@@ -230,9 +230,18 @@
       </div>
       <p class="use-note">
         Then wrap text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.
-        Cross-origin use requires the font host to send
+        The snippet above is this page’s origin (fine for the demo).
+        For other sites, prefer jsDelivr rather than GitHub Pages as a CDN:
+      </p>
+      <pre><code id="snippet-jsdelivr">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css"&gt;</code></pre>
+      <div class="snippet-actions">
+        <button type="button" data-copy="snippet-jsdelivr">Copy</button>
+      </div>
+      <p class="use-note">
+        Cross-origin <code>@font-face</code> needs
         <code>Access-Control-Allow-Origin</code>
-        (GitHub Pages and jsDelivr do; <code>raw.githubusercontent.com</code> is not suitable).
+        (jsDelivr and GitHub Pages send it;
+        <code>raw.githubusercontent.com</code> is not suitable).
       </p>
     </div>
   </section>

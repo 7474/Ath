@@ -2,12 +2,9 @@
 
 ## GitHub Pages デモ
 
-> **公開 URL（GitHub Pages）**: `https://7474.github.io/Ath/`
+> **デモ URL（GitHub Pages）**: `https://7474.github.io/Ath/`
 >
-> フォントをダウンロードせずに使う場合のエンドポイント:
-> - スタイルシート: `https://7474.github.io/Ath/aarth.css`
-> - WOFF2: `https://7474.github.io/Ath/aarth.woff2`
-> - TTF: `https://7474.github.io/Ath/aarth.ttf`
+> GitHub Pages はプロジェクトのショーケース用です。他サイトからフォントを直リンクして使う場合は、下の [jsDelivr](#1-スタイルシートを-link-する推奨) を使ってください。
 >
 > `main` ブランチへの push をトリガーに GitHub Actions が自動でフォントを再生成し、
 > `docs/` フォルダの内容を GitHub Pages へデプロイします。
@@ -128,26 +125,22 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 フォントファイルをプロジェクトにコピーしなくても、公開 URL を指定して使えます。
 `aarth.css` の `@font-face` は相対パスなので、**CSS 自身の URL** を基準に `aarth.woff2` / `aarth.ttf` が解決されます。別サイトから CSS を `<link>` しても、フォントは CSS と同じオリジンから取得されます。
 
-クロスオリジンの `@font-face` には配信元の `Access-Control-Allow-Origin` が必要です。GitHub Pages と jsDelivr はこれを返します。`raw.githubusercontent.com` は MIME 型が `text/plain` になるため使わないでください。
+クロスオリジンの `@font-face` には配信元の `Access-Control-Allow-Origin` が必要です。jsDelivr と GitHub Pages はこれを返します。`raw.githubusercontent.com` は MIME 型が `text/plain` になるため使わないでください。
+
+GitHub Pages は [プロジェクトのショーケース用](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#pages) であり、汎用 CDN ではありません。デモページからの利用は想定どおりですが、**他サイトからの恒常的な直リンクには jsDelivr を使ってください。** 月あたりの Pages 帯域はソフト上限 100 GB です。超えると配信できなくなるか、CDN や別ホストへの移行を案内されます（[GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)）。
 
 デモページ上のスニペットは、表示中のホストに合わせた絶対 URL に書き換わります。
 
 ### 1. スタイルシートを link する（推奨）
 
-GitHub Pages の公開 URL（この README 先頭）を使った例:
+他サイトから使う場合（jsDelivr。GitHub 上の OSS ファイル向け CDN）:
 
 ```html
-<link rel="stylesheet" href="https://7474.github.io/Ath/aarth.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css">
 <style>
   .ath { font-family: 'Aarth', serif; }
 </style>
 <p class="ath">aarth lotr atosr</p>
-```
-
-GitHub Pages を使わず Git 上の `docs/` を CDN 配信する場合（jsDelivr）:
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css">
 ```
 
 本番では `@main` の代わりにコミット SHA を指定すると、フォント再生成の影響を受けません。
@@ -157,8 +150,8 @@ GitHub Pages を使わず Git 上の `docs/` を CDN 配信する場合（jsDeli
 ```css
 @font-face {
   font-family: 'Aarth';
-  src: url('https://7474.github.io/Ath/aarth.woff2') format('woff2'),
-       url('https://7474.github.io/Ath/aarth.ttf')   format('truetype');
+  src: url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.ttf')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
