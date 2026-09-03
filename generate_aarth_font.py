@@ -6,8 +6,9 @@ Generates aarth.ttf and aarth.woff2 from the Ath (Ath alphabet) raster image.
 
 Pipeline:
   1. Download the source PNG from Wikimedia Commons (or use a local file).
-  2. Pre-process with OpenCV: grayscale → threshold → noise removal.
-  3. Detect glyph bounding boxes via contour finding; sort top→bottom, left→right.
+  2. Pre-process with OpenCV: grayscale → threshold.
+  3. Detect glyph boxes; merge disconnected overlines / umlauts into the
+     parent glyph; keep the 4×7 alphabet grid (drop the header).
   4. For each glyph: save as PBM bitmap, call `potrace` to produce an SVG path.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
@@ -98,15 +99,133 @@ def load_and_binarize(image_path: Path) -> np.ndarray:
     _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # Glyphs are dark (0) on white (255); invert so glyphs are white on black
     binary = cv2.bitwise_not(binary)
-    # Remove small noise
-    kernel = np.ones((2, 2), np.uint8)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=1)
+    # Do not apply morphological opening: 2×2 opening eats umlaut dots (~4×4).
     return binary
 
 
-def find_glyph_boxes(binary: np.ndarray, min_area: int = 300):
+def _box_area(box) -> int:
+    return box[2] * box[3]
+
+
+def _union_box(a, b):
+    x1 = min(a[0], b[0])
+    y1 = min(a[1], b[1])
+    x2 = max(a[0] + a[2], b[0] + b[2])
+    y2 = max(a[1] + a[3], b[1] + b[3])
+    return (x1, y1, x2 - x1, y2 - y1)
+
+
+def _x_overlap(a, b) -> int:
+    return max(0, min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]))
+
+
+def _is_diacritic_above(mark, base, max_gap_px: float) -> bool:
+    """True if `mark` is a small accent sitting above `base` (overline / umlaut)."""
+    mx, my, mw, mh = mark
+    bx, by, bw, bh = base
+    if _box_area(mark) >= _box_area(base) * 0.45:
+        return False
+    mcx = mx + mw / 2
+    if not (bx - 4 <= mcx <= bx + bw + 4 or _x_overlap(mark, base) >= 0.3 * min(mw, bw)):
+        return False
+    gap = by - (my + mh)
+    return gap <= max_gap_px
+
+
+def merge_diacritic_boxes(boxes: list) -> list:
     """
-    Find bounding boxes of individual glyphs.
+    Union-find merge of disconnected accents into the glyph they belong to.
+
+    Overlines and umlaut dots are separate contours from the letter body.
+    Latin labels sit *below* their glyph and are left unmerged.
+    """
+    n = len(boxes)
+    if n <= 1:
+        return list(boxes)
+
+    parent = list(range(n))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def union(i, j):
+        ri, rj = find(i), find(j)
+        if ri != rj:
+            parent[rj] = ri
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = boxes[i], boxes[j]
+            if a[1] <= b[1]:
+                upper, lower = a, b
+            else:
+                upper, lower = b, a
+            max_gap = max(10.0, 0.4 * lower[3])
+            if _is_diacritic_above(upper, lower, max_gap):
+                union(i, j)
+
+    groups: dict[int, list] = {}
+    for i, box in enumerate(boxes):
+        groups.setdefault(find(i), []).append(box)
+
+    merged = []
+    for group in groups.values():
+        acc = group[0]
+        for extra in group[1:]:
+            acc = _union_box(acc, extra)
+        merged.append(acc)
+    return merged
+
+
+def group_boxes_into_rows(boxes: list) -> list[list]:
+    """Cluster boxes into rows by y, then sort each row left-to-right."""
+    if not boxes:
+        return []
+    heights = sorted(h for _, _, _, h in boxes)
+    median_h = heights[len(heights) // 2]
+    row_tol = median_h * 0.6
+    ordered = sorted(boxes, key=lambda b: b[1])
+    rows = []
+    current = [ordered[0]]
+    for box in ordered[1:]:
+        if abs(box[1] - current[-1][1]) < row_tol:
+            current.append(box)
+        else:
+            rows.append(sorted(current, key=lambda b: b[0]))
+            current = [box]
+    rows.append(sorted(current, key=lambda b: b[0]))
+    return rows
+
+
+def select_alphabet_grid(boxes: list, expected: int = 28) -> list:
+    """
+    Keep 7-column rows of letter-sized boxes.
+
+    The source PNG has a 6-item header ('Ath' + three sample glyphs) above a
+    4×7 alphabet grid, plus small Latin labels under each glyph. After
+    diacritic merging, letter bodies are tall (~25px) while labels are short.
+    """
+    letter_boxes = [b for b in boxes if b[3] >= 18]
+    rows = group_boxes_into_rows(letter_boxes)
+    grid_rows = [row for row in rows if len(row) == 7]
+    result = [box for row in grid_rows for box in row]
+    if len(result) == expected:
+        return result
+    if rows and len(rows[0]) != 7:
+        rest = [box for row in rows[1:] for box in row]
+        if len(rest) == expected:
+            return rest
+    return result
+
+
+def find_glyph_boxes(binary: np.ndarray, min_area: int = 8):
+    """
+    Find bounding boxes of the 28 alphabet glyphs, including disconnected
+    overlines and umlaut dots.
+
     Returns list of (x, y, w, h) sorted top-to-bottom, left-to-right by row.
     """
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -123,25 +242,8 @@ def find_glyph_boxes(binary: np.ndarray, min_area: int = 300):
     if not boxes:
         return boxes
 
-    # Sort into rows using a y-tolerance of half the median glyph height
-    heights = sorted([h for _, _, _, h in boxes])
-    median_h = heights[len(heights) // 2]
-    row_tol = median_h * 0.6
-
-    boxes.sort(key=lambda b: b[1])  # sort by y first
-
-    rows = []
-    current_row = [boxes[0]]
-    for box in boxes[1:]:
-        if abs(box[1] - current_row[-1][1]) < row_tol:
-            current_row.append(box)
-        else:
-            rows.append(sorted(current_row, key=lambda b: b[0]))
-            current_row = [box]
-    rows.append(sorted(current_row, key=lambda b: b[0]))
-
-    result = [box for row in rows for box in row]
-    return result
+    boxes = merge_diacritic_boxes(boxes)
+    return select_alphabet_grid(boxes, expected=len(GLYPH_CODEPOINTS))
 
 
 def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
@@ -172,7 +274,10 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
 
     try:
         subprocess.run(
-            ["potrace", "--svg", "--output", str(svg_path), str(pbm_path)],
+            [
+                "potrace", "--svg", "--turdsize", "0",
+                "--output", str(svg_path), str(pbm_path),
+            ],
             check=True,
             capture_output=True,
         )
@@ -218,22 +323,24 @@ def parse_svg_path(svg_file: Path) -> str | None:
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
-def layout_glyph(svg_d: str, target_height: float, lsb: float):
+def layout_glyph(svg_d: str, target_height: float, lsb: float, scale: float | None = None):
     """
     Fit a potrace SVG path to the font's em, without drawing yet.
 
     Potrace path coordinates are y-up and 10x the source-pixel size (the SVG's
     own ``<g transform="translate(0,H) scale(0.1,-0.1)">`` compensates for that
-    when rendered). Because we fit each glyph by its own bounding box, the
-    constant 10x factor and any origin offset cancel out, so that group
-    transform does not need to be applied here. A single uniform positive scale
-    keeps the aspect ratio and preserves contour orientation, so counters/holes
-    fill correctly.
+    when rendered). A single uniform positive scale keeps the aspect ratio and
+    preserves contour orientation, so counters/holes fill correctly.
+
+    When ``scale`` is omitted the glyph is stretched to ``target_height``.
+    Passing a shared ``scale`` (from the tallest outline) keeps letter bodies
+    consistent so overlines/umlauts sit above the cap rather than shrinking
+    the whole glyph.
 
     Returns ``(recording_pen, affine, advance)`` — replaying ``recording_pen``
-    through ``TransformPen(target_pen, affine)`` scales the glyph to
-    ``target_height`` font units, resting on the baseline with ``lsb`` units of
-    left side bearing — or ``None`` when the path is empty/degenerate.
+    through ``TransformPen(target_pen, affine)`` places the glyph on the
+    baseline with ``lsb`` units of left side bearing — or ``None`` when the
+    path is empty/degenerate.
     """
     from fontTools.svgLib.path import parse_path
     from fontTools.pens.recordingPen import RecordingPen
@@ -252,7 +359,8 @@ def layout_glyph(svg_d: str, target_height: float, lsb: float):
     if raw_h <= 0:
         return None
 
-    scale = target_height / raw_h
+    if scale is None:
+        scale = target_height / raw_h
     # font_x = scale*x + (lsb - scale*x_min);  font_y = scale*y - scale*y_min
     affine = (scale, 0.0, 0.0, scale, lsb - scale * x_min, -scale * y_min)
     advance = int(round(raw_w * scale)) + 2 * int(lsb)
@@ -270,15 +378,34 @@ def build_font(glyph_data: list[dict], output_dir: Path):
       - saves as aarth.ttf  (OTF binary; .ttf extension for broad compatibility)
       - compresses to aarth.woff2
 
-    Each glyph is scaled from its own outline bounding box to CAP_HEIGHT and set
-    on the baseline, so all glyphs share a consistent size regardless of the
-    source pixel dimensions.
+    Each glyph is scaled with a *shared* factor taken from the tallest outline
+    (typically a letter plus overline/umlaut) so bodies stay the same size and
+    diacritics sit above the cap height instead of shrinking the whole glyph.
     """
     from fontTools.fontBuilder import FontBuilder
     from fontTools.pens.t2CharStringPen import T2CharStringPen
     from fontTools.pens.transformPen import TransformPen
+    from fontTools.svgLib.path import parse_path
+    from fontTools.pens.recordingPen import RecordingPen
+    from fontTools.pens.boundsPen import ControlBoundsPen
 
     glyph_names = [".notdef"] + [g["name"] for g in glyph_data]
+
+    # Measure every outline so we can pick one scale for the whole font.
+    max_raw_h = 0.0
+    for g in glyph_data:
+        if not g["svg_d"]:
+            continue
+        rec = RecordingPen()
+        try:
+            parse_path(g["svg_d"], rec)
+        except Exception:
+            continue
+        bounds = ControlBoundsPen(None)
+        rec.replay(bounds)
+        if bounds.bounds:
+            max_raw_h = max(max_raw_h, bounds.bounds[3] - bounds.bounds[1])
+    shared_scale = (CAP_HEIGHT / max_raw_h) if max_raw_h > 0 else None
 
     # Build CFF charstrings, capturing each glyph's advance width as we draw it.
     charStrings = {}
@@ -303,7 +430,7 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         layout = None
         if g["svg_d"]:
             try:
-                layout = layout_glyph(g["svg_d"], CAP_HEIGHT, GLYPH_LSB)
+                layout = layout_glyph(g["svg_d"], CAP_HEIGHT, GLYPH_LSB, scale=shared_scale)
             except Exception as exc:
                 print(f"  [warn] layout failed for {g['name']}: {exc}")
 
@@ -394,19 +521,24 @@ def main():
 
     if args.debug:
         debug_img = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
-        for x, y, w, h in boxes:
-            cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        for i, (x, y, w, h) in enumerate(boxes):
+            cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+            label = GLYPH_NAMES[i] if i < len(GLYPH_NAMES) else str(i)
+            cv2.putText(
+                debug_img, label, (x, max(12, y - 2)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 180, 255), 1, cv2.LINE_AA,
+            )
         cv2.imwrite(str(output_dir / "debug_boxes.png"), debug_img)
 
     # Warn if too few/many glyphs found
     expected = len(GLYPH_CODEPOINTS)
-    if len(boxes) < expected:
-        print(f"  [warn] expected {expected} glyphs but only found {len(boxes)}. "
-              "The font will be partial.")
-    if len(boxes) > expected:
-        print(f"  [info] more boxes than expected ({len(boxes)} > {expected}); "
-              "using first {expected}.")
-        boxes = boxes[:expected]
+    if len(boxes) != expected:
+        print(f"  [warn] expected {expected} glyphs but found {len(boxes)}.")
+        if len(boxes) < expected:
+            print("  The font will be partial.")
+        else:
+            print(f"  using first {expected}.")
+            boxes = boxes[:expected]
 
     # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
