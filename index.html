@@ -12,7 +12,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: system-ui, sans-serif;
+      font-family: 'Aarth', system-ui, sans-serif;
       background: #fafaf8;
       color: #222;
       padding: 2rem;
@@ -20,9 +20,24 @@
       margin: 0 auto;
     }
 
+    body.translated {
+      font-family: system-ui, sans-serif;
+    }
+
     h1, h2 { margin-bottom: .5rem; }
     h1 { font-size: 1.8rem; margin-bottom: 1.5rem; }
     h2 { font-size: 1.2rem; color: #555; margin-top: 2rem; }
+
+    #translate-button {
+      font: 1rem system-ui, sans-serif;
+      padding: .45rem .8rem;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    #translate-button:hover { background: #f3f3f3; }
 
     /* ------------------------------------------------------------------ */
     /* Aarth font utility class                                            */
@@ -92,6 +107,14 @@
       letter-spacing: .04em;
     }
 
+    body.translated .aarth,
+    body.translated .aarth-hero,
+    body.translated .alpha-cell .glyph,
+    body.translated .size-scale p,
+    body.translated .aarth-para {
+      font-family: inherit;
+    }
+
     code {
       background: #f0f0f0;
       color: #1a1a1a;
@@ -149,6 +172,7 @@
 </head>
 <body>
 
+  <button id="translate-button" type="button" aria-pressed="false">Translate</button>
   <h1>Aarth (Ath Alphabet) — Webfont Demo</h1>
 
   <!-- Hero -->
@@ -334,6 +358,15 @@
           }
         });
       });
+
+      var translateButton = document.getElementById('translate-button');
+      if (translateButton) {
+        translateButton.addEventListener('click', function () {
+          var translated = document.body.classList.toggle('translated');
+          translateButton.setAttribute('aria-pressed', String(translated));
+          translateButton.textContent = translated ? 'Show Ath' : 'Translate';
+        });
+      }
     })();
   </script>
 
