@@ -9,7 +9,7 @@ Pipeline:
   2. Pre-process with OpenCV: grayscale → threshold.
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
      parent glyph; keep the 4×7 alphabet grid (drop the header).
-  4. For each glyph: save grayscale crop as PGM, call `potrace --blacklevel`.
+  4. For each glyph: split ink into components, 8× silhouette-blur, potrace.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
 Usage:
@@ -77,13 +77,20 @@ CAP_HEIGHT = 700   # target height every glyph is scaled to
 X_HEIGHT = 500
 GLYPH_LSB = 40     # left/right side bearing in font units
 
-# Keep tracing at native resolution so potrace can fit smooth curves.
-# 8× upscaling made outlines stairstep the pixel grid. The hollow-sliver
-# bug is avoided by feeding grayscale + a softer blacklevel instead of
-# the harsh Otsu mask used only for box detection.
-# Potrace --blacklevel: fraction of white above which a pixel is paper.
-# 0.6 keeps anti-aliased fringe as ink so thin strokes stay solid.
-TRACE_BLACKLEVEL = 0.6
+# Source PNG is ~20–30px with an 8-level gray ramp. Otsu (box detection)
+# makes a thin dark core; potrace on that greymap traces each stroke as a
+# ribbon whose Béziers sag and leave a white sliver (especially Ath 'h').
+#
+# Instead: take a *silhouette* of each ink component, upscale, blur so the
+# 0.5 isosurface is a smooth outer contour, then potrace. One filled outline
+# cannot pinch hollow. Components (umlaut dots, overlines) are assigned by
+# nearest Otsu seed so blur cannot melt them into the letter body.
+SOURCE_INK_LEVEL = 0.6   # include anti-aliased fringe as ink
+TRACE_SCALE = 8
+# Blur the *native* signed-distance field (stair period = 1px), then
+# cubic-upsample so potrace sees a dense, already-smooth 0.5 isosurface.
+TRACE_SDF_SIGMA = 1.2
+TRACE_BLACKLEVEL = 0.5   # midpoint of the SDF ramp (0-level of the field)
 
 
 # ---------------------------------------------------------------------------
@@ -274,29 +281,77 @@ def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
     return binary[y1:y2, x1:x2]
 
 
-def prepare_glyph_for_trace(gray: np.ndarray, box, padding: int = 4) -> np.ndarray:
-    """
-    Crop a glyph from the source grayscale for potrace.
+def _nearest_seed_labels(loose: np.ndarray, seeds: np.ndarray) -> np.ndarray:
+    """Assign every ``loose`` ink pixel to the nearest connected seed.
 
-    Detection uses a strict Otsu binary so Latin labels stay separate.
-    Tracing stays at native size (smooth Bézier fit) and keeps the
-    anti-aliased fringe so thin strokes are not pinched hollow.
+    ``seeds`` is a labeled image (0 = background). Overlapping gray fringe
+    between an umlaut and its letter body goes to whichever core is closer,
+    so a later blur cannot weld diacritics onto the stem.
     """
-    return crop_glyph(gray, box, padding)
+    n = int(seeds.max())
+    if n <= 0:
+        return seeds
+    assigned = np.zeros(seeds.shape, dtype=np.int32)
+    min_dist = np.full(seeds.shape, np.inf, dtype=np.float32)
+    for i in range(1, n + 1):
+        seed = (seeds == i).astype(np.uint8)
+        dist = cv2.distanceTransform(1 - seed, cv2.DIST_L2, 5)
+        closer = loose & (dist < min_dist)
+        assigned[closer] = i
+        min_dist[closer] = dist[closer]
+        assigned[seed.astype(bool)] = i
+    return assigned
 
 
-def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:
+def split_ink_components(gray_crop: np.ndarray, otsu_crop: np.ndarray) -> list[np.ndarray]:
     """
-    Save glyph as PGM, run potrace, return the SVG path 'd' string.
-    Potrace produces a path with (0,0) at bottom-left in PostScript coords.
+    One ink mask (255 = ink) per disconnected mark in the crop.
 
-    ``glyph_img`` is a grayscale crop, dark ink on light paper (same polarity
-    as the source PNG). Potrace traces pixels darker than TRACE_BLACKLEVEL.
+    Seeds come from the Otsu detection mask (sharp cores, separate dots).
+    Each seed claims nearby anti-aliased fringe (``SOURCE_INK_LEVEL``).
     """
-    pgm_path = tmp_dir / f"glyph_{idx:03d}.pgm"
-    svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
+    loose = gray_crop < SOURCE_INK_LEVEL * 255
+    strict = otsu_crop > 0
+    n_labels, seeds = cv2.connectedComponents(strict.astype(np.uint8), connectivity=8)
+    labels = _nearest_seed_labels(loose, seeds)
+    masks = []
+    for i in range(1, n_labels):
+        masks.append(np.where(labels == i, 255, 0).astype(np.uint8))
+    return masks
+
+
+def prepare_component_for_trace(ink_mask: np.ndarray) -> np.ndarray:
+    """Smooth a component's silhouette via SDF, then 8× for potrace."""
+    ink = np.where(ink_mask > 0, 255, 0).astype(np.uint8)
+    dist_in = cv2.distanceTransform(ink, cv2.DIST_L2, 5)
+    dist_out = cv2.distanceTransform(cv2.bitwise_not(ink), cv2.DIST_L2, 5)
+    sdf = dist_in.astype(np.float32) - dist_out.astype(np.float32)
+    k = int(max(3, round(TRACE_SDF_SIGMA * 6))) | 1
+    sdf = cv2.GaussianBlur(sdf, (k, k), sigmaX=TRACE_SDF_SIGMA)
+    h, w = sdf.shape
+    up = cv2.resize(
+        sdf,
+        (w * TRACE_SCALE, h * TRACE_SCALE),
+        interpolation=cv2.INTER_CUBIC,
+    )
+    # Map SDF 0 → 127.5 so --blacklevel 0.5 follows the smoothed outline.
+    # ±4 px covers the ramp; interior stays dark, exterior paper.
+    gray = np.clip(127.5 - up * (127.5 / 4.0), 0, 255).astype(np.uint8)
+    return gray
+
+
+def prepare_glyph_for_trace(
+    gray: np.ndarray, binary: np.ndarray, box, padding: int = 4,
+) -> list[np.ndarray]:
+    """Return one blurred silhouette greymap per ink component of ``box``."""
+    gray_crop = crop_glyph(gray, box, padding)
+    otsu_crop = crop_glyph(binary, box, padding)
+    masks = split_ink_components(gray_crop, otsu_crop)
+    return [prepare_component_for_trace(mask) for mask in masks]
+
+
+def _potrace_pgm(glyph_img: np.ndarray, pgm_path: Path, svg_path: Path) -> str | None:
     Image.fromarray(glyph_img).convert("L").save(str(pgm_path))
-
     try:
         subprocess.run(
             [
@@ -308,13 +363,38 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
             capture_output=True,
         )
     except subprocess.CalledProcessError as exc:
-        print(f"  [warn] potrace failed for glyph {idx}: {exc.stderr.decode()}")
+        print(f"  [warn] potrace failed: {exc.stderr.decode()}")
         return None
     except FileNotFoundError:
         print("  [error] potrace not found. Install it with: sudo apt-get install potrace")
         sys.exit(1)
-
     return parse_svg_path(svg_path)
+
+
+def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:
+    """
+    Save a greymap as PGM, run potrace, return the SVG path 'd' string.
+    Potrace produces a path with (0,0) at bottom-left in PostScript coords.
+    """
+    return _potrace_pgm(
+        glyph_img,
+        tmp_dir / f"glyph_{idx:03d}.pgm",
+        tmp_dir / f"glyph_{idx:03d}.svg",
+    )
+
+
+def trace_glyph(gray: np.ndarray, binary: np.ndarray, box, tmp_dir: Path, idx: int) -> str | None:
+    """Trace every ink component of a glyph and concatenate the path data."""
+    parts = []
+    for c_idx, canvas in enumerate(prepare_glyph_for_trace(gray, binary, box)):
+        d = _potrace_pgm(
+            canvas,
+            tmp_dir / f"glyph_{idx:03d}_{c_idx:02d}.pgm",
+            tmp_dir / f"glyph_{idx:03d}_{c_idx:02d}.svg",
+        )
+        if d:
+            parts.append(d)
+    return " ".join(parts) or None
 
 
 def parse_svg_path(svg_file: Path) -> str | None:
@@ -579,8 +659,7 @@ def main():
             name = GLYPH_NAMES[idx]
             print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
 
-            crop = prepare_glyph_for_trace(gray, box)
-            svg_d = glyph_to_svg_path(crop, tmp_dir, idx)
+            svg_d = trace_glyph(gray, binary, box, tmp_dir, idx)
 
             if svg_d:
                 print(" ok")

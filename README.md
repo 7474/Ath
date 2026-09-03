@@ -135,7 +135,7 @@ python3 generate_aarth_font.py
 
 1. ローカルに画像がなければ Wikimedia Commons から `Ath_(alphabet).png` を取得する（`--image <path>` でも指定可）。
 2. 画像を二値化し、28 個のグリフ領域を検出する。
-3. `potrace` で各グリフをベクター化する（bitmap → SVG cubic Bézier）。
+3. 成分ごとにシルエットを整え、`potrace` でベクター化する（bitmap → SVG cubic Bézier）。
 4. CFF ベースの OpenType フォントを組み立て、WOFF2 に圧縮する。
 
 出力はデフォルトでカレントディレクトリです（`--output-dir`）。
@@ -178,7 +178,7 @@ Ath_(alphabet).png
   cv2.findContours → merge overlines/umlauts → 28 glyph boxes (row-major)
         │
         ▼  (per glyph)
-  crop grayscale → PGM → potrace --svg --blacklevel → SVG path 'd' string
+  per-component silhouette → SDF smooth + 8× → PGM → potrace --svg --blacklevel → SVG path
         │
         ▼
   Scale & translate to 1000-unit EM (ascender=800, descender=-200)
