@@ -1,5 +1,20 @@
 # Aarth — Ath Alphabet Webfont Generator
 
+## GitHub Pages デモ
+
+> **公開 URL（GitHub Pages）**: `https://7474.github.io/Ath/`
+>
+> `main` ブランチへの push をトリガーに GitHub Actions が自動でフォントを再生成し、
+> `docs/` フォルダの内容を GitHub Pages へデプロイします。
+>
+> **GitHub Pages の有効化手順**（初回のみリポジトリオーナーが実施）:
+> 1. https://github.com/7474/Ath/settings/pages を開く
+> 2. **Source** → `Deploy from a branch`
+> 3. **Branch** → `main` / `docs`
+> 4. Save
+
+
+
 Automatically extracts glyph shapes from the **Ath (Ath alphabet)** raster image,
 vectorises them with Potrace, and packages the result as a ready-to-use webfont
 (`aarth.ttf` / `aarth.woff2`).
