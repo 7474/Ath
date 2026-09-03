@@ -73,3 +73,87 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 
 <p class="ath">aarth lotr atosr</p>
 ```
+
+---
+
+## Quick start
+
+リポジトリをクローンしたあと、次の手順でフォントをローカル生成できます。
+
+### 1. Install system tools
+
+```bash
+# Debian / Ubuntu
+sudo apt-get install potrace
+
+# macOS
+brew install potrace
+
+# Windows — download the binary from http://potrace.sourceforge.net/
+```
+
+### 2. Install Python packages
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Generate the font
+
+```bash
+python3 generate_aarth_font.py
+```
+
+スクリプトは次を行います。
+
+1. ローカルに画像がなければ Wikimedia Commons から `Ath_(alphabet).png` を取得する（`--image <path>` でも指定可）。
+2. 画像を二値化し、28 個のグリフ領域を検出する。
+3. `potrace` で各グリフをベクター化する（bitmap → SVG cubic Bézier）。
+4. CFF ベースの OpenType フォントを組み立て、WOFF2 に圧縮する。
+
+出力はデフォルトでカレントディレクトリです（`--output-dir`）。
+
+```
+aarth.ttf    — OpenType/CFF font（互換性が広い）
+aarth.woff2  — モダンブラウザ向けの圧縮 Web フォント
+```
+
+### 4. Preview in a browser
+
+`index.html` を開きます（同じフォルダに `aarth.woff2` と `aarth.ttf` があること）。
+
+---
+
+## Command-line options
+
+| Option | Default | Description |
+|---|---|---|
+| `--image` | Wikimedia URL | Local path or HTTP URL of the source PNG |
+| `--output-dir` | `.` | Directory to write output files |
+| `--debug` | off | Save `debug_boxes.png` showing detected bounding boxes |
+
+---
+
+## Pipeline overview
+
+```
+Ath_(alphabet).png
+        │
+        ▼
+  OpenCV binarise + denoise
+        │
+        ▼
+  cv2.findContours → merge overlines/umlauts → 28 glyph boxes (row-major)
+        │
+        ▼  (per glyph)
+  crop → PBM bitmap → potrace --svg → SVG path 'd' string
+        │
+        ▼
+  Scale & translate to 1000-unit EM (ascender=800, descender=-200)
+        │
+        ▼
+  fontTools FontBuilder (CFF/OTF, cubic Bézier)
+        │
+        ├──▶ aarth.ttf
+        └──▶ aarth.woff2  (via fontTools woff2 compress)
+```
