@@ -9,7 +9,7 @@ Pipeline:
   2. Pre-process with OpenCV: grayscale → threshold.
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
      parent glyph; keep the 4×7 alphabet grid (drop the header).
-  4. For each glyph: upscale grayscale, save as PGM, call `potrace`.
+  4. For each glyph: save grayscale crop as PGM, call `potrace --blacklevel`.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
 Usage:
@@ -77,12 +77,12 @@ CAP_HEIGHT = 700   # target height every glyph is scaled to
 X_HEIGHT = 500
 GLYPH_LSB = 40     # left/right side bearing in font units
 
-# Native Ath glyphs are ~20–30 px. At that size potrace's Bézier fit pinches
-# thin strokes and leaves a white sliver between the outer edge and the fill.
-# Upscale the grayscale crop first so the fit stays inside the stroke.
-TRACE_UPSCALE = 8
+# Keep tracing at native resolution so potrace can fit smooth curves.
+# 8× upscaling made outlines stairstep the pixel grid. The hollow-sliver
+# bug is avoided by feeding grayscale + a softer blacklevel instead of
+# the harsh Otsu mask used only for box detection.
 # Potrace --blacklevel: fraction of white above which a pixel is paper.
-# 0.6 keeps anti-aliased fringe as ink (Otsu ~99 is used only for boxes).
+# 0.6 keeps anti-aliased fringe as ink so thin strokes stay solid.
 TRACE_BLACKLEVEL = 0.6
 
 
@@ -276,20 +276,13 @@ def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
 
 def prepare_glyph_for_trace(gray: np.ndarray, box, padding: int = 4) -> np.ndarray:
     """
-    Crop a glyph from the source grayscale and upscale it for potrace.
+    Crop a glyph from the source grayscale for potrace.
 
     Detection uses a strict Otsu binary so Latin labels stay separate.
-    Tracing uses the upscaled grayscale (cubic interpolation) so
-    anti-aliased fringe stays available and potrace can fit strokes
-    without pinching them into a hollow outline with a gap inside.
+    Tracing stays at native size (smooth Bézier fit) and keeps the
+    anti-aliased fringe so thin strokes are not pinched hollow.
     """
-    crop = crop_glyph(gray, box, padding)
-    height, width = crop.shape
-    return cv2.resize(
-        crop,
-        (width * TRACE_UPSCALE, height * TRACE_UPSCALE),
-        interpolation=cv2.INTER_CUBIC,
-    )
+    return crop_glyph(gray, box, padding)
 
 
 def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:

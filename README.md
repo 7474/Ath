@@ -178,7 +178,7 @@ Ath_(alphabet).png
   cv2.findContours → merge overlines/umlauts → 28 glyph boxes (row-major)
         │
         ▼  (per glyph)
-  crop → upscale grayscale → PGM → potrace --svg → SVG path 'd' string
+  crop grayscale → PGM → potrace --svg --blacklevel → SVG path 'd' string
         │
         ▼
   Scale & translate to 1000-unit EM (ascender=800, descender=-200)
