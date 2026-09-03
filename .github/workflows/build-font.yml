@@ -7,6 +7,7 @@ on:
       - 'generate_aarth_font.py'
       - 'Ath_alphabet.png'
       - 'index.html'
+      - 'aarth.css'
       - '.github/workflows/build-font.yml'
   workflow_dispatch:
 
@@ -35,9 +36,11 @@ jobs:
             --output-dir docs \
             --debug
 
-      - name: Copy demo page into docs
+      - name: Copy demo page and stylesheet into docs
         run: |
           cp index.html docs/index.html
+          cp aarth.css docs/aarth.css
+          touch docs/.nojekyll
 
       - name: Commit generated files
         run: |

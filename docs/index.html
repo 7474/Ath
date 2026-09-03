@@ -4,19 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aarth (Ath Alphabet) Webfont Demo</title>
+  <link rel="stylesheet" href="aarth.css">
   <style>
-    /* ------------------------------------------------------------------ */
-    /* @font-face — load Aarth webfont                                     */
-    /* ------------------------------------------------------------------ */
-    @font-face {
-      font-family: 'Aarth';
-      src: url('aarth.woff2') format('woff2'),
-           url('aarth.ttf')   format('truetype');
-      font-weight: normal;
-      font-style:  normal;
-      font-display: swap;
-    }
-
     /* ------------------------------------------------------------------ */
     /* Base styles                                                         */
     /* ------------------------------------------------------------------ */
@@ -120,6 +109,31 @@
       line-height: 1.6;
       margin-top: .5rem;
     }
+
+    .snippet-actions {
+      display: flex;
+      gap: .5rem;
+      margin-top: .6rem;
+      flex-wrap: wrap;
+    }
+
+    .snippet-actions button {
+      font: inherit;
+      font-size: .85rem;
+      padding: .35rem .7rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .snippet-actions button:hover { background: #f3f3f3; }
+
+    .use-note {
+      margin-top: .8rem;
+      color: #444;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -197,13 +211,40 @@
 
   <!-- CSS usage snippet -->
   <section>
-    <h2>How to use in your own project</h2>
+    <h2>Use via URL (no download)</h2>
     <div class="demo-block">
-      <p>Copy <code>aarth.woff2</code> (and optionally <code>aarth.ttf</code>) next to your CSS file, then add:</p>
-      <pre><code>@font-face {
+      <p>
+        Link the hosted stylesheet. Font files stay on this origin;
+        you do not need to copy them into your project.
+        Relative paths in <code>aarth.css</code> resolve against the CSS URL,
+        so a cross-site <code>&lt;link&gt;</code> still fetches
+        <code>aarth.woff2</code> / <code>aarth.ttf</code> from the same host.
+      </p>
+      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;
+
+&lt;style&gt;
+  .ath-text { font-family: 'Aarth', serif; }
+&lt;/style&gt;</code></pre>
+      <div class="snippet-actions">
+        <button type="button" data-copy="snippet-link">Copy</button>
+      </div>
+      <p class="use-note">
+        Then wrap text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.
+        Cross-origin use requires the font host to send
+        <code>Access-Control-Allow-Origin</code>
+        (GitHub Pages and jsDelivr do; <code>raw.githubusercontent.com</code> is not suitable).
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Use @font-face with font URLs</h2>
+    <div class="demo-block">
+      <p>If you prefer to declare the face yourself:</p>
+      <pre><code id="snippet-font-face">@font-face {
   font-family: 'Aarth';
-  src: url('aarth.woff2') format('woff2'),
-       url('aarth.ttf')   format('truetype');
+  src: url('./aarth.woff2') format('woff2'),
+       url('./aarth.ttf')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
@@ -212,14 +253,75 @@
 .ath-text {
   font-family: 'Aarth', serif;
 }</code></pre>
-      <p style="margin-top:1rem">Then wrap any text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.</p>
-      <p style="margin-top:.5rem">
+      <div class="snippet-actions">
+        <button type="button" data-copy="snippet-font-face">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Use a local copy</h2>
+    <div class="demo-block">
+      <p>For offline apps, copy <code>aarth.woff2</code> (and optionally <code>aarth.ttf</code>) next to your CSS, then use the same <code>@font-face</code> with relative paths.</p>
+      <p class="use-note">
         Character mapping: use standard lowercase a–z plus
         <code>é ï œ ü ÿ</code> for the special vowels,
         and uppercase <code>A I E</code> for the digraphs <em>ai, au, eu</em>.
       </p>
     </div>
   </section>
+
+  <script>
+    (function () {
+      var cssUrl = new URL('aarth.css', window.location.href).href;
+      var woff2Url = new URL('aarth.woff2', window.location.href).href;
+      var ttfUrl = new URL('aarth.ttf', window.location.href).href;
+
+      var linkEl = document.getElementById('snippet-link');
+      var faceEl = document.getElementById('snippet-font-face');
+      if (linkEl) {
+        linkEl.textContent =
+          '<link rel="stylesheet" href="' + cssUrl + '">\n\n' +
+          '<style>\n' +
+          "  .ath-text { font-family: 'Aarth', serif; }\n" +
+          '</style>';
+      }
+      if (faceEl) {
+        faceEl.textContent =
+          '@font-face {\n' +
+          "  font-family: 'Aarth';\n" +
+          "  src: url('" + woff2Url + "') format('woff2'),\n" +
+          "       url('" + ttfUrl + "')   format('truetype');\n" +
+          '  font-weight: normal;\n' +
+          '  font-style:  normal;\n' +
+          '  font-display: swap;\n' +
+          '}\n\n' +
+          '.ath-text {\n' +
+          "  font-family: 'Aarth', serif;\n" +
+          '}';
+      }
+
+      document.querySelectorAll('[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = document.getElementById(btn.getAttribute('data-copy'));
+          if (!target) return;
+          var text = target.textContent;
+          var done = function () {
+            var prev = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = prev; }, 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+              window.prompt('Copy:', text);
+            });
+          } else {
+            window.prompt('Copy:', text);
+          }
+        });
+      });
+    })();
+  </script>
 
 </body>
 </html>
