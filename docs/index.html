@@ -214,35 +214,29 @@
     <h2>Use via URL (no download)</h2>
     <div class="demo-block">
       <p>
-        Link the hosted stylesheet. Font files stay on this origin;
-        you do not need to copy them into your project.
-        Relative paths in <code>aarth.css</code> resolve against the CSS URL,
-        so a cross-site <code>&lt;link&gt;</code> still fetches
-        <code>aarth.woff2</code> / <code>aarth.ttf</code> from the same host.
+        jsDelivr serves files from this public GitHub repository automatically.
+        No signup, application, npm publish, or config file is required.
+        Link the stylesheet; fonts resolve relative to the CSS URL.
       </p>
-      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;
+      <pre><code id="snippet-jsdelivr">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css"&gt;
 
 &lt;style&gt;
   .ath-text { font-family: 'Aarth', serif; }
 &lt;/style&gt;</code></pre>
       <div class="snippet-actions">
-        <button type="button" data-copy="snippet-link">Copy</button>
-      </div>
-      <p class="use-note">
-        Then wrap text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.
-        The snippet above is this page’s origin (fine for the demo).
-        For other sites, prefer jsDelivr rather than GitHub Pages as a CDN:
-      </p>
-      <pre><code id="snippet-jsdelivr">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css"&gt;</code></pre>
-      <div class="snippet-actions">
         <button type="button" data-copy="snippet-jsdelivr">Copy</button>
       </div>
       <p class="use-note">
-        Cross-origin <code>@font-face</code> needs
-        <code>Access-Control-Allow-Origin</code>
-        (jsDelivr and GitHub Pages send it;
-        <code>raw.githubusercontent.com</code> is not suitable).
+        Then wrap text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.
+        For production, replace <code>@main</code> with a commit SHA
+        (branch URLs are cached about 12 hours).
+        <code>raw.githubusercontent.com</code> is not suitable.
       </p>
+      <p class="use-note">This demo page’s own origin (GitHub Pages or local preview):</p>
+      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;</code></pre>
+      <div class="snippet-actions">
+        <button type="button" data-copy="snippet-link">Copy</button>
+      </div>
     </div>
   </section>
 
