@@ -1,0 +1,72 @@
+name: Build Aarth Font & Deploy Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'generate_aarth_font.py'
+      - 'Ath_alphabet.png'
+      - 'index.html'
+      - '.github/workflows/build-font.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y potrace
+
+      - name: Install Python dependencies
+        run: pip install opencv-python-headless pillow fonttools brotli
+
+      - name: Generate font
+        run: |
+          python3 generate_aarth_font.py \
+            --image Ath_alphabet.png \
+            --output-dir docs \
+            --debug
+
+      - name: Copy demo page into docs
+        run: |
+          cp index.html docs/index.html
+
+      - name: Commit generated files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --cached --quiet || git commit -m "ci: regenerate aarth font [skip ci]"
+          git push
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main   # pick up the just-committed docs/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
