@@ -29,9 +29,4 @@ echo "[info] main ブランチを push …"
 git push github main
 
 echo "[done] push 完了: https://github.com/7474/Ath"
-echo ""
-echo "次のステップ — GitHub Pages を有効化:"
-echo "  1. https://github.com/7474/Ath/settings/pages を開く"
-echo "  2. Source: Deploy from a branch"
-echo "  3. Branch: main / docs → Save"
 echo "  公開 URL: https://7474.github.io/Ath/"
