@@ -1,78 +1,18 @@
-# Aarth — Ath Alphabet Webfont Generator
+# Aarth — Ath Alphabet Webfont
 
-## GitHub Pages デモ
+[アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) の字形を抽出し、Web フォント（`aarth.ttf` / `aarth.woff2`）にしたものです。
 
-> **公開 URL（GitHub Pages）**: `https://7474.github.io/Ath/`
->
-> `main` ブランチへの push をトリガーに GitHub Actions が自動でフォントを再生成し、
-> `docs/` フォルダの内容を GitHub Pages へデプロイします。
->
-> **GitHub Pages の有効化手順**（初回のみリポジトリオーナーが実施）:
-> 1. https://github.com/7474/Ath/settings/pages を開く
-> 2. **Source** → `Deploy from a branch`
-> 3. **Branch** → `main` / `docs`
-> 4. Save
+## デモ
 
+公開デモ（GitHub Pages）: **https://7474.github.io/Ath/**
 
+## 出典・ライセンス
 
-Automatically extracts glyph shapes from the **Ath (Ath alphabet)** raster image,
-vectorises them with Potrace, and packages the result as a ready-to-use webfont
-(`aarth.ttf` / `aarth.woff2`).
+字形の出典は、日本語版 Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」に添付されているパブリックドメイン画像 [Ath (alphabet).png](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E#/media/%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB:Ath_(alphabet).png/2) です。著作権者により [パブリックドメイン](https://commons.wikimedia.org/wiki/File:Ath_(alphabet).png) として公開されています。
 
----
+アーヴ語およびアースは、森岡浩之『星界シリーズ』に登場する架空言語・文字体系です（字母の設計は原作者の森岡浩之）。本フォントはその設定に基づく**二次創作**です。二次創作であることを前提に、自由に使っていただいて構いません。
 
-## Quick start
-
-### 1. Install system tools
-
-```bash
-# Debian / Ubuntu
-sudo apt-get install potrace
-
-# macOS
-brew install potrace
-
-# Windows — download the binary from http://potrace.sourceforge.net/
-```
-
-### 2. Install Python packages
-
-```bash
-pip install opencv-python-headless pillow fonttools brotli
-```
-
-### 3. Generate the font
-
-```bash
-python3 generate_aarth_font.py
-```
-
-The script will:
-1. Download `Ath_(alphabet).png` from Wikimedia Commons (or use `--image <path>`) if no local copy is found.
-2. Binarise the image and detect 28 glyph bounding boxes.
-3. Vectorise each glyph via `potrace` (bitmap → SVG cubic Bézier).
-4. Build a CFF-based OpenType font and compress it to WOFF2.
-
-Output files are written to the current directory by default (`--output-dir`).
-
-```
-aarth.ttf    — OpenType/CFF font (broadest compatibility)
-aarth.woff2  — Compressed webfont for modern browsers
-```
-
-### 4. Preview in a browser
-
-Open `index.html` (make sure `aarth.woff2` and `aarth.ttf` are in the same folder).
-
----
-
-## Command-line options
-
-| Option | Default | Description |
-|---|---|---|
-| `--image` | Wikimedia URL | Local path or HTTP URL of the source PNG |
-| `--output-dir` | `.` | Directory to write output files |
-| `--debug` | off | Save `debug_boxes.png` showing detected bounding boxes |
+関連情報は [Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) を参照してください。
 
 ---
 
@@ -132,30 +72,4 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 </style>
 
 <p class="ath">aarth lotr atosr</p>
-```
-
----
-
-## Pipeline overview
-
-```
-Ath_(alphabet).png
-        │
-        ▼
-  OpenCV binarise + denoise
-        │
-        ▼
-  cv2.findContours → 28 glyph bounding boxes (sorted row-major)
-        │
-        ▼  (per glyph)
-  crop → PBM bitmap → potrace --svg → SVG path 'd' string
-        │
-        ▼
-  Scale & translate to 1000-unit EM (ascender=800, descender=-200)
-        │
-        ▼
-  fontTools FontBuilder (CFF/OTF, cubic Bézier)
-        │
-        ├──▶ aarth.ttf
-        └──▶ aarth.woff2  (via fontTools woff2 compress)
 ```
