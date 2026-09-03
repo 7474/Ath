@@ -95,7 +95,7 @@
       .page-content.is-switching { filter: none; opacity: 1; }
     }
 
-    /* Default: the document reads as Ath. Translate restores Latin. */
+    /* Default: the document reads as Ath. Translate restores Latin copy. */
     body:not(.translated) .page-content {
       font-family: 'Aarth', Georgia, serif;
       text-transform: lowercase;
@@ -119,12 +119,13 @@
       letter-spacing: normal;
     }
 
+    /* Specimens stay in Aarth after Translate so this page remains a font demo. */
     body.translated .aarth,
     body.translated .aarth-hero,
     body.translated .alpha-cell .glyph,
     body.translated .size-scale p,
     body.translated .aarth-para {
-      font-family: inherit;
+      font-family: 'Aarth', serif;
     }
 
     body.translated .alpha-cell .label,
