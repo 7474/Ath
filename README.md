@@ -1,0 +1,146 @@
+# Aarth — Ath Alphabet Webfont Generator
+
+Automatically extracts glyph shapes from the **Ath (Ath alphabet)** raster image,
+vectorises them with Potrace, and packages the result as a ready-to-use webfont
+(`aarth.ttf` / `aarth.woff2`).
+
+---
+
+## Quick start
+
+### 1. Install system tools
+
+```bash
+# Debian / Ubuntu
+sudo apt-get install potrace
+
+# macOS
+brew install potrace
+
+# Windows — download the binary from http://potrace.sourceforge.net/
+```
+
+### 2. Install Python packages
+
+```bash
+pip install opencv-python-headless pillow fonttools brotli
+```
+
+### 3. Generate the font
+
+```bash
+python3 generate_aarth_font.py
+```
+
+The script will:
+1. Download `Ath_(alphabet).png` from Wikimedia Commons (or use `--image <path>`) if no local copy is found.
+2. Binarise the image and detect 28 glyph bounding boxes.
+3. Vectorise each glyph via `potrace` (bitmap → SVG cubic Bézier).
+4. Build a CFF-based OpenType font and compress it to WOFF2.
+
+Output files are written to the current directory by default (`--output-dir`).
+
+```
+aarth.ttf    — OpenType/CFF font (broadest compatibility)
+aarth.woff2  — Compressed webfont for modern browsers
+```
+
+### 4. Preview in a browser
+
+Open `index.html` (make sure `aarth.woff2` and `aarth.ttf` are in the same folder).
+
+---
+
+## Command-line options
+
+| Option | Default | Description |
+|---|---|---|
+| `--image` | Wikimedia URL | Local path or HTTP URL of the source PNG |
+| `--output-dir` | `.` | Directory to write output files |
+| `--debug` | off | Save `debug_boxes.png` showing detected bounding boxes |
+
+---
+
+## Character mapping
+
+The 28 Ath phonemes are mapped to the following Unicode code points:
+
+| Ath phoneme | Unicode | Key to type |
+|---|---|---|
+| a | U+0061 | `a` |
+| i | U+0069 | `i` |
+| u | U+0075 | `u` |
+| é | U+00E9 | `é` |
+| o | U+006F | `o` |
+| e | U+0065 | `e` |
+| c | U+0063 | `c` |
+| s | U+0073 | `s` |
+| t | U+0074 | `t` |
+| l | U+006C | `l` |
+| n | U+006E | `n` |
+| h | U+0068 | `h` |
+| p | U+0070 | `p` |
+| f | U+0066 | `f` |
+| m | U+006D | `m` |
+| ï | U+00EF | `ï` |
+| ai (digraph) | U+0041 | `A` |
+| y | U+0079 | `y` |
+| œ | U+0153 | `œ` |
+| r | U+0072 | `r` |
+| ü | U+00FC | `ü` |
+| au (digraph) | U+0049 | `I` |
+| ÿ | U+00FF | `ÿ` |
+| eu (digraph) | U+0045 | `E` |
+| g | U+0067 | `g` |
+| z | U+007A | `z` |
+| d | U+0064 | `d` |
+| b | U+0062 | `b` |
+
+---
+
+## CSS / HTML usage
+
+```html
+<style>
+  @font-face {
+    font-family: 'Aarth';
+    src: url('aarth.woff2') format('woff2'),
+         url('aarth.ttf')   format('truetype');
+    font-weight: normal;
+    font-style:  normal;
+    font-display: swap;
+  }
+
+  .ath {
+    font-family: 'Aarth', serif;
+  }
+</style>
+
+<p class="ath">aarth lotr atosr</p>
+```
+
+---
+
+## Pipeline overview
+
+```
+Ath_(alphabet).png
+        │
+        ▼
+  OpenCV binarise + denoise
+        │
+        ▼
+  cv2.findContours → 28 glyph bounding boxes (sorted row-major)
+        │
+        ▼  (per glyph)
+  crop → PBM bitmap → potrace --svg → SVG path 'd' string
+        │
+        ▼
+  Scale & translate to 1000-unit EM (ascender=800, descender=-200)
+        │
+        ▼
+  fontTools FontBuilder (CFF/OTF, cubic Bézier)
+        │
+        ├──▶ aarth.ttf
+        └──▶ aarth.woff2  (via fontTools woff2 compress)
+```
