@@ -6,8 +6,9 @@ Generates aarth.ttf and aarth.woff2 from the Ath (Ath alphabet) raster image.
 
 Pipeline:
   1. Download the source PNG from Wikimedia Commons (or use a local file).
-  2. Pre-process with OpenCV: grayscale → threshold → noise removal.
-  3. Detect glyph bounding boxes via contour finding; sort top→bottom, left→right.
+  2. Pre-process with OpenCV: grayscale → threshold.
+  3. Detect glyph bounding boxes via contour finding; merge disconnected
+     overlines / umlauts into the parent glyph; sort top→bottom, left→right.
   4. For each glyph: save as PBM bitmap, call `potrace` to produce an SVG path.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
@@ -22,10 +23,7 @@ Requirements (install once):
 """
 
 import argparse
-import os
 import re
-import shutil
-import struct
 import subprocess
 import sys
 import tempfile
@@ -99,17 +97,139 @@ def load_and_binarize(image_path: Path) -> np.ndarray:
         raise FileNotFoundError(f"Cannot read image: {image_path}")
     # The source image is black ink on white paper → invert after threshold
     _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # Glyphs are dark (0) on white (255); invert so glyphs are white on black
-    binary = cv2.bitwise_not(binary)
-    # Remove small noise
-    kernel = np.ones((2, 2), np.uint8)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=1)
-    return binary
+    # Glyphs are dark (0) on white (255); invert so glyphs are white on black.
+    # Do not apply morphological opening: 2×2 opening eats umlaut dots (~4×4).
+    return cv2.bitwise_not(binary)
 
 
-def find_glyph_boxes(binary: np.ndarray, min_area: int = 300):
+def _box_area(box) -> int:
+    return box[2] * box[3]
+
+
+def _union_box(a, b):
+    x1 = min(a[0], b[0])
+    y1 = min(a[1], b[1])
+    x2 = max(a[0] + a[2], b[0] + b[2])
+    y2 = max(a[1] + a[3], b[1] + b[3])
+    return (x1, y1, x2 - x1, y2 - y1)
+
+
+def _x_overlap(a, b) -> int:
+    return max(0, min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]))
+
+
+def _is_diacritic_above(mark, base, max_gap_px: float) -> bool:
+    """True if `mark` is a small accent sitting above `base` (overline / umlaut)."""
+    mx, my, mw, mh = mark
+    bx, by, bw, bh = base
+    if _box_area(mark) >= _box_area(base) * 0.45:
+        return False
+    # Horizontal association: mark centre falls in the base, or the boxes overlap.
+    mcx = mx + mw / 2
+    if not (bx - 4 <= mcx <= bx + bw + 4 or _x_overlap(mark, base) >= 0.3 * min(mw, bw)):
+        return False
+    # Vertical: mark is above (or slightly overlapping) the base, with a small gap.
+    gap = by - (my + mh)
+    return gap <= max_gap_px
+
+
+def merge_diacritic_boxes(boxes: list) -> list:
     """
-    Find bounding boxes of individual glyphs.
+    Union-find merge of disconnected accents into the glyph they belong to.
+
+    Overlines and umlaut dots are separate contours from the letter body.
+    Latin labels sit *below* their glyph and are larger relative to a mark,
+    so they are left unmerged.
+    """
+    n = len(boxes)
+    if n <= 1:
+        return list(boxes)
+
+    parent = list(range(n))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def union(i, j):
+        ri, rj = find(i), find(j)
+        if ri != rj:
+            parent[rj] = ri
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = boxes[i], boxes[j]
+            # The upper box is the one with smaller y.
+            if a[1] <= b[1]:
+                upper, lower = a, b
+            else:
+                upper, lower = b, a
+            max_gap = max(10.0, 0.4 * lower[3])
+            if _is_diacritic_above(upper, lower, max_gap):
+                union(i, j)
+
+    groups: dict[int, list] = {}
+    for i, box in enumerate(boxes):
+        groups.setdefault(find(i), []).append(box)
+
+    merged = []
+    for group in groups.values():
+        acc = group[0]
+        for extra in group[1:]:
+            acc = _union_box(acc, extra)
+        merged.append(acc)
+    return merged
+
+
+def group_boxes_into_rows(boxes: list) -> list[list]:
+    """Cluster boxes into rows by y, then sort each row left-to-right."""
+    if not boxes:
+        return []
+    heights = sorted(h for _, _, _, h in boxes)
+    median_h = heights[len(heights) // 2]
+    row_tol = median_h * 0.6
+    ordered = sorted(boxes, key=lambda b: b[1])
+    rows = []
+    current = [ordered[0]]
+    for box in ordered[1:]:
+        if abs(box[1] - current[-1][1]) < row_tol:
+            current.append(box)
+        else:
+            rows.append(sorted(current, key=lambda b: b[0]))
+            current = [box]
+    rows.append(sorted(current, key=lambda b: b[0]))
+    return rows
+
+
+def select_alphabet_grid(boxes: list, expected: int = 28) -> list:
+    """
+    Keep 7-column rows of letter-sized boxes.
+
+    The source PNG has a 6-item header ('Ath' + three sample glyphs) above a
+    4×7 alphabet grid, plus small Latin labels under each glyph. After
+    diacritic merging, letter bodies are tall (~25px) while labels are short.
+    """
+    letter_boxes = [b for b in boxes if b[3] >= 18]
+    rows = group_boxes_into_rows(letter_boxes)
+    grid_rows = [row for row in rows if len(row) == 7]
+    result = [box for row in grid_rows for box in row]
+    if len(result) == expected:
+        return result
+    # Fallback: drop a short header row if present.
+    if rows and len(rows[0]) != 7:
+        rest = [box for row in rows[1:] for box in row]
+        if len(rest) == expected:
+            return rest
+    return result
+
+
+def find_glyph_boxes(binary: np.ndarray, min_area: int = 8):
+    """
+    Find bounding boxes of the 28 alphabet glyphs, including disconnected
+    overlines and umlaut dots.
+
     Returns list of (x, y, w, h) sorted top-to-bottom, left-to-right by row.
     """
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -126,25 +246,8 @@ def find_glyph_boxes(binary: np.ndarray, min_area: int = 300):
     if not boxes:
         return boxes
 
-    # Sort into rows using a y-tolerance of half the median glyph height
-    heights = sorted([h for _, _, _, h in boxes])
-    median_h = heights[len(heights) // 2]
-    row_tol = median_h * 0.6
-
-    boxes.sort(key=lambda b: b[1])  # sort by y first
-
-    rows = []
-    current_row = [boxes[0]]
-    for box in boxes[1:]:
-        if abs(box[1] - current_row[-1][1]) < row_tol:
-            current_row.append(box)
-        else:
-            rows.append(sorted(current_row, key=lambda b: b[0]))
-            current_row = [box]
-    rows.append(sorted(current_row, key=lambda b: b[0]))
-
-    result = [box for row in rows for box in row]
-    return result
+    boxes = merge_diacritic_boxes(boxes)
+    return select_alphabet_grid(boxes, expected=len(GLYPH_CODEPOINTS))
 
 
 def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
@@ -160,18 +263,25 @@ def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
 def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:
     """
     Save glyph as PBM, run potrace, return the SVG path 'd' string.
-    Potrace produces a path with (0,0) at bottom-left in PostScript coords.
+
+    OpenCV stores glyphs as white-on-black; potrace traces black pixels, so the
+    crop is inverted first. `--unit 1` keeps path coordinates in pixels, with
+    origin at the bottom-left and y pointing up (potrace's group transform).
+    `--turdsize 0` preserves umlaut dots.
     """
     pbm_path = tmp_dir / f"glyph_{idx:03d}.pbm"
     svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
 
-    # Convert to pure B/W PIL image
-    pil = Image.fromarray(glyph_img).convert("1")
+    ink_black = cv2.bitwise_not(glyph_img)
+    pil = Image.fromarray(ink_black).convert("1")
     pil.save(str(pbm_path))
 
     try:
         subprocess.run(
-            ["potrace", "--svg", "--output", str(svg_path), str(pbm_path)],
+            [
+                "potrace", "--svg", "--unit", "1", "--turdsize", "0",
+                "--output", str(svg_path), str(pbm_path),
+            ],
             check=True,
             capture_output=True,
         )
@@ -186,16 +296,14 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
 
 
 def parse_svg_path(svg_file: Path) -> str | None:
-    """Extract the 'd' attribute from the first <path> in the SVG."""
+    """Extract and join 'd' attributes from all <path> elements in the SVG."""
     try:
         tree = ET.parse(str(svg_file))
         root = tree.getroot()
-        ns = {"svg": "http://www.w3.org/2000/svg"}
-        paths = root.findall(".//svg:path", ns)
-        if not paths:
-            paths = root.findall(".//{http://www.w3.org/2000/svg}path")
-        if paths:
-            return paths[0].get("d", "")
+        paths = root.findall(".//{http://www.w3.org/2000/svg}path")
+        ds = [p.get("d", "") for p in paths if p.get("d")]
+        if ds:
+            return " ".join(ds)
     except ET.ParseError:
         pass
     return None
@@ -205,141 +313,122 @@ def parse_svg_path(svg_file: Path) -> str | None:
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
-def _parse_number(s: str) -> tuple[float, str]:
-    """Parse one floating-point number from string, return (value, rest)."""
-    s = s.lstrip()
-    m = re.match(r"[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?", s)
-    if not m:
-        raise ValueError(f"Expected number in: {s!r}")
-    return float(m.group()), s[m.end():]
-
-
-def _parse_coord_pair(s: str) -> tuple[tuple[float, float], str]:
-    s = s.lstrip(" ,")
-    x, s = _parse_number(s)
-    s = s.lstrip(" ,")
-    y, s = _parse_number(s)
-    return (x, y), s
+_PATH_TOKEN_RE = re.compile(
+    r"[MmZzLlHhVvCcSsQqTtAa]|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?"
+)
 
 
 def svg_path_to_pen_commands(d: str, pen, sx: float, sy: float, dx: float, dy: float):
     """
     Replay an SVG path 'd' string onto a fontTools pen, applying scale+offset.
-    sx/sy: scale; dx/dy: translation (in font units).
-    Potrace SVG uses y-down coords starting from top-left of the bitmap.
-    Font units use y-up.  We flip y: font_y = dy - (svg_y * sy).
+
+    Potrace `--unit 1` path coordinates are in pixels, origin at the bitmap
+    bottom-left, y-up — the same orientation as font units. No y-flip.
+    Relative `m` starts a new subpath (overline / umlaut dots).
     """
 
     def tx(x):
         return dx + x * sx
 
     def ty(y):
-        return dy - y * sy  # flip y
+        return dy + y * sy
 
-    tokens = d.strip()
+    tokens = _PATH_TOKEN_RE.findall(d)
     i = 0
     current = (0.0, 0.0)
     start = (0.0, 0.0)
     cmd = None
     in_subpath = False
 
-    def advance():
-        nonlocal tokens
-        tokens = tokens.lstrip(" ,\n\r\t")
+    def read_pair():
+        nonlocal i
+        x = float(tokens[i])
+        y = float(tokens[i + 1])
+        i += 2
+        return x, y
 
-    def next_pair():
-        nonlocal tokens
-        advance()
-        pair, tokens = _parse_coord_pair(tokens)
-        return pair
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok.isalpha():
+            cmd = tok
+            i += 1
+            if cmd in ("Z", "z"):
+                if in_subpath:
+                    pen.closePath()
+                    in_subpath = False
+                    current = start
+                cmd = None
+                continue
 
-    def next_num():
-        nonlocal tokens
-        advance()
-        val, tokens = _parse_number(tokens)
-        return val
-
-    advance()
-    while tokens:
-        if tokens[0].isalpha():
-            cmd = tokens[0]
-            tokens = tokens[1:]
-            advance()
         if cmd is None:
             break
 
         if cmd == "M":
             if in_subpath:
                 pen.endPath()
-            pt = next_pair()
-            current = (tx(pt[0]), ty(pt[1]))
+            px, py = read_pair()
+            current = (tx(px), ty(py))
             start = current
             pen.moveTo(current)
             in_subpath = True
-            cmd = "L"  # subsequent coords are lineTo
+            cmd = "L"
         elif cmd == "m":
             if in_subpath:
                 pen.endPath()
-            pt = next_pair()
-            current = (current[0] + tx(pt[0]) - dx, current[1] + (-(pt[1] * sy)))
-            # relative M: recalc properly
-            current = (tx(0) + pt[0] * sx + (current[0] - tx(0)),
-                       ty(0) - pt[1] * sy + (current[1] - ty(0)))
-            # simpler: absolute position
-            # Actually potrace always emits absolute M, so handle simply:
-            # treat as absolute
-            sx2, sy2 = sx, sy
-            cx = dx + pt[0] * sx2
-            cy = dy - pt[1] * sy2
-            if in_subpath:
-                pass  # already ended
-            current = (cx, cy)
+            px, py = read_pair()
+            current = (current[0] + px * sx, current[1] + py * sy)
             start = current
             pen.moveTo(current)
             in_subpath = True
             cmd = "l"
         elif cmd == "L":
-            pt = next_pair()
-            current = (tx(pt[0]), ty(pt[1]))
+            px, py = read_pair()
+            current = (tx(px), ty(py))
             pen.lineTo(current)
         elif cmd == "l":
-            pt = next_pair()
-            current = (current[0] + pt[0] * sx, current[1] - pt[1] * sy)
+            px, py = read_pair()
+            current = (current[0] + px * sx, current[1] + py * sy)
+            pen.lineTo(current)
+        elif cmd == "H":
+            px = float(tokens[i]); i += 1
+            current = (tx(px), current[1])
+            pen.lineTo(current)
+        elif cmd == "h":
+            px = float(tokens[i]); i += 1
+            current = (current[0] + px * sx, current[1])
+            pen.lineTo(current)
+        elif cmd == "V":
+            py = float(tokens[i]); i += 1
+            current = (current[0], ty(py))
+            pen.lineTo(current)
+        elif cmd == "v":
+            py = float(tokens[i]); i += 1
+            current = (current[0], current[1] + py * sy)
             pen.lineTo(current)
         elif cmd == "C":
-            p1 = next_pair()
-            p2 = next_pair()
-            p3 = next_pair()
-            current = (tx(p3[0]), ty(p3[1]))
+            x1, y1 = read_pair()
+            x2, y2 = read_pair()
+            x3, y3 = read_pair()
+            current = (tx(x3), ty(y3))
+            pen.curveTo((tx(x1), ty(y1)), (tx(x2), ty(y2)), current)
+        elif cmd == "c":
+            x1, y1 = read_pair()
+            x2, y2 = read_pair()
+            x3, y3 = read_pair()
+            ox, oy = current
+            current = (ox + x3 * sx, oy + y3 * sy)
             pen.curveTo(
-                (tx(p1[0]), ty(p1[1])),
-                (tx(p2[0]), ty(p2[1])),
+                (ox + x1 * sx, oy + y1 * sy),
+                (ox + x2 * sx, oy + y2 * sy),
                 current,
             )
-        elif cmd == "c":
-            p1 = next_pair()
-            p2 = next_pair()
-            p3 = next_pair()
-            ox, oy = current
-            pen.curveTo(
-                (ox + p1[0] * sx, oy - p1[1] * sy),
-                (ox + p2[0] * sx, oy - p2[1] * sy),
-                (ox + p3[0] * sx, oy - p3[1] * sy),
-            )
-            current = (ox + p3[0] * sx, oy - p3[1] * sy)
-        elif cmd in ("Z", "z"):
-            if in_subpath:
-                pen.closePath()
-                in_subpath = False
-            advance()
-            cmd = None
-            continue
         else:
-            # Skip unknown command
-            tokens = tokens[1:]
+            # Unsupported command: skip its letter; numbers are consumed by
+            # the next recognised command or will trip the alpha check.
+            if tok.isalpha():
+                continue
+            i += 1
             continue
-
-        advance()
 
     if in_subpath:
         pen.endPath()
@@ -409,13 +498,13 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         privateDict={"defaultWidthX": 0, "nominalWidthX": 0},
     )
     fb.setupNameTable({"familyName": "Aarth", "styleName": "Regular"})
-    fb.setupHorizontalHeader(ascent=ASCENDER, descent=DESCENDER)
+    fb.setupHorizontalHeader(ascent=EM, descent=DESCENDER)
     fb.setupHead(unitsPerEm=EM)
     fb.setupOS2(
         sTypoAscender=ASCENDER,
         sTypoDescender=DESCENDER,
         sTypoLineGap=0,
-        usWinAscent=ASCENDER,
+        usWinAscent=EM,          # extra room for overlines / umlauts + crop padding
         usWinDescent=abs(DESCENDER),
         sxHeight=X_HEIGHT,
         sCapHeight=CAP_HEIGHT,
@@ -472,19 +561,30 @@ def main():
 
     if args.debug:
         debug_img = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
-        for x, y, w, h in boxes:
-            cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        for i, (x, y, w, h) in enumerate(boxes):
+            cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+            label = GLYPH_NAMES[i] if i < len(GLYPH_NAMES) else str(i)
+            cv2.putText(
+                debug_img, label, (x, max(12, y - 2)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 180, 255), 1, cv2.LINE_AA,
+            )
         cv2.imwrite(str(output_dir / "debug_boxes.png"), debug_img)
 
     # Warn if too few/many glyphs found
     expected = len(GLYPH_CODEPOINTS)
-    if len(boxes) < expected:
-        print(f"  [warn] expected {expected} glyphs but only found {len(boxes)}. "
-              "The font will be partial.")
-    if len(boxes) > expected:
-        print(f"  [info] more boxes than expected ({len(boxes)} > {expected}); "
-              "using first {expected}.")
-        boxes = boxes[:expected]
+    if len(boxes) != expected:
+        print(f"  [warn] expected {expected} glyphs but found {len(boxes)}.")
+        if len(boxes) < expected:
+            print("  The font will be partial.")
+        else:
+            print(f"  using first {expected}.")
+            boxes = boxes[:expected]
+
+    # Uniform scale so letter bodies stay consistent; diacritics occupy extra
+    # height above the body instead of shrinking the whole glyph to fit.
+    CROP_PAD = 4
+    max_h = max((h for _, _, _, h in boxes), default=1)
+    uniform_sy = (ASCENDER - DESCENDER) / max_h if max_h else 1.0
 
     # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
@@ -498,7 +598,8 @@ def main():
             name = GLYPH_NAMES[idx]
             print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
 
-            crop = crop_glyph(binary, box)
+            x, y, gw, gh = box
+            crop = crop_glyph(binary, box, padding=CROP_PAD)
             svg_d = glyph_to_svg_path(crop, tmp_dir, idx)
 
             if svg_d:
@@ -506,12 +607,16 @@ def main():
             else:
                 print(" (no path)")
 
-            # Compute scale/offset to fit glyph into EM square
-            _, _, gw, gh = box
-            # We want glyph height to fill ASCENDER - DESCENDER
-            glyph_height_fu = ASCENDER - DESCENDER  # 1000
-            sy = glyph_height_fu / gh if gh > 0 else 1.0
-            sx = sy  # uniform scale
+            sx = sy = uniform_sy
+            crop_h = crop.shape[0]
+            crop_x1 = max(0, x - CROP_PAD)
+            crop_y1 = max(0, y - CROP_PAD)
+            # Potrace --unit 1: origin at crop bottom-left, y-up, pixel units.
+            box_bottom_in_crop = (y + gh) - crop_y1          # from top of crop
+            box_left_in_crop = x - crop_x1
+            y_path_box_bottom = crop_h - box_bottom_in_crop  # from bottom (path y)
+            dx = 10 - box_left_in_crop * sx
+            dy = DESCENDER - y_path_box_bottom * sy
             advance = int(gw * sx) + 20
 
             glyph_data.append({
@@ -522,8 +627,8 @@ def main():
                 "img_h": gh,
                 "sx": sx,
                 "sy": sy,
-                "dx": 10,           # left side bearing
-                "dy": ASCENDER,     # baseline offset (y-flip origin)
+                "dx": dx,
+                "dy": dy,
                 "advance": advance,
             })
 

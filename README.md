@@ -145,7 +145,7 @@ Ath_(alphabet).png
   OpenCV binarise + denoise
         │
         ▼
-  cv2.findContours → 28 glyph bounding boxes (sorted row-major)
+  cv2.findContours → merge overlines/umlauts → 28 glyph boxes (row-major)
         │
         ▼  (per glyph)
   crop → PBM bitmap → potrace --svg → SVG path 'd' string
