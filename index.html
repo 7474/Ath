@@ -80,7 +80,7 @@
     .alpha-cell .glyph {
       font-family: 'Aarth', serif;
       font-size: 2.8rem;
-      line-height: 1;
+      line-height: 1.35;
     }
 
     .alpha-cell .label {
@@ -105,6 +105,7 @@
 
     code {
       background: #f0f0f0;
+      color: #1a1a1a;
       border-radius: 3px;
       padding: .1em .35em;
       font-size: .9em;
@@ -119,6 +120,16 @@
       font-size: .9rem;
       line-height: 1.6;
       margin-top: .5rem;
+    }
+
+    /* <pre><code> must not inherit the inline-code chip background,
+       or the light text on #f0f0f0 becomes unreadable. */
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: inherit;
+      border-radius: 0;
     }
   </style>
 </head>
