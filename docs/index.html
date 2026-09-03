@@ -384,8 +384,12 @@
         (branch URLs are cached about 12 hours).
         <code>raw.githubusercontent.com</code> is not suitable.
       </p>
-      <p class="use-note">This demo page’s own origin (GitHub Pages or local preview):</p>
-      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;</code></pre>
+      <p class="use-note">When the font files sit next to your page, use a relative path:</p>
+      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;
+
+&lt;style&gt;
+  .ath-text { font-family: 'Aarth', serif; }
+&lt;/style&gt;</code></pre>
       <div class="snippet-actions">
         <button type="button" data-copy="snippet-link">Copy</button>
       </div>
@@ -457,34 +461,6 @@
 
   <script>
     (function () {
-      var cssUrl = new URL('aarth.css', window.location.href).href;
-      var woff2Url = new URL('aarth.woff2', window.location.href).href;
-      var ttfUrl = new URL('aarth.ttf', window.location.href).href;
-
-      var linkEl = document.getElementById('snippet-link');
-      var faceEl = document.getElementById('snippet-font-face');
-      if (linkEl) {
-        linkEl.textContent =
-          '<link rel="stylesheet" href="' + cssUrl + '">\n\n' +
-          '<style>\n' +
-          "  .ath-text { font-family: 'Aarth', serif; }\n" +
-          '</style>';
-      }
-      if (faceEl) {
-        faceEl.textContent =
-          '@font-face {\n' +
-          "  font-family: 'Aarth';\n" +
-          "  src: url('" + woff2Url + "') format('woff2'),\n" +
-          "       url('" + ttfUrl + "')   format('truetype');\n" +
-          '  font-weight: normal;\n' +
-          '  font-style:  normal;\n' +
-          '  font-display: swap;\n' +
-          '}\n\n' +
-          '.ath-text {\n' +
-          "  font-family: 'Aarth', serif;\n" +
-          '}';
-      }
-
       document.querySelectorAll('[data-copy]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var target = document.getElementById(btn.getAttribute('data-copy'));
