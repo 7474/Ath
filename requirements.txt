@@ -4,4 +4,4 @@ opencv-python-headless==5.0.0.93
 pillow==12.3.0
 fonttools==4.64.0
 brotli==1.2.0
-numpy==2.4.4
+numpy==2.5.2
