@@ -9,7 +9,7 @@ Pipeline:
   2. Pre-process with OpenCV: grayscale → threshold.
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
      parent glyph; keep the 4×7 alphabet grid (drop the header).
-  4. For each glyph: save as PBM bitmap, call `potrace` to produce an SVG path.
+  4. For each glyph: save grayscale crop as PGM, call `potrace --blacklevel`.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
 Usage:
@@ -77,6 +77,14 @@ CAP_HEIGHT = 700   # target height every glyph is scaled to
 X_HEIGHT = 500
 GLYPH_LSB = 40     # left/right side bearing in font units
 
+# Keep tracing at native resolution so potrace can fit smooth curves.
+# 8× upscaling made outlines stairstep the pixel grid. The hollow-sliver
+# bug is avoided by feeding grayscale + a softer blacklevel instead of
+# the harsh Otsu mask used only for box detection.
+# Potrace --blacklevel: fraction of white above which a pixel is paper.
+# 0.6 keeps anti-aliased fringe as ink so thin strokes stay solid.
+TRACE_BLACKLEVEL = 0.6
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -90,17 +98,27 @@ def download_image(url: str, dest: Path) -> None:
         f.write(resp.read())
 
 
-def load_and_binarize(image_path: Path) -> np.ndarray:
-    """Return a binary (0/255) OpenCV image where glyphs are WHITE on BLACK."""
+def load_grayscale(image_path: Path) -> np.ndarray:
+    """Load the source PNG as a single-channel grayscale image."""
     img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise FileNotFoundError(f"Cannot read image: {image_path}")
+    return img
+
+
+def binarize(gray: np.ndarray) -> np.ndarray:
+    """Return a binary (0/255) image where glyphs are WHITE on BLACK."""
     # The source image is black ink on white paper → invert after threshold
-    _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # Glyphs are dark (0) on white (255); invert so glyphs are white on black
     binary = cv2.bitwise_not(binary)
     # Do not apply morphological opening: 2×2 opening eats umlaut dots (~4×4).
     return binary
+
+
+def load_and_binarize(image_path: Path) -> np.ndarray:
+    """Return a binary (0/255) OpenCV image where glyphs are WHITE on BLACK."""
+    return binarize(load_grayscale(image_path))
 
 
 def _box_area(box) -> int:
@@ -256,27 +274,35 @@ def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
     return binary[y1:y2, x1:x2]
 
 
+def prepare_glyph_for_trace(gray: np.ndarray, box, padding: int = 4) -> np.ndarray:
+    """
+    Crop a glyph from the source grayscale for potrace.
+
+    Detection uses a strict Otsu binary so Latin labels stay separate.
+    Tracing stays at native size (smooth Bézier fit) and keeps the
+    anti-aliased fringe so thin strokes are not pinched hollow.
+    """
+    return crop_glyph(gray, box, padding)
+
+
 def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:
     """
-    Save glyph as PBM, run potrace, return the SVG path 'd' string.
+    Save glyph as PGM, run potrace, return the SVG path 'd' string.
     Potrace produces a path with (0,0) at bottom-left in PostScript coords.
-    """
-    pbm_path = tmp_dir / f"glyph_{idx:03d}.pbm"
-    svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
 
-    # `glyph_img` has the glyph as WHITE (255) on a BLACK (0) background (that
-    # polarity is what cv2.findContours needs). Potrace, however, traces the
-    # BLACK pixels as the foreground shape, so feeding it as-is would trace the
-    # background rectangle and leave the glyph as a hole (a filled block with a
-    # cut-out). Invert first so the glyph strokes are black on a white ground.
-    pil = Image.fromarray(cv2.bitwise_not(glyph_img)).convert("1")
-    pil.save(str(pbm_path))
+    ``glyph_img`` is a grayscale crop, dark ink on light paper (same polarity
+    as the source PNG). Potrace traces pixels darker than TRACE_BLACKLEVEL.
+    """
+    pgm_path = tmp_dir / f"glyph_{idx:03d}.pgm"
+    svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
+    Image.fromarray(glyph_img).convert("L").save(str(pgm_path))
 
     try:
         subprocess.run(
             [
                 "potrace", "--svg", "--turdsize", "0",
-                "--output", str(svg_path), str(pbm_path),
+                "--blacklevel", str(TRACE_BLACKLEVEL),
+                "--output", str(svg_path), str(pgm_path),
             ],
             check=True,
             capture_output=True,
@@ -512,7 +538,8 @@ def main():
 
     # --- 2. Pre-process ---
     print("[process] binarizing image …")
-    binary = load_and_binarize(image_path)
+    gray = load_grayscale(image_path)
+    binary = binarize(gray)
 
     # --- 3. Detect glyph boxes ---
     print("[process] detecting glyphs …")
@@ -552,7 +579,7 @@ def main():
             name = GLYPH_NAMES[idx]
             print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
 
-            crop = crop_glyph(binary, box)
+            crop = prepare_glyph_for_trace(gray, box)
             svg_d = glyph_to_svg_path(crop, tmp_dir, idx)
 
             if svg_d:
