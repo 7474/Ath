@@ -162,8 +162,12 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
     pbm_path = tmp_dir / f"glyph_{idx:03d}.pbm"
     svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
 
-    # Convert to pure B/W PIL image
-    pil = Image.fromarray(glyph_img).convert("1")
+    # `glyph_img` has the glyph as WHITE (255) on a BLACK (0) background (that
+    # polarity is what cv2.findContours needs). Potrace, however, traces the
+    # BLACK pixels as the foreground shape, so feeding it as-is would trace the
+    # background rectangle and leave the glyph as a hole (a filled block with a
+    # cut-out). Invert first so the glyph strokes are black on a white ground.
+    pil = Image.fromarray(cv2.bitwise_not(glyph_img)).convert("1")
     pil.save(str(pbm_path))
 
     try:
