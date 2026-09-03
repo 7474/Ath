@@ -2,7 +2,9 @@
 
 ## GitHub Pages デモ
 
-> **公開 URL（GitHub Pages）**: `https://7474.github.io/Ath/`
+> **デモ URL（GitHub Pages）**: `https://7474.github.io/Ath/`
+>
+> GitHub Pages はプロジェクトのショーケース用です。他サイトからフォントを URL 指定する場合は [jsDelivr](#jsdelivr) を使ってください。
 >
 > `main` ブランチへの push をトリガーに GitHub Actions が自動でフォントを再生成し、
 > `docs/` フォルダの内容を GitHub Pages へデプロイします。
@@ -62,7 +64,12 @@ aarth.woff2  — Compressed webfont for modern browsers
 
 ### 4. Preview in a browser
 
-Open `index.html` (make sure `aarth.woff2` and `aarth.ttf` are in the same folder).
+Open `index.html` via a local HTTP server (make sure `aarth.css`, `aarth.woff2`, and `aarth.ttf` are in the same folder).
+
+```bash
+python3 -m http.server 8000
+# http://127.0.0.1:8000/
+```
 
 ---
 
@@ -114,6 +121,50 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 ---
 
 ## CSS / HTML usage
+
+### jsDelivr
+
+[jsDelivr](https://www.jsdelivr.com/) に登録・申請する手続きはありません。GitHub エンドポイントは **公開リポジトリに push されたファイルを自動配信**します。アカウント作成、npm 公開、設定ファイル、ダッシュボード操作も不要で、URL を書くだけで使えます。
+
+```
+https://cdn.jsdelivr.net/gh/<user>/<repo>@<ref>/<path>
+```
+
+このリポジトリでは次のとおりです。`aarth.css` の `@font-face` は相対パスなので、フォントは CSS と同じ jsDelivr URL から解決されます。
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css">
+<style>
+  .ath { font-family: 'Aarth', serif; }
+</style>
+<p class="ath">aarth lotr atosr</p>
+```
+
+`@font-face` を自分で書く場合:
+
+```css
+@font-face {
+  font-family: 'Aarth';
+  src: url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.ttf')   format('truetype');
+  font-weight: normal;
+  font-style:  normal;
+  font-display: swap;
+}
+```
+
+- リポジトリが **public** であることだけが条件です（private は配信されません）。
+- 初回アクセス時に GitHub から取得してキャッシュします。数秒かかることがあります。
+- `@main` はブランチ参照で、[キャッシュは約 12 時間](https://github.com/jsdelivr/jsdelivr#caching)です。本番ではコミット SHA を指定すると内容が固定されます。
+- クロスオリジンの `@font-face` に必要な `Access-Control-Allow-Origin` は jsDelivr が返します。
+- `raw.githubusercontent.com` は MIME 型が `text/plain` になるため使わないでください。
+- 公式: [GitHub からの使い方](https://github.com/jsdelivr/jsdelivr#github) / [URL 変換](https://www.jsdelivr.com/github)
+
+GitHub Pages は [プロジェクトのショーケース用](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#pages) です。デモページからの利用は想定どおりですが、他サイトからの恒常的な直リンクには jsDelivr を使ってください。
+
+デモページ上のスニペットは、表示中のホストに合わせた絶対 URL にも書き換わります。
+
+### ローカルに置く（オフライン用）
 
 ```html
 <style>
