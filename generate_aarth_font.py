@@ -22,10 +22,6 @@ Requirements (install once):
 """
 
 import argparse
-import os
-import re
-import shutil
-import struct
 import subprocess
 import sys
 import tempfile
@@ -76,8 +72,9 @@ SOURCE_URL = (
 EM = 1000          # units per em
 ASCENDER = 800
 DESCENDER = -200
-CAP_HEIGHT = 700
+CAP_HEIGHT = 700   # target height every glyph is scaled to
 X_HEIGHT = 500
+GLYPH_LSB = 40     # left/right side bearing in font units
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +183,18 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
 
 
 def parse_svg_path(svg_file: Path) -> str | None:
-    """Extract the 'd' attribute from the first <path> in the SVG."""
+    """
+    Return the concatenated 'd' data of *every* <path> in the SVG.
+
+    Potrace emits one <path> per outline and additional <path> elements for
+    counters/holes (e.g. the bowl of 'a'), so we must keep them all — using
+    only the first path drops the holes. Each 'd' string starts with its own
+    absolute 'M', so simple concatenation yields a valid multi-subpath.
+
+    Coordinates are left in potrace's raw path space (10 units per source
+    pixel, y-up); the potrace <g transform> is intentionally *not* baked in
+    here because build_font() rescales each glyph from its own bounding box.
+    """
     try:
         tree = ET.parse(str(svg_file))
         root = tree.getroot()
@@ -194,8 +202,9 @@ def parse_svg_path(svg_file: Path) -> str | None:
         paths = root.findall(".//svg:path", ns)
         if not paths:
             paths = root.findall(".//{http://www.w3.org/2000/svg}path")
-        if paths:
-            return paths[0].get("d", "")
+        ds = [p.get("d", "").strip() for p in paths if p.get("d")]
+        if ds:
+            return " ".join(ds)
     except ET.ParseError:
         pass
     return None
@@ -205,144 +214,45 @@ def parse_svg_path(svg_file: Path) -> str | None:
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
-def _parse_number(s: str) -> tuple[float, str]:
-    """Parse one floating-point number from string, return (value, rest)."""
-    s = s.lstrip()
-    m = re.match(r"[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?", s)
-    if not m:
-        raise ValueError(f"Expected number in: {s!r}")
-    return float(m.group()), s[m.end():]
-
-
-def _parse_coord_pair(s: str) -> tuple[tuple[float, float], str]:
-    s = s.lstrip(" ,")
-    x, s = _parse_number(s)
-    s = s.lstrip(" ,")
-    y, s = _parse_number(s)
-    return (x, y), s
-
-
-def svg_path_to_pen_commands(d: str, pen, sx: float, sy: float, dx: float, dy: float):
+def layout_glyph(svg_d: str, target_height: float, lsb: float):
     """
-    Replay an SVG path 'd' string onto a fontTools pen, applying scale+offset.
-    sx/sy: scale; dx/dy: translation (in font units).
-    Potrace SVG uses y-down coords starting from top-left of the bitmap.
-    Font units use y-up.  We flip y: font_y = dy - (svg_y * sy).
+    Fit a potrace SVG path to the font's em, without drawing yet.
+
+    Potrace path coordinates are y-up and 10x the source-pixel size (the SVG's
+    own ``<g transform="translate(0,H) scale(0.1,-0.1)">`` compensates for that
+    when rendered). Because we fit each glyph by its own bounding box, the
+    constant 10x factor and any origin offset cancel out, so that group
+    transform does not need to be applied here. A single uniform positive scale
+    keeps the aspect ratio and preserves contour orientation, so counters/holes
+    fill correctly.
+
+    Returns ``(recording_pen, affine, advance)`` — replaying ``recording_pen``
+    through ``TransformPen(target_pen, affine)`` scales the glyph to
+    ``target_height`` font units, resting on the baseline with ``lsb`` units of
+    left side bearing — or ``None`` when the path is empty/degenerate.
     """
+    from fontTools.svgLib.path import parse_path
+    from fontTools.pens.recordingPen import RecordingPen
+    from fontTools.pens.boundsPen import ControlBoundsPen
 
-    def tx(x):
-        return dx + x * sx
+    rec = RecordingPen()
+    parse_path(svg_d, rec)
 
-    def ty(y):
-        return dy - y * sy  # flip y
+    bounds = ControlBoundsPen(None)
+    rec.replay(bounds)
+    if bounds.bounds is None:
+        return None
+    x_min, y_min, x_max, y_max = bounds.bounds
+    raw_h = y_max - y_min
+    raw_w = x_max - x_min
+    if raw_h <= 0:
+        return None
 
-    tokens = d.strip()
-    i = 0
-    current = (0.0, 0.0)
-    start = (0.0, 0.0)
-    cmd = None
-    in_subpath = False
-
-    def advance():
-        nonlocal tokens
-        tokens = tokens.lstrip(" ,\n\r\t")
-
-    def next_pair():
-        nonlocal tokens
-        advance()
-        pair, tokens = _parse_coord_pair(tokens)
-        return pair
-
-    def next_num():
-        nonlocal tokens
-        advance()
-        val, tokens = _parse_number(tokens)
-        return val
-
-    advance()
-    while tokens:
-        if tokens[0].isalpha():
-            cmd = tokens[0]
-            tokens = tokens[1:]
-            advance()
-        if cmd is None:
-            break
-
-        if cmd == "M":
-            if in_subpath:
-                pen.endPath()
-            pt = next_pair()
-            current = (tx(pt[0]), ty(pt[1]))
-            start = current
-            pen.moveTo(current)
-            in_subpath = True
-            cmd = "L"  # subsequent coords are lineTo
-        elif cmd == "m":
-            if in_subpath:
-                pen.endPath()
-            pt = next_pair()
-            current = (current[0] + tx(pt[0]) - dx, current[1] + (-(pt[1] * sy)))
-            # relative M: recalc properly
-            current = (tx(0) + pt[0] * sx + (current[0] - tx(0)),
-                       ty(0) - pt[1] * sy + (current[1] - ty(0)))
-            # simpler: absolute position
-            # Actually potrace always emits absolute M, so handle simply:
-            # treat as absolute
-            sx2, sy2 = sx, sy
-            cx = dx + pt[0] * sx2
-            cy = dy - pt[1] * sy2
-            if in_subpath:
-                pass  # already ended
-            current = (cx, cy)
-            start = current
-            pen.moveTo(current)
-            in_subpath = True
-            cmd = "l"
-        elif cmd == "L":
-            pt = next_pair()
-            current = (tx(pt[0]), ty(pt[1]))
-            pen.lineTo(current)
-        elif cmd == "l":
-            pt = next_pair()
-            current = (current[0] + pt[0] * sx, current[1] - pt[1] * sy)
-            pen.lineTo(current)
-        elif cmd == "C":
-            p1 = next_pair()
-            p2 = next_pair()
-            p3 = next_pair()
-            current = (tx(p3[0]), ty(p3[1]))
-            pen.curveTo(
-                (tx(p1[0]), ty(p1[1])),
-                (tx(p2[0]), ty(p2[1])),
-                current,
-            )
-        elif cmd == "c":
-            p1 = next_pair()
-            p2 = next_pair()
-            p3 = next_pair()
-            ox, oy = current
-            pen.curveTo(
-                (ox + p1[0] * sx, oy - p1[1] * sy),
-                (ox + p2[0] * sx, oy - p2[1] * sy),
-                (ox + p3[0] * sx, oy - p3[1] * sy),
-            )
-            current = (ox + p3[0] * sx, oy - p3[1] * sy)
-        elif cmd in ("Z", "z"):
-            if in_subpath:
-                pen.closePath()
-                in_subpath = False
-            advance()
-            cmd = None
-            continue
-        else:
-            # Skip unknown command
-            tokens = tokens[1:]
-            continue
-
-        advance()
-
-    if in_subpath:
-        pen.endPath()
+    scale = target_height / raw_h
+    # font_x = scale*x + (lsb - scale*x_min);  font_y = scale*y - scale*y_min
+    affine = (scale, 0.0, 0.0, scale, lsb - scale * x_min, -scale * y_min)
+    advance = int(round(raw_w * scale)) + 2 * int(lsb)
+    return rec, affine, advance
 
 
 # ---------------------------------------------------------------------------
@@ -351,21 +261,25 @@ def svg_path_to_pen_commands(d: str, pen, sx: float, sy: float, dx: float, dy: f
 
 def build_font(glyph_data: list[dict], output_dir: Path):
     """
-    glyph_data: list of {codepoint, name, svg_d, img_w, img_h, sx, sy, dx, dy, advance}
+    glyph_data: list of {codepoint, name, svg_d}
     Builds a CFF-based OTF (natively supports cubic Beziers from potrace), then:
       - saves as aarth.ttf  (OTF binary; .ttf extension for broad compatibility)
       - compresses to aarth.woff2
+
+    Each glyph is scaled from its own outline bounding box to CAP_HEIGHT and set
+    on the baseline, so all glyphs share a consistent size regardless of the
+    source pixel dimensions.
     """
     from fontTools.fontBuilder import FontBuilder
     from fontTools.pens.t2CharStringPen import T2CharStringPen
+    from fontTools.pens.transformPen import TransformPen
 
     glyph_names = [".notdef"] + [g["name"] for g in glyph_data]
-    metrics = {".notdef": (500, 0)}
-    for g in glyph_data:
-        metrics[g["name"]] = (g["advance"], 0)
 
-    # Build CFF charstrings
+    # Build CFF charstrings, capturing each glyph's advance width as we draw it.
     charStrings = {}
+    metrics = {".notdef": (500, 0)}
+    default_advance = int(CAP_HEIGHT * 0.6) + 2 * GLYPH_LSB
 
     # .notdef — simple open rectangle
     pen = T2CharStringPen(500, None)
@@ -382,16 +296,20 @@ def build_font(glyph_data: list[dict], output_dir: Path):
     charStrings[".notdef"] = pen.getCharString()
 
     for g in glyph_data:
-        pen = T2CharStringPen(g["advance"], None)
+        layout = None
         if g["svg_d"]:
             try:
-                svg_path_to_pen_commands(
-                    g["svg_d"], pen,
-                    g["sx"], g["sy"], g["dx"], g["dy"],
-                )
+                layout = layout_glyph(g["svg_d"], CAP_HEIGHT, GLYPH_LSB)
             except Exception as exc:
-                print(f"  [warn] pen replay failed for {g['name']}: {exc}")
+                print(f"  [warn] layout failed for {g['name']}: {exc}")
+
+        advance = layout[2] if layout else default_advance
+        pen = T2CharStringPen(advance, None)
+        if layout:
+            rec, affine, _ = layout
+            rec.replay(TransformPen(pen, affine))
         charStrings[g["name"]] = pen.getCharString()
+        metrics[g["name"]] = (advance, 0)
 
     fb = FontBuilder(EM, isTTF=False)
     fb.setupGlyphOrder(glyph_names)
@@ -506,25 +424,12 @@ def main():
             else:
                 print(" (no path)")
 
-            # Compute scale/offset to fit glyph into EM square
-            _, _, gw, gh = box
-            # We want glyph height to fill ASCENDER - DESCENDER
-            glyph_height_fu = ASCENDER - DESCENDER  # 1000
-            sy = glyph_height_fu / gh if gh > 0 else 1.0
-            sx = sy  # uniform scale
-            advance = int(gw * sx) + 20
-
+            # build_font() scales each glyph from its own outline bounding box,
+            # so no per-box scale/offset needs to be computed here.
             glyph_data.append({
                 "codepoint": codepoint,
                 "name": name,
                 "svg_d": svg_d,
-                "img_w": gw,
-                "img_h": gh,
-                "sx": sx,
-                "sy": sy,
-                "dx": 10,           # left side bearing
-                "dy": ASCENDER,     # baseline offset (y-flip origin)
-                "advance": advance,
             })
 
         print("[build] assembling font …")
