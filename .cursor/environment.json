@@ -1,0 +1,16 @@
+{
+  "name": "Aarth — Ath Alphabet Webfont Generator",
+  "install": "sudo apt-get update -qq && sudo apt-get install -y potrace && pip install -r requirements.txt && python3 generate_aarth_font.py --image Ath_alphabet.png --output-dir docs --debug && cp -f docs/aarth.ttf docs/aarth.woff2 .",
+  "terminals": [
+    {
+      "name": "preview",
+      "command": "python3 -m http.server 8000"
+    }
+  ],
+  "ports": [
+    {
+      "name": "preview",
+      "port": 8000
+    }
+  ]
+}

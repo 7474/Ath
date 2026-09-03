@@ -7,8 +7,8 @@ Generates aarth.ttf and aarth.woff2 from the Ath (Ath alphabet) raster image.
 Pipeline:
   1. Download the source PNG from Wikimedia Commons (or use a local file).
   2. Pre-process with OpenCV: grayscale → threshold.
-  3. Detect glyph bounding boxes via contour finding; merge disconnected
-     overlines / umlauts into the parent glyph; sort top→bottom, left→right.
+  3. Detect glyph boxes; merge disconnected overlines / umlauts into the
+     parent glyph; keep the 4×7 alphabet grid (drop the header).
   4. For each glyph: save as PBM bitmap, call `potrace` to produce an SVG path.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
@@ -23,7 +23,6 @@ Requirements (install once):
 """
 
 import argparse
-import re
 import subprocess
 import sys
 import tempfile
@@ -74,8 +73,9 @@ SOURCE_URL = (
 EM = 1000          # units per em
 ASCENDER = 800
 DESCENDER = -200
-CAP_HEIGHT = 700
+CAP_HEIGHT = 700   # target height every glyph is scaled to
 X_HEIGHT = 500
+GLYPH_LSB = 40     # left/right side bearing in font units
 
 
 # ---------------------------------------------------------------------------
@@ -97,9 +97,10 @@ def load_and_binarize(image_path: Path) -> np.ndarray:
         raise FileNotFoundError(f"Cannot read image: {image_path}")
     # The source image is black ink on white paper → invert after threshold
     _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # Glyphs are dark (0) on white (255); invert so glyphs are white on black.
+    # Glyphs are dark (0) on white (255); invert so glyphs are white on black
+    binary = cv2.bitwise_not(binary)
     # Do not apply morphological opening: 2×2 opening eats umlaut dots (~4×4).
-    return cv2.bitwise_not(binary)
+    return binary
 
 
 def _box_area(box) -> int:
@@ -124,11 +125,9 @@ def _is_diacritic_above(mark, base, max_gap_px: float) -> bool:
     bx, by, bw, bh = base
     if _box_area(mark) >= _box_area(base) * 0.45:
         return False
-    # Horizontal association: mark centre falls in the base, or the boxes overlap.
     mcx = mx + mw / 2
     if not (bx - 4 <= mcx <= bx + bw + 4 or _x_overlap(mark, base) >= 0.3 * min(mw, bw)):
         return False
-    # Vertical: mark is above (or slightly overlapping) the base, with a small gap.
     gap = by - (my + mh)
     return gap <= max_gap_px
 
@@ -138,8 +137,7 @@ def merge_diacritic_boxes(boxes: list) -> list:
     Union-find merge of disconnected accents into the glyph they belong to.
 
     Overlines and umlaut dots are separate contours from the letter body.
-    Latin labels sit *below* their glyph and are larger relative to a mark,
-    so they are left unmerged.
+    Latin labels sit *below* their glyph and are left unmerged.
     """
     n = len(boxes)
     if n <= 1:
@@ -161,7 +159,6 @@ def merge_diacritic_boxes(boxes: list) -> list:
     for i in range(n):
         for j in range(i + 1, n):
             a, b = boxes[i], boxes[j]
-            # The upper box is the one with smaller y.
             if a[1] <= b[1]:
                 upper, lower = a, b
             else:
@@ -217,7 +214,6 @@ def select_alphabet_grid(boxes: list, expected: int = 28) -> list:
     result = [box for row in grid_rows for box in row]
     if len(result) == expected:
         return result
-    # Fallback: drop a short header row if present.
     if rows and len(rows[0]) != 7:
         rest = [box for row in rows[1:] for box in row]
         if len(rest) == expected:
@@ -263,23 +259,23 @@ def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
 def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | None:
     """
     Save glyph as PBM, run potrace, return the SVG path 'd' string.
-
-    OpenCV stores glyphs as white-on-black; potrace traces black pixels, so the
-    crop is inverted first. `--unit 1` keeps path coordinates in pixels, with
-    origin at the bottom-left and y pointing up (potrace's group transform).
-    `--turdsize 0` preserves umlaut dots.
+    Potrace produces a path with (0,0) at bottom-left in PostScript coords.
     """
     pbm_path = tmp_dir / f"glyph_{idx:03d}.pbm"
     svg_path = tmp_dir / f"glyph_{idx:03d}.svg"
 
-    ink_black = cv2.bitwise_not(glyph_img)
-    pil = Image.fromarray(ink_black).convert("1")
+    # `glyph_img` has the glyph as WHITE (255) on a BLACK (0) background (that
+    # polarity is what cv2.findContours needs). Potrace, however, traces the
+    # BLACK pixels as the foreground shape, so feeding it as-is would trace the
+    # background rectangle and leave the glyph as a hole (a filled block with a
+    # cut-out). Invert first so the glyph strokes are black on a white ground.
+    pil = Image.fromarray(cv2.bitwise_not(glyph_img)).convert("1")
     pil.save(str(pbm_path))
 
     try:
         subprocess.run(
             [
-                "potrace", "--svg", "--unit", "1", "--turdsize", "0",
+                "potrace", "--svg", "--turdsize", "0",
                 "--output", str(svg_path), str(pbm_path),
             ],
             check=True,
@@ -296,12 +292,26 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
 
 
 def parse_svg_path(svg_file: Path) -> str | None:
-    """Extract and join 'd' attributes from all <path> elements in the SVG."""
+    """
+    Return the concatenated 'd' data of *every* <path> in the SVG.
+
+    Potrace emits one <path> per outline and additional <path> elements for
+    counters/holes (e.g. the bowl of 'a'), so we must keep them all — using
+    only the first path drops the holes. Each 'd' string starts with its own
+    absolute 'M', so simple concatenation yields a valid multi-subpath.
+
+    Coordinates are left in potrace's raw path space (10 units per source
+    pixel, y-up); the potrace <g transform> is intentionally *not* baked in
+    here because build_font() rescales each glyph from its own bounding box.
+    """
     try:
         tree = ET.parse(str(svg_file))
         root = tree.getroot()
-        paths = root.findall(".//{http://www.w3.org/2000/svg}path")
-        ds = [p.get("d", "") for p in paths if p.get("d")]
+        ns = {"svg": "http://www.w3.org/2000/svg"}
+        paths = root.findall(".//svg:path", ns)
+        if not paths:
+            paths = root.findall(".//{http://www.w3.org/2000/svg}path")
+        ds = [p.get("d", "").strip() for p in paths if p.get("d")]
         if ds:
             return " ".join(ds)
     except ET.ParseError:
@@ -313,125 +323,48 @@ def parse_svg_path(svg_file: Path) -> str | None:
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
-_PATH_TOKEN_RE = re.compile(
-    r"[MmZzLlHhVvCcSsQqTtAa]|[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?"
-)
-
-
-def svg_path_to_pen_commands(d: str, pen, sx: float, sy: float, dx: float, dy: float):
+def layout_glyph(svg_d: str, target_height: float, lsb: float, scale: float | None = None):
     """
-    Replay an SVG path 'd' string onto a fontTools pen, applying scale+offset.
+    Fit a potrace SVG path to the font's em, without drawing yet.
 
-    Potrace `--unit 1` path coordinates are in pixels, origin at the bitmap
-    bottom-left, y-up — the same orientation as font units. No y-flip.
-    Relative `m` starts a new subpath (overline / umlaut dots).
+    Potrace path coordinates are y-up and 10x the source-pixel size (the SVG's
+    own ``<g transform="translate(0,H) scale(0.1,-0.1)">`` compensates for that
+    when rendered). A single uniform positive scale keeps the aspect ratio and
+    preserves contour orientation, so counters/holes fill correctly.
+
+    When ``scale`` is omitted the glyph is stretched to ``target_height``.
+    Passing a shared ``scale`` (from the tallest outline) keeps letter bodies
+    consistent so overlines/umlauts sit above the cap rather than shrinking
+    the whole glyph.
+
+    Returns ``(recording_pen, affine, advance)`` — replaying ``recording_pen``
+    through ``TransformPen(target_pen, affine)`` places the glyph on the
+    baseline with ``lsb`` units of left side bearing — or ``None`` when the
+    path is empty/degenerate.
     """
+    from fontTools.svgLib.path import parse_path
+    from fontTools.pens.recordingPen import RecordingPen
+    from fontTools.pens.boundsPen import ControlBoundsPen
 
-    def tx(x):
-        return dx + x * sx
+    rec = RecordingPen()
+    parse_path(svg_d, rec)
 
-    def ty(y):
-        return dy + y * sy
+    bounds = ControlBoundsPen(None)
+    rec.replay(bounds)
+    if bounds.bounds is None:
+        return None
+    x_min, y_min, x_max, y_max = bounds.bounds
+    raw_h = y_max - y_min
+    raw_w = x_max - x_min
+    if raw_h <= 0:
+        return None
 
-    tokens = _PATH_TOKEN_RE.findall(d)
-    i = 0
-    current = (0.0, 0.0)
-    start = (0.0, 0.0)
-    cmd = None
-    in_subpath = False
-
-    def read_pair():
-        nonlocal i
-        x = float(tokens[i])
-        y = float(tokens[i + 1])
-        i += 2
-        return x, y
-
-    while i < len(tokens):
-        tok = tokens[i]
-        if tok.isalpha():
-            cmd = tok
-            i += 1
-            if cmd in ("Z", "z"):
-                if in_subpath:
-                    pen.closePath()
-                    in_subpath = False
-                    current = start
-                cmd = None
-                continue
-
-        if cmd is None:
-            break
-
-        if cmd == "M":
-            if in_subpath:
-                pen.endPath()
-            px, py = read_pair()
-            current = (tx(px), ty(py))
-            start = current
-            pen.moveTo(current)
-            in_subpath = True
-            cmd = "L"
-        elif cmd == "m":
-            if in_subpath:
-                pen.endPath()
-            px, py = read_pair()
-            current = (current[0] + px * sx, current[1] + py * sy)
-            start = current
-            pen.moveTo(current)
-            in_subpath = True
-            cmd = "l"
-        elif cmd == "L":
-            px, py = read_pair()
-            current = (tx(px), ty(py))
-            pen.lineTo(current)
-        elif cmd == "l":
-            px, py = read_pair()
-            current = (current[0] + px * sx, current[1] + py * sy)
-            pen.lineTo(current)
-        elif cmd == "H":
-            px = float(tokens[i]); i += 1
-            current = (tx(px), current[1])
-            pen.lineTo(current)
-        elif cmd == "h":
-            px = float(tokens[i]); i += 1
-            current = (current[0] + px * sx, current[1])
-            pen.lineTo(current)
-        elif cmd == "V":
-            py = float(tokens[i]); i += 1
-            current = (current[0], ty(py))
-            pen.lineTo(current)
-        elif cmd == "v":
-            py = float(tokens[i]); i += 1
-            current = (current[0], current[1] + py * sy)
-            pen.lineTo(current)
-        elif cmd == "C":
-            x1, y1 = read_pair()
-            x2, y2 = read_pair()
-            x3, y3 = read_pair()
-            current = (tx(x3), ty(y3))
-            pen.curveTo((tx(x1), ty(y1)), (tx(x2), ty(y2)), current)
-        elif cmd == "c":
-            x1, y1 = read_pair()
-            x2, y2 = read_pair()
-            x3, y3 = read_pair()
-            ox, oy = current
-            current = (ox + x3 * sx, oy + y3 * sy)
-            pen.curveTo(
-                (ox + x1 * sx, oy + y1 * sy),
-                (ox + x2 * sx, oy + y2 * sy),
-                current,
-            )
-        else:
-            # Unsupported command: skip its letter; numbers are consumed by
-            # the next recognised command or will trip the alpha check.
-            if tok.isalpha():
-                continue
-            i += 1
-            continue
-
-    if in_subpath:
-        pen.endPath()
+    if scale is None:
+        scale = target_height / raw_h
+    # font_x = scale*x + (lsb - scale*x_min);  font_y = scale*y - scale*y_min
+    affine = (scale, 0.0, 0.0, scale, lsb - scale * x_min, -scale * y_min)
+    advance = int(round(raw_w * scale)) + 2 * int(lsb)
+    return rec, affine, advance
 
 
 # ---------------------------------------------------------------------------
@@ -440,21 +373,44 @@ def svg_path_to_pen_commands(d: str, pen, sx: float, sy: float, dx: float, dy: f
 
 def build_font(glyph_data: list[dict], output_dir: Path):
     """
-    glyph_data: list of {codepoint, name, svg_d, img_w, img_h, sx, sy, dx, dy, advance}
+    glyph_data: list of {codepoint, name, svg_d}
     Builds a CFF-based OTF (natively supports cubic Beziers from potrace), then:
       - saves as aarth.ttf  (OTF binary; .ttf extension for broad compatibility)
       - compresses to aarth.woff2
+
+    Each glyph is scaled with a *shared* factor taken from the tallest outline
+    (typically a letter plus overline/umlaut) so bodies stay the same size and
+    diacritics sit above the cap height instead of shrinking the whole glyph.
     """
     from fontTools.fontBuilder import FontBuilder
     from fontTools.pens.t2CharStringPen import T2CharStringPen
+    from fontTools.pens.transformPen import TransformPen
+    from fontTools.svgLib.path import parse_path
+    from fontTools.pens.recordingPen import RecordingPen
+    from fontTools.pens.boundsPen import ControlBoundsPen
 
     glyph_names = [".notdef"] + [g["name"] for g in glyph_data]
-    metrics = {".notdef": (500, 0)}
-    for g in glyph_data:
-        metrics[g["name"]] = (g["advance"], 0)
 
-    # Build CFF charstrings
+    # Measure every outline so we can pick one scale for the whole font.
+    max_raw_h = 0.0
+    for g in glyph_data:
+        if not g["svg_d"]:
+            continue
+        rec = RecordingPen()
+        try:
+            parse_path(g["svg_d"], rec)
+        except Exception:
+            continue
+        bounds = ControlBoundsPen(None)
+        rec.replay(bounds)
+        if bounds.bounds:
+            max_raw_h = max(max_raw_h, bounds.bounds[3] - bounds.bounds[1])
+    shared_scale = (CAP_HEIGHT / max_raw_h) if max_raw_h > 0 else None
+
+    # Build CFF charstrings, capturing each glyph's advance width as we draw it.
     charStrings = {}
+    metrics = {".notdef": (500, 0)}
+    default_advance = int(CAP_HEIGHT * 0.6) + 2 * GLYPH_LSB
 
     # .notdef — simple open rectangle
     pen = T2CharStringPen(500, None)
@@ -471,16 +427,20 @@ def build_font(glyph_data: list[dict], output_dir: Path):
     charStrings[".notdef"] = pen.getCharString()
 
     for g in glyph_data:
-        pen = T2CharStringPen(g["advance"], None)
+        layout = None
         if g["svg_d"]:
             try:
-                svg_path_to_pen_commands(
-                    g["svg_d"], pen,
-                    g["sx"], g["sy"], g["dx"], g["dy"],
-                )
+                layout = layout_glyph(g["svg_d"], CAP_HEIGHT, GLYPH_LSB, scale=shared_scale)
             except Exception as exc:
-                print(f"  [warn] pen replay failed for {g['name']}: {exc}")
+                print(f"  [warn] layout failed for {g['name']}: {exc}")
+
+        advance = layout[2] if layout else default_advance
+        pen = T2CharStringPen(advance, None)
+        if layout:
+            rec, affine, _ = layout
+            rec.replay(TransformPen(pen, affine))
         charStrings[g["name"]] = pen.getCharString()
+        metrics[g["name"]] = (advance, 0)
 
     fb = FontBuilder(EM, isTTF=False)
     fb.setupGlyphOrder(glyph_names)
@@ -498,13 +458,13 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         privateDict={"defaultWidthX": 0, "nominalWidthX": 0},
     )
     fb.setupNameTable({"familyName": "Aarth", "styleName": "Regular"})
-    fb.setupHorizontalHeader(ascent=EM, descent=DESCENDER)
+    fb.setupHorizontalHeader(ascent=ASCENDER, descent=DESCENDER)
     fb.setupHead(unitsPerEm=EM)
     fb.setupOS2(
         sTypoAscender=ASCENDER,
         sTypoDescender=DESCENDER,
         sTypoLineGap=0,
-        usWinAscent=EM,          # extra room for overlines / umlauts + crop padding
+        usWinAscent=ASCENDER,
         usWinDescent=abs(DESCENDER),
         sxHeight=X_HEIGHT,
         sCapHeight=CAP_HEIGHT,
@@ -580,12 +540,6 @@ def main():
             print(f"  using first {expected}.")
             boxes = boxes[:expected]
 
-    # Uniform scale so letter bodies stay consistent; diacritics occupy extra
-    # height above the body instead of shrinking the whole glyph to fit.
-    CROP_PAD = 4
-    max_h = max((h for _, _, _, h in boxes), default=1)
-    uniform_sy = (ASCENDER - DESCENDER) / max_h if max_h else 1.0
-
     # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
@@ -598,8 +552,7 @@ def main():
             name = GLYPH_NAMES[idx]
             print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
 
-            x, y, gw, gh = box
-            crop = crop_glyph(binary, box, padding=CROP_PAD)
+            crop = crop_glyph(binary, box)
             svg_d = glyph_to_svg_path(crop, tmp_dir, idx)
 
             if svg_d:
@@ -607,29 +560,12 @@ def main():
             else:
                 print(" (no path)")
 
-            sx = sy = uniform_sy
-            crop_h = crop.shape[0]
-            crop_x1 = max(0, x - CROP_PAD)
-            crop_y1 = max(0, y - CROP_PAD)
-            # Potrace --unit 1: origin at crop bottom-left, y-up, pixel units.
-            box_bottom_in_crop = (y + gh) - crop_y1          # from top of crop
-            box_left_in_crop = x - crop_x1
-            y_path_box_bottom = crop_h - box_bottom_in_crop  # from bottom (path y)
-            dx = 10 - box_left_in_crop * sx
-            dy = DESCENDER - y_path_box_bottom * sy
-            advance = int(gw * sx) + 20
-
+            # build_font() scales each glyph from its own outline bounding box,
+            # so no per-box scale/offset needs to be computed here.
             glyph_data.append({
                 "codepoint": codepoint,
                 "name": name,
                 "svg_d": svg_d,
-                "img_w": gw,
-                "img_h": gh,
-                "sx": sx,
-                "sy": sy,
-                "dx": dx,
-                "dy": dy,
-                "advance": advance,
             })
 
         print("[build] assembling font …")
