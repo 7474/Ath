@@ -46,6 +46,7 @@ class AgentHttpTest(unittest.TestCase):
         self.assertGreater(body["entries"], 2000)
         self.assertIn("agent", body["engines"])
         self.assertEqual(body["vector_dim"], 512)
+        self.assertIn("model", body)
 
     def test_synonyms_endpoint(self):
         conn = self._conn()

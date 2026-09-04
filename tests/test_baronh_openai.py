@@ -177,5 +177,59 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertLess(ctx.count("\n"), 12)
 
 
+class ChatRequestRetryTest(unittest.TestCase):
+    def test_retries_503_then_succeeds(self):
+        import io
+        from unittest import mock
+        from urllib.error import HTTPError
+
+        from baronh.openai_backend import _request
+
+        calls = {"n": 0}
+
+        def fake_urlopen(req, timeout=60):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise HTTPError(req.full_url, 503, "unavailable", hdrs=None, fp=io.BytesIO(b"busy"))
+
+            class Resp:
+                def read(self):
+                    return b'{"ok":true}'
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+            return Resp()
+
+        with mock.patch("baronh.openai_backend.urllib.request.urlopen", fake_urlopen):
+            with mock.patch("baronh.openai_backend._sleep"):
+                raw = _request("http://example.test/v1/chat/completions", "key", {"model": "x"})
+        self.assertEqual(raw, b'{"ok":true}')
+        self.assertEqual(calls["n"], 3)
+
+    def test_does_not_retry_400(self):
+        import io
+        from unittest import mock
+        from urllib.error import HTTPError
+
+        from baronh.openai_backend import _request
+
+        calls = {"n": 0}
+
+        def fake_urlopen(req, timeout=60):
+            calls["n"] += 1
+            raise HTTPError(req.full_url, 400, "bad", hdrs=None, fp=io.BytesIO(b"no"))
+
+        with mock.patch("baronh.openai_backend.urllib.request.urlopen", fake_urlopen):
+            with mock.patch("baronh.openai_backend._sleep"):
+                with self.assertRaises(RuntimeError) as ctx:
+                    _request("http://example.test/v1/chat/completions", "key", {"model": "x"})
+        self.assertIn("400", str(ctx.exception))
+        self.assertEqual(calls["n"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

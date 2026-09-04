@@ -68,6 +68,28 @@
     return firstOf(urls, loadBuffer);
   }
 
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  var FETCH_RETRIES = 3;
+  var RETRYABLE_STATUS = { 408: 1, 429: 1, 500: 1, 502: 1, 503: 1, 504: 1 };
+
+  function fetchWithRetry(url, init, attempt) {
+    attempt = attempt || 0;
+    return fetch(url, init).then(function (res) {
+      if (res.ok || !RETRYABLE_STATUS[res.status] || attempt >= FETCH_RETRIES - 1) return res;
+      return delay(400 * Math.pow(2, attempt)).then(function () {
+        return fetchWithRetry(url, init, attempt + 1);
+      });
+    }, function (err) {
+      if (attempt >= FETCH_RETRIES - 1) throw err;
+      return delay(400 * Math.pow(2, attempt)).then(function () {
+        return fetchWithRetry(url, init, attempt + 1);
+      });
+    });
+  }
+
   function refreshCount() {
     $("dict-count").textContent = "辞書 " + (lexicon ? lexicon.entries.length : 0) + " 語";
   }
@@ -151,8 +173,46 @@
     return raw;
   }
 
+  function agentHealthUrl() {
+    return agentEndpoint().replace(/\/api\/translate$/i, "/api/health");
+  }
+
+  function setAgentOptionVisible(visible) {
+    var sel = $("engine");
+    if (!sel) return;
+    var opt = sel.querySelector('option[value="agent"]');
+    if (!opt) return;
+    opt.hidden = !visible;
+    opt.disabled = !visible;
+    if (!visible && sel.value === "agent") {
+      sel.value = "local";
+      syncLocalVectorOption();
+    }
+  }
+
+  function probeAgentConfigured() {
+    return fetch(agentHealthUrl()).then(function (res) {
+      if (!res.ok) return false;
+      return res.json().then(function (body) {
+        return !!(body && body.ok && body.model);
+      }, function () { return false; });
+    }).catch(function () { return false; }).then(function (ok) {
+      setAgentOptionVisible(ok);
+      return ok;
+    });
+  }
+
   function agentTranslate() {
-    return fetch(agentEndpoint(), {
+    return fetchWithRetry(agentEndpoint(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: $("source-text").value,
+        source_lang: $("source-lang").value,
+        target_lang: $("target-lang").value,
+        engine: "agent"
+      })
+    }).then(function (res) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -203,7 +263,7 @@
       targetLang: $("target-lang").value,
       chatOnce: function (payload) {
         payload.model = payload.model || model;
-        return fetch(apiUrl("chat/completions"), {
+        return fetchWithRetry(apiUrl("chat/completions"), {
           method: "POST",
           headers: {
             "Authorization": "Bearer " + (key || "no-key"),
@@ -378,6 +438,7 @@
     localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
     if ($("agent-url")) localStorage.setItem(AGENT_URL_KEY, $("agent-url").value.trim());
     setStatus("設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）");
+    probeAgentConfigured();
   });
   $("clear-key").addEventListener("click", function () {
     localStorage.removeItem(KEY);
@@ -422,6 +483,7 @@
     $("local-vector-search").checked = localStorage.getItem(VECTOR_SEARCH_KEY) === "1";
   }
   syncLocalVectorOption();
+  setAgentOptionVisible(false);
 
   firstJson(dataUrls("lexicon.json")).then(function (doc) {
     lexicon = new BaronhEngine.Lexicon(doc.entries || []);
@@ -448,6 +510,8 @@
       });
       BaronhVectorDB.getIndex(lexicon);
     });
+  }).then(function () {
+    return probeAgentConfigured();
   }).then(function () {
     syncAthScript();
     runTranslate();
