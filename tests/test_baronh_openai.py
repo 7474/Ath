@@ -177,6 +177,72 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertLess(ctx.count("\n"), 12)
 
 
+class BatchToolTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lex = load_lexicon()
+
+    def test_schema_requires_queries_array(self):
+        from baronh.openai_backend import CHAT_TOOLS
+
+        lookup = next(tool["function"] for tool in CHAT_TOOLS if tool["function"]["name"] == "lookup_lexicon")
+        self.assertEqual(lookup["parameters"]["required"], ["queries"])
+        self.assertNotIn("query", lookup["parameters"]["properties"])
+
+    def test_lookup_tool_batches_queries(self):
+        from baronh.openai_backend import collect_lookup_queries
+
+        self.assertEqual(collect_lookup_queries({"queries": ["頭", "星", "頭"]}), ["頭", "星"])
+        self.assertEqual(collect_lookup_queries({"query": "頭"}), ["頭"])
+        raw = dispatch_tool("lookup_lexicon", {"queries": ["アーヴ", "見る"], "lang": "ja"}, self.lex)
+        data = json.loads(raw)
+        self.assertEqual([row["query"] for row in data["results"]], ["アーヴ", "見る"])
+        self.assertTrue(any("abh" in hit for hit in data["results"][0]["hits"]))
+
+    def test_prompt_asks_to_batch(self):
+        self.assertIn("queries", GRAMMAR_BRIEF)
+        self.assertIn("1語ずつ", GRAMMAR_BRIEF)
+
+    def test_tool_loop_forces_answer_after_one_batch(self):
+        from baronh.openai_backend import TOOL_ANSWER_NOW, run_chat_tool_loop
+
+        payloads: list[dict] = []
+
+        def fake_chat(payload):
+            payloads.append(json.loads(json.dumps(payload)))
+            if len(payloads) == 1:
+                return {
+                    "choices": [{
+                        "message": {
+                            "tool_calls": [{
+                                "id": "c1",
+                                "function": {
+                                    "name": "lookup_lexicon",
+                                    "arguments": json.dumps({"queries": ["アーヴ", "私"]}, ensure_ascii=False),
+                                },
+                            }]
+                        }
+                    }]
+                }
+            return {"choices": [{"message": {"content": "F'a bale."}}]}
+
+        messages = [{"role": "user", "content": "私はアーヴです"}]
+        out, rounds = run_chat_tool_loop(
+            url="http://example/v1/chat/completions",
+            api_key="no-key",
+            model="gemini-3.5-flash-lite",
+            messages=messages,
+            lexicon=self.lex,
+            use_tools=True,
+            chat_once=fake_chat,
+        )
+        self.assertEqual(out, "F'a bale.")
+        self.assertEqual(rounds, 2)
+        self.assertEqual(payloads[0]["tool_choice"], "auto")
+        self.assertEqual(payloads[1]["tool_choice"], "none")
+        self.assertEqual(messages[-1]["content"], TOOL_ANSWER_NOW)
+
+
 class ChatRequestRetryTest(unittest.TestCase):
     def test_retries_503_then_succeeds(self):
         import io

@@ -129,6 +129,8 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
       assert.ok(system.indexOf("主格") >= 0);
       assert.ok(u.indexOf("sairiac") >= 0);
       assert.ok(payload.tools.some(function (t) { return t.function.name === "search_lexicon"; }));
+      var search = payload.tools.filter(function (t) { return t.function.name === "search_lexicon"; })[0];
+      assert.strictEqual(JSON.stringify(search.function.parameters.required), JSON.stringify(["queries"]));
       return {
         choices: [{
           message: {
@@ -140,6 +142,7 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
         }]
       };
     }
+    assert.strictEqual(payload.tool_choice, "none");
     return { choices: [{ message: { content: "gereulacr sairiac mire." } }] };
   }
 }).then(function (out) {

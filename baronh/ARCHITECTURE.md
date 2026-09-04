@@ -23,7 +23,7 @@
         ├── --engine local / Web の「ローカル辞書」: この訳を採用
         ├── --engine agent / Web の「サーバエージェント」
         │      ① 原文トークンを簡易ベクトル索引で検索し、文法全文をシステムプロンプトへ
-        │      ② 生成 AI が search_lexicon / find_synonyms / lookup_lexicon を複数往復
+        │      ② 生成 AI が search_lexicon 等を queries 一括で 1 往復
         │      ③ 文の組み立てはモデル。規則下訳は渡さない
         │      ④ 生成したアーヴ語を辞書語形と照合。造語なら再生成（規則下訳には戻さない）
         └── --engine openai / Web の「生成AI（ブラウザ）」
@@ -66,7 +66,7 @@
 
 1. 原文とトークンを `baronh/vectordb.py` のハッシュ n-gram 索引（512 次元、余弦類似度）で検索する。Pinecone 等の外部 DB や埋め込み API は使わない。
 2. システムプロンプトに `grammar_context()` の文法全文を載せる。規則ベースの下訳は渡さない。
-3. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` / `grammar_note` / `validate_baronh` を最大 10 往復する。文の組み立てはモデル。
+3. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` を使うときは `queries` / `names` にまとめて **1 往復**する。ツール実行後は `tool_choice=none` で訳文へ進む。1 語ずつの連続呼び出しは切る。文の組み立てはモデル。
 4. 生成したアーヴ語を辞書語形と照合する。造語なら書き直す。なお残っても規則下訳には戻さない。
 
 例: 「光」→ ベクトル検索と類義語で `sairiac`「輝くもの」。「光」⊂「凝集光銃」のような複合語へは結ばない（長い語の 1 文字 n-gram は索引しない）。
@@ -90,7 +90,7 @@ GitHub Pages の静的ホストはエージェントを実行しない。翻訳�
 ### 呼び出しの流れ
 
 1. 原文トークンをベクトル索引で検索し、文法全文をシステムプロンプトへ載せる。規則下訳は渡さない。
-2. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` / `grammar_note` / `validate_baronh` を最大 10 往復する。
+2. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` を使うときは `queries` / `names` にまとめて **1 往復**する。ツール実行後は `tool_choice=none` で訳文へ進む。
 3. 生成したアーヴ語を辞書語形と照合する。造語なら再生成する。規則下訳には戻さない。
 4. Ath キーと仮名読みは生成文からローカルで再計算する。
 
