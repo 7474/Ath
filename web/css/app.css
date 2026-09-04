@@ -1,9 +1,14 @@
 @font-face {
   font-family: "Aarth";
-  src: url("/font/aarth.woff2") format("woff2"),
-       url("/font/aarth.ttf") format("truetype"),
+  /* Pages: /Ath/web/css → /Ath/aarth.woff2。serve: /css → /aarth.woff2（web/ 直下）。 */
+  src: url("../../aarth.woff2") format("woff2"),
        url("../aarth.woff2") format("woff2"),
-       url("../aarth.ttf") format("truetype");
+       url("aarth.woff2") format("woff2"),
+       url("/font/aarth.woff2") format("woff2"),
+       url("../../aarth.ttf") format("truetype"),
+       url("../aarth.ttf") format("truetype"),
+       url("aarth.ttf") format("truetype"),
+       url("/font/aarth.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -132,7 +137,7 @@ select, input[type="text"], input[type="password"] {
 
 label.block { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .35rem; }
 
-textarea {
+<textarea {
   width: 100%;
   min-height: 8.5rem;
   border: 1px solid #ccc;
@@ -141,13 +146,13 @@ textarea {
   resize: vertical;
   background: #fff;
   font: 1rem/1.5 system-ui, sans-serif;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 /* アーヴ語を選んだ入出力欄だけアース文字。値はローマ字のまま。 */
 textarea.ath-script {
-  font-family: "Aarth", serif;
-  font-size: 1.55rem;
-  line-height: 1.7;
+  font: 1.55rem/1.7 "Aarth", serif;
   letter-spacing: .04em;
 }
 
