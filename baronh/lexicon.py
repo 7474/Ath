@@ -343,6 +343,42 @@ class Lexicon:
                     take([entry])
         return found
 
+    def search(self, query: str, *, lang: str = "auto", limit: int = 8) -> list[Entry]:
+        """短いクエリで全エントリを点数付けする。完全一致を優先し、無ければ活用語尾を剥がして探す。"""
+        exact = self.lookup(query, lang=lang)
+        if exact:
+            return exact[:limit]
+        tokens = list(dict.fromkeys(ja_query_variants(query) + en_query_variants(query)))
+        return self.rank(query, tokens=tokens, limit=limit)
+
+    def rank(self, haystack: str, *, tokens: Iterable[str] | None = None, limit: int = 40, min_score: int = 150) -> list[Entry]:
+        """文や下訳に対して辞書を全件スキャンし、関連する見出しだけを返す。"""
+        token_list = [part.strip() for part in (tokens or []) if part and str(part).strip()]
+        expanded: list[str] = []
+        seen_tok: set[str] = set()
+        for token in token_list:
+            for variant in (*ja_query_variants(token), *en_query_variants(token), token):
+                if variant and variant not in seen_tok:
+                    seen_tok.add(variant)
+                    expanded.append(variant)
+        scored: list[tuple[int, str, Entry]] = []
+        for entry in self.entries:
+            points = score_entry(entry, haystack=haystack, tokens=expanded)
+            if points >= min_score:
+                scored.append((points, entry.lemma, entry))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        picked: list[Entry] = []
+        seen_lemma: set[str] = set()
+        for _points, lemma, entry in scored:
+            key = _normalize_key(lemma)
+            if key in seen_lemma:
+                continue
+            seen_lemma.add(key)
+            picked.append(entry)
+            if len(picked) >= limit:
+                break
+        return picked
+
     def iter_pos(self, *pos: str) -> Iterator[Entry]:
         wanted = set(pos)
         for entry in self.entries:
@@ -363,6 +399,135 @@ class Lexicon:
         doc["entries"] = [entry.to_dict() for entry in self.entries]
         doc["meta"]["entry_count"] = len(self.entries)
         return doc
+
+
+_JA_STRIP_SUFFIXES = (
+    "でしたか",
+    "であります",
+    "ました",
+    "ません",
+    "ました",
+    "ますか",
+    "でした",
+    "だった",
+    "である",
+    "します",
+    "ました",
+    "する",
+    "した",
+    "して",
+    "ます",
+    "です",
+    "だ",
+)
+
+_EN_STOP = {
+    "a", "an", "the", "of", "to", "from", "with", "by", "in", "on", "at",
+    "is", "are", "was", "were", "be", "and", "or", "i", "you", "we", "they",
+}
+
+
+def ja_query_variants(query: str) -> list[str]:
+    """見ます→見る、移民します→移民する のように、辞書見出しと突き合わせる候補を増やす。"""
+    text = (query or "").strip()
+    if not text:
+        return []
+    out: list[str] = [text]
+    for suf in _JA_STRIP_SUFFIXES:
+        if text.endswith(suf) and len(text) > len(suf):
+            stem = text[: -len(suf)]
+            out.append(stem)
+            if suf in {"ます", "ますか", "ました", "ません", "します"}:
+                out.append(stem + "る")
+            if suf in {"ます", "ますか", "ました", "ません", "します", "だ", "です", "した", "して"}:
+                out.append(stem + "する")
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for item in out:
+        item = item.strip()
+        if item and item not in seen:
+            seen.add(item)
+            uniq.append(item)
+    return uniq
+
+
+def en_query_variants(query: str) -> list[str]:
+    text = (query or "").strip()
+    if not text:
+        return []
+    low = text.casefold()
+    out = [text, low]
+    if low.endswith("ing") and len(low) > 5:
+        stem = low[:-3]
+        out.extend([stem, stem + "e"])
+    if low.endswith("ies") and len(low) > 4:
+        out.append(low[:-3] + "y")
+    elif low.endswith("es") and len(low) > 4:
+        out.append(low[:-2])
+    elif low.endswith("s") and len(low) > 3:
+        out.append(low[:-1])
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for item in out:
+        if item and item not in seen:
+            seen.add(item)
+            uniq.append(item)
+    return uniq
+
+
+def _en_aliases(gloss: str) -> list[str]:
+    aliases: list[str] = []
+    for part in (gloss or "").replace("/", ",").split(","):
+        item = part.strip()
+        if item:
+            aliases.append(item)
+    return aliases
+
+
+def score_entry(entry: Entry, *, haystack: str, tokens: Iterable[str]) -> int:
+    """完全一致の語釈・見出しを強く、1文字の部分一致は採らない。"""
+    token_list = [str(token) for token in tokens if token]
+    token_set = set(token_list)
+    token_cf = {token.casefold() for token in token_list}
+    hay = haystack or ""
+    best = 0
+    lemma = entry.lemma
+    if lemma:
+        if lemma in token_set or lemma.casefold() in token_cf:
+            best = max(best, 500)
+        elif len(lemma) >= 2 and re.search(
+            rf"(?i)(?<![A-Za-zÉéÏïÜüŸÿŒœ]){re.escape(lemma)}(?![A-Za-zÉéÏïÜüŸÿŒœ])",
+            hay,
+        ):
+            best = max(best, 280)
+    aliases = _split_ja_aliases(entry.gloss_ja)
+    primary = (aliases[0] if aliases else entry.gloss_ja).strip()
+    for alias in aliases:
+        alias = alias.strip()
+        if not alias:
+            continue
+        n = len(alias)
+        if n < 2 and alias != primary:
+            continue
+        if alias in token_set:
+            best = max(best, 450 + n * 10)
+        elif n >= 2 and alias in hay:
+            best = max(best, 200 + n * 10)
+        elif n >= 2:
+            for token in token_list:
+                if len(token) < 2:
+                    continue
+                if token.startswith(alias) or alias.startswith(token):
+                    best = max(best, 90 + min(n, len(token)) * 6)
+    for alias in _en_aliases(entry.gloss_en):
+        low = alias.casefold()
+        if not low or low in _EN_STOP:
+            continue
+        if alias in token_set or low in token_cf:
+            best = max(best, 400 + len(alias) * 4)
+        elif len(low) >= 3 and re.search(rf"(?i)\b{re.escape(alias)}\b", hay):
+            best = max(best, 180 + len(alias) * 4)
+    return best
 
 
 def _split_ja_aliases(gloss: str) -> list[str]:

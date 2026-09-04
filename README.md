@@ -276,7 +276,11 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
   辞書 lookup + 格変化 / 動詞活用   ← data/lexicon.json
         │
         ├──▶ 規則ベースの訳（既定）
-        └──▶ 任意: OpenAI API（同じ辞書・文法をプロンプトに渡す）
+        └──▶ 任意: OpenAI 互換 API
+               辞書を全件スキャンして関連語だけ渡す
+               （ベクトル検索は使わない。2435 語なら線形スキャンで足りる）
+               下訳・例示・文法要点 → 生成 → 辞書語形の検証
+               造語なら一度書き直しを求め、なお悪いときは下訳に戻す
         │
         ▼
   読み仮名 → Web Speech / espeak-ng / OpenAI TTS
@@ -330,7 +334,7 @@ python3 -m baronh serve
 
 ### Web
 
-`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。チャットは関連語の検索結果と、必要なら `lookup_lexicon` / `grammar_note` のツール呼び出しで足します。音声合成は翻訳とは別の `/v1/audio/speech` です。
+`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語は 2400 語規模の辞書をその場で全件スキャンして点数付けし、必要なら `lookup_lexicon` / `grammar_note` のツール呼び出しで足します。生成したアーヴ語は辞書の語形と照合し、未登録なら再生成します。音声合成は翻訳とは別の `/v1/audio/speech` です。
 
 ルートで `python3 -m http.server 8000` した場合の URL は `http://127.0.0.1:8000/web/` です。
 

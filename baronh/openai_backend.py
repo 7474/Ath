@@ -4,16 +4,24 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from baronh.grammar import conjugate, decline
+from baronh.grammar import FormIndex, conjugate, decline
 from baronh.lexicon import Lexicon
 from baronh.phonology import reading_ja, to_ath_keys
-from baronh.translate import TranslationResult, _tokenize_baronh, _tokenize_en, _tokenize_ja, translate
+from baronh.translate import (
+    JA_PARTICLES,
+    TranslationResult,
+    _tokenize_baronh,
+    _tokenize_en,
+    _tokenize_ja,
+    translate,
+)
 
 DEFAULT_CHAT_MODEL = "gpt-4o-mini"
 DEFAULT_TTS_MODEL = "gpt-4o-mini-tts"
@@ -22,9 +30,12 @@ DEFAULT_API_BASE = "https://api.openai.com/v1"
 
 GRAMMAR_BRIEF = """
 あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、
-与えられた辞書・文法を根拠にします。普通名詞など辞書にない語は造語せず残します。
-辞書にない固有名詞は発音に基づいてローマ字転記し、その語が転記であることを示します。
-辞書と文法の全文は渡しません。必要な語は lookup_lexicon、文法の詳細は grammar_note で引いてください。
+与えられた辞書・文法だけを根拠にします。
+下訳は規則ベースで、抜けや誤りがあります。辞書と文法で直してください。
+普通名詞など辞書にない語は造語せず、原文の語を残します。
+辞書にない固有名詞は発音に基づいてローマ字転記して構いません。
+必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。
+訳文だけを出力し、解説や引用符は付けないでください。
 
 文法の要点:
 - 名詞は7格: 主格(-h/-c が), 対格(-e/-l を), 生格(-r の), 与格(-i/-ri に), 向格(-ré/-é/-gh へ), 奪格(-har/-sar から), 具格(-le で)
@@ -39,6 +50,25 @@ GRAMMAR_BRIEF = """
 - 語順は SOV または SVO。修飾語は被修飾語の後ろ
 - ローマ字化は Nine Lives / 本リポジトリの Aarth キー (ai→A, au→I, eu→E) に従う
 """
+
+FEW_SHOT_TO_BARONH = """
+例（ja/en → baronh）:
+- 私は移民します → F'a usere.
+- 私はアーヴです → F'a bale.
+- 分かりますか → face sa?
+- ありがとう → zom.
+- ジントはアーヴです → jinto a bale.
+"""
+
+FEW_SHOT_FROM_BARONH = """
+例（baronh → ja/en）:
+- F'a usere. → 私は移民する / I immigrate.
+- F'a bale. → 私はアーヴだ / I am Abh.
+- face sa? → 分かりますか / Do you understand?
+- zom. → ありがとう / Thanks.
+"""
+
+CLOSED_BARONH = frozenset({"a", "éü", "sa", "te", "le", "lo", "f'a", "d'a", "s'a"})
 
 GRAMMAR_TOPICS: dict[str, str] = {
     "cases": (
@@ -169,7 +199,98 @@ def _format_entry(entry) -> str:
     if entry.pos in {"noun", "pronoun"}:
         forms = decline(entry)
         line += " " + "/".join(forms[c] for c in ("nom", "acc", "gen", "dat", "all", "abl", "ins"))
+    elif entry.pos == "verb":
+        forms = [
+            conjugate(entry, mood="indicative", aspect="indefinite"),
+            conjugate(entry, mood="indicative", aspect="perfect"),
+            conjugate(entry, mood="indicative", aspect="progressive"),
+            conjugate(entry, mood="imperative", aspect="indefinite"),
+        ]
+        line += " 活用:" + "/".join(forms)
     return line
+
+
+def _is_searchable_note(note: str) -> bool:
+    text = (note or "").strip()
+    if not text or text in JA_PARTICLES or text == "主題":
+        return False
+    if "未登録" in text or "発音転記" in text:
+        return False
+    return True
+
+
+def _prompt_tokens(text: str, lexicon: Lexicon, local: TranslationResult | None) -> list[str]:
+    tokens: list[str] = []
+    tokens.extend(_tokenize_ja(text, lexicon))
+    tokens.extend(_tokenize_en(text))
+    if re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ']", text):
+        tokens.extend(_tokenize_baronh(text))
+    if local:
+        tokens.extend(_tokenize_baronh(local.text))
+        if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", local.text):
+            tokens.extend(_tokenize_ja(local.text, lexicon))
+        for item in local.analysis:
+            tokens.append(item.source)
+            tokens.append(item.target)
+            if _is_searchable_note(item.note):
+                tokens.extend(part.strip() for part in item.note.replace("/", " ").split() if part.strip())
+        tokens.extend(local.unknown)
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        word = str(token or "").strip(".,!?;:。？！")
+        if not word or word in seen:
+            continue
+        if len(word) == 1 and word not in JA_PARTICLES and word not in {"a", "I"}:
+            if not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", word):
+                continue
+        seen.add(word)
+        cleaned.append(word)
+    return cleaned
+    tokens: list[str] = []
+    tokens.extend(_tokenize_ja(text, lexicon))
+    tokens.extend(_tokenize_en(text))
+    if re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ']", text):
+        tokens.extend(_tokenize_baronh(text))
+    if local:
+        tokens.extend(_tokenize_baronh(local.text))
+        if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", local.text):
+            tokens.extend(_tokenize_ja(local.text, lexicon))
+        for item in local.analysis:
+            tokens.append(item.source)
+            tokens.append(item.target)
+            if item.note:
+                tokens.extend(part.strip() for part in item.note.replace("/", " ").split() if part.strip())
+        tokens.extend(local.unknown)
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        word = str(token or "").strip(".,!?;:。？！")
+        if not word or word in seen:
+            continue
+        if len(word) == 1 and word not in JA_PARTICLES and word not in {"a", "I"}:
+            if not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", word):
+                continue
+        seen.add(word)
+        cleaned.append(word)
+    return cleaned
+
+
+def retrieve_lexicon_entries(
+    text: str,
+    lexicon: Lexicon,
+    *,
+    local: TranslationResult | None = None,
+    limit: int = 36,
+) -> list:
+    """辞書を全件スキャンして関連語だけを返す。ベクトルは使わない。"""
+    tokens = _prompt_tokens(text, lexicon, local)
+    parts = [text]
+    if local:
+        parts.append(local.text)
+        parts.extend(item.note for item in local.analysis if _is_searchable_note(item.note))
+    haystack = "\n".join(parts)
+    return lexicon.rank(haystack, tokens=tokens, limit=limit)
 
 
 def retrieve_lexicon_context(
@@ -180,29 +301,109 @@ def retrieve_lexicon_context(
     limit: int = 36,
 ) -> str:
     """原文と下訳から関連語だけを拾う。辞書全文は渡さない。"""
-    queries: list[str] = []
-    queries.extend(_tokenize_ja(text, lexicon))
-    queries.extend(_tokenize_baronh(text))
-    queries.extend(_tokenize_en(text))
-    queries.extend(part for part in text.replace("、", " ").replace(",", " ").split() if part)
-    if local:
-        queries.extend(item.source for item in local.analysis)
-        queries.extend(item.target for item in local.analysis)
-        queries.append(local.text)
-    picked: list[str] = []
-    seen: set[str] = set()
-    for word in queries:
-        word = word.strip(".,!?;:。")
-        if not word:
-            continue
-        for entry in lexicon.lookup(word, lang="auto"):
-            if entry.lemma in seen:
-                continue
-            seen.add(entry.lemma)
-            picked.append(_format_entry(entry))
-            if len(picked) >= limit:
-                return "\n".join(picked)
+    picked = [_format_entry(entry) for entry in retrieve_lexicon_entries(text, lexicon, local=local, limit=limit)]
     return "\n".join(picked) if picked else "(該当なし。lookup_lexicon で追加検索してください)"
+
+
+def describe_gaps(local: TranslationResult | None) -> str:
+    if local is None:
+        return ""
+    lines: list[str] = []
+    seen: set[str] = set()
+    for item in local.analysis:
+        src = item.source
+        if src in seen:
+            continue
+        note = item.note or ""
+        if "発音転記" in note:
+            seen.add(src)
+            lines.append(f"- {src} → {item.target}（固有名詞の発音転記。この語形は使ってよい）")
+        elif "未登録" in note:
+            seen.add(src)
+            lines.append(f"- {src}（辞書にない。造語せず原文の語を残す）")
+    for word in local.unknown:
+        if word not in seen:
+            seen.add(word)
+            lines.append(f"- {word}（辞書にない。造語せず原文の語を残す）")
+    return "\n".join(lines)
+
+
+def system_prompt(target_lang: str) -> str:
+    shot = FEW_SHOT_FROM_BARONH if target_lang in {"ja", "en"} else FEW_SHOT_TO_BARONH
+    topics = "\n".join(f"- {name}: {body}" for name, body in GRAMMAR_TOPICS.items())
+    return f"{GRAMMAR_BRIEF.strip()}\n\n文法の詳細:\n{topics}\n{shot.strip()}"
+
+
+def build_user_prompt(
+    text: str,
+    lexicon: Lexicon,
+    *,
+    local: TranslationResult,
+    target_lang: str,
+) -> str:
+    retrieved = retrieve_lexicon_context(text, lexicon, local=local)
+    gaps = describe_gaps(local)
+    gap_block = f"\n\n辞書にない語:\n{gaps}" if gaps else ""
+    return (
+        f"翻訳方向: {local.source_lang} → {target_lang}\n"
+        f"原文:\n{text}\n\n"
+        f"規則ベースの下訳（誤り・抜けあり。辞書で直してよい）:\n{local.text}\n\n"
+        f"関連辞書（全文スキャンの上位。全文ではない）:\n{retrieved}"
+        f"{gap_block}\n\n"
+        "訳文だけを出力してください。解説は不要です。"
+        "足りない語や格は lookup_lexicon / grammar_note で引いてから訳してください。"
+    )
+
+
+def phonetic_allowed_forms(local: TranslationResult | None) -> set[str]:
+    allowed: set[str] = set()
+    if local is None:
+        return allowed
+    for item in local.analysis:
+        if "発音転記" in (item.note or ""):
+            for token in _tokenize_baronh(item.target):
+                allowed.add(token.casefold())
+    return allowed
+
+
+def invented_baronh_forms(
+    text: str,
+    lexicon: Lexicon,
+    *,
+    local: TranslationResult | None = None,
+    index: FormIndex | None = None,
+) -> list[str]:
+    """生成したアーヴ語のうち、辞書語形でも発音転記でもないラテン語を列挙する。"""
+    idx = index or FormIndex(lexicon)
+    allowed = phonetic_allowed_forms(local)
+    invented: list[str] = []
+    for token in _tokenize_baronh(text):
+        surface = token.strip(".,!?;:")
+        if not surface:
+            continue
+        key = surface.casefold()
+        if key in CLOSED_BARONH or key in allowed:
+            continue
+        if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", surface):
+            continue
+        if not re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", surface):
+            continue
+        if idx.lookup(surface):
+            continue
+        invented.append(surface)
+    return invented
+
+
+def clean_model_text(text: str) -> str:
+    out = (text or "").strip()
+    if out.startswith("```"):
+        lines = out.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        out = "\n".join(lines).strip()
+    return out.strip().strip('"').strip("「」")
 
 
 def dispatch_tool(name: str, arguments: dict[str, Any], lexicon: Lexicon) -> str:
@@ -211,7 +412,7 @@ def dispatch_tool(name: str, arguments: dict[str, Any], lexicon: Lexicon) -> str
         lang = str(arguments.get("lang") or "auto")
         if lang not in {"auto", "baronh", "ja", "en"}:
             lang = "auto"
-        hits = lexicon.lookup(query, lang=lang)[:8]
+        hits = lexicon.search(query, lang=lang, limit=8)
         if not hits:
             return json.dumps({"query": query, "hits": []}, ensure_ascii=False)
         return json.dumps(
@@ -296,22 +497,14 @@ def translate_openai(
     base = normalize_api_base(api_base)
     key = resolve_api_key(api_key, api_base=base)
     local = translate(text, lexicon, source_lang=source_lang, target_lang=target_lang)
-    retrieved = retrieve_lexicon_context(text, lexicon, local=local)
-    user = (
-        f"翻訳方向: {local.source_lang} → {target_lang}\n"
-        f"原文:\n{text}\n\n"
-        f"規則ベースの下訳:\n{local.text}\n\n"
-        f"関連辞書（自動検索、全文ではない）:\n{retrieved}\n\n"
-        "訳文だけを出力してください。解説は不要です。"
-        "足りない語や格は lookup_lexicon / grammar_note で引いてから訳してください。"
-    )
+    user = build_user_prompt(text, lexicon, local=local, target_lang=target_lang)
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": GRAMMAR_BRIEF.strip()},
+        {"role": "system", "content": system_prompt(target_lang)},
         {"role": "user", "content": user},
     ]
     url = api_url("chat/completions", api_base=base)
     notes = [
-        f"OpenAI 互換 Chat Completions（{base}）。下訳と検索した辞書を渡し、必要ならツールで追加検索します。",
+        f"OpenAI 互換 Chat Completions（{base}）。辞書は全文スキャンして関連語だけ渡し、生成後に語形を検証します。",
     ]
     used_tools = False
     try:
@@ -328,11 +521,50 @@ def translate_openai(
             notes.append(f"ツール非対応のため単発に切り替え（{rounds} 回）。")
         else:
             raise
+    out = clean_model_text(out)
     if not out:
         out = local.text
         notes.append("生成結果が空のため下訳を使いました。")
     if used_tools:
         notes.append("モデルが lookup_lexicon / grammar_note を呼び出しています。")
+    if target_lang == "baronh":
+        index = FormIndex(lexicon)
+        invented = invented_baronh_forms(out, lexicon, local=local, index=index)
+        if invented and out != local.text:
+            critique = (
+                f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
+                "造語せず、関連辞書または lookup_lexicon の見出し・活用形だけで書き直してください。"
+                "普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。"
+            )
+            retry_messages = list(messages) + [
+                {"role": "assistant", "content": out},
+                {"role": "user", "content": critique},
+            ]
+            try:
+                rewritten, extra = _run_tool_loop(
+                    url=url,
+                    api_key=key,
+                    model=model,
+                    messages=retry_messages,
+                    lexicon=lexicon,
+                    use_tools=use_tools,
+                    max_rounds=3,
+                )
+                rewritten = clean_model_text(rewritten)
+                notes.append(f"辞書にない語形 {', '.join(invented)} を検出し、再生成しました（+{extra} 回）。")
+                if rewritten:
+                    again = invented_baronh_forms(rewritten, lexicon, local=local, index=index)
+                    if len(again) <= len(invented):
+                        out = rewritten
+                        invented = again
+            except RuntimeError:
+                notes.append("語形の再生成に失敗したため、最初の生成を使います。")
+        if invented:
+            notes.append("辞書にない語形: " + ", ".join(invented) + "。規則下訳の語を優先してもよいです。")
+            if local.text and invented_baronh_forms(local.text, lexicon, local=local, index=index) == []:
+                if len(invented) >= 2:
+                    notes.append("生成文の未登録語が多いため下訳を使いました。")
+                    out = local.text
     return TranslationResult(
         source_lang=local.source_lang,
         target_lang=target_lang,

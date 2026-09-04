@@ -108,7 +108,7 @@
       <p class="hint">
         キーとベース URL は localStorage にだけ保存し、指定したエンドポイントへだけ送ります。
         既定は <code>https://api.openai.com/v1</code> です。LM Studio / vLLM / LiteLLM / Ollama（OpenAI 互換）なども同じ形で指定できます。
-        未設定ならローカル辞書のみで動きます。辞書全文は送りません。モデルは <code>lookup_lexicon</code> と <code>grammar_note</code> で追加検索できます。
+        未設定ならローカル辞書のみで動きます。辞書全文は送りません。関連語は辞書を全件スキャンして点数付けし、足りない語は <code>lookup_lexicon</code> / <code>grammar_note</code> で追加検索します。生成したアーヴ語は辞書の語形と照合し、造語なら書き直しを求めます。
         音声合成は翻訳とは別の <code>/audio/speech</code> です。未対応の互換実装ではブラウザ読み上げに戻ります。
       </p>
       <div class="settings-grid">

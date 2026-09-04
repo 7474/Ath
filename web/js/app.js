@@ -113,17 +113,10 @@
     }
     var model = localStorage.getItem(MODEL_KEY) || $("chat-model").value || "gpt-4o-mini";
     var local = localTranslate();
-    var retrieved = BaronhEngine.retrieveLexiconContext($("source-text").value, lexicon, local);
+    var targetLang = $("target-lang").value;
     var messages = [
-      { role: "system", content: BaronhEngine.GRAMMAR_BRIEF },
-      {
-        role: "user",
-        content: "方向: " + local.source_lang + " → " + ($("target-lang").value) +
-          "\n原文:\n" + $("source-text").value +
-          "\n下訳:\n" + local.text +
-          "\n関連辞書（自動検索、全文ではない）:\n" + retrieved +
-          "\n訳文だけを返してください。足りない語は lookup_lexicon / grammar_note で引いてください。"
-      }
+      { role: "system", content: BaronhEngine.systemPrompt(targetLang) },
+      { role: "user", content: BaronhEngine.buildUserPrompt($("source-text").value, lexicon, local, targetLang) }
     ];
     function chat(useTools) {
       var body = { model: model, temperature: 0.2, messages: messages };
@@ -150,7 +143,7 @@
       return chat(useTools).then(function (data) {
         var message = (((data.choices || [])[0]) || {}).message || {};
         var calls = message.tool_calls || [];
-        if (!calls.length) return String(message.content || "").trim() || local.text;
+        if (!calls.length) return BaronhEngine.cleanModelText(String(message.content || "").trim()) || local.text;
         messages.push(message);
         calls.forEach(function (call) {
           var fn = call.function || {};
@@ -172,15 +165,49 @@
       }
       throw err;
     }).then(function (text) {
-      local.text = text;
-      local.engine = "openai";
-      local.notes = (local.notes || []).concat(["OpenAI 互換 API（" + base + "）。辞書全文は送っていません。"]);
-      if (local.target_lang === "baronh") {
-        local.ath_keys = BaronhEngine.toAthKeys(text);
-        local.reading_ja = BaronhEngine.readingJa(text);
+      text = BaronhEngine.cleanModelText(text) || local.text;
+      var notes = ["OpenAI 互換 API（" + base + "）。辞書は全文スキャンして関連語だけ渡し、生成後に語形を検証します。"];
+      if (targetLang === "baronh") {
+        var invented = BaronhEngine.inventedBaronhForms(text, lexicon, local);
+        if (invented.length && text !== local.text) {
+          notes.push("辞書にない語形 " + invented.join(", ") + " を検出したので再生成します。");
+          messages = messages.concat([
+            { role: "assistant", content: text },
+            { role: "user", content: "次の語は辞書の語形でも発音転記でもありません: " + invented.join(", ") + "。造語せず書き直してください。普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。" }
+          ]);
+          return loop(true, 1).catch(function () { return text; }).then(function (rewritten) {
+            rewritten = BaronhEngine.cleanModelText(rewritten) || text;
+            var again = BaronhEngine.inventedBaronhForms(rewritten, lexicon, local);
+            if (again.length <= invented.length) {
+              text = rewritten;
+              invented = again;
+            }
+            return finishOpenAi(text, local, notes, invented, targetLang, base);
+          });
+        }
+        return finishOpenAi(text, local, notes, invented, targetLang, base);
       }
-      return local;
+      return finishOpenAi(text, local, notes, [], targetLang, base);
     });
+  }
+
+  function finishOpenAi(text, local, notes, invented, targetLang, base) {
+    if (invented && invented.length) {
+      notes.push("辞書にない語形: " + invented.join(", ") + "。");
+      var draftClean = BaronhEngine.inventedBaronhForms(local.text, lexicon, local);
+      if (draftClean.length === 0 && invented.length >= 2) {
+        notes.push("生成文の未登録語が多いため下訳を使いました。");
+        text = local.text;
+      }
+    }
+    local.text = text;
+    local.engine = "openai";
+    local.notes = (local.notes || []).concat(notes);
+    if (targetLang === "baronh") {
+      local.ath_keys = BaronhEngine.toAthKeys(text);
+      local.reading_ja = BaronhEngine.readingJa(text);
+    }
+    return local;
   }
 
   function runTranslate() {
