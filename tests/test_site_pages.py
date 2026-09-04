@@ -47,6 +47,18 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
 
+    def test_ath_demo_leads_with_empire_name(self):
+        demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn("Hero text", demo)
+        self.assertIn("Humankind Empire of Abh", demo)
+        main_at = demo.find("<main")
+        hero_at = demo.find('class="aarth-hero"')
+        h1_at = demo.find("<h1>")
+        self.assertGreater(main_at, 0)
+        self.assertGreater(hero_at, main_at)
+        self.assertGreater(h1_at, hero_at)
+        self.assertIn("text-transform: lowercase", demo[demo.find(".aarth-hero") : hero_at])
+
     def test_translator_mentions_server_agent(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("サーバエージェント", web)
