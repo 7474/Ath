@@ -40,7 +40,7 @@ class DetectGlyphsTest(unittest.TestCase):
         cls.boxes = aarth.find_glyph_boxes(cls.binary)
 
     def test_finds_expected_glyph_count(self):
-        self.assertEqual(len(self.boxes), len(aarth.GLYPH_CODEPOINTS))
+        self.assertEqual(len(self.boxes), len(aarth.ALPHABET_CODEPOINTS))
 
     def test_boxes_have_positive_size(self):
         for i, (_x, _y, w, h) in enumerate(self.boxes):
@@ -90,7 +90,7 @@ class GenerateFontTest(unittest.TestCase):
         font = TTFont(self.output_dir / "aarth.ttf")
         cmap = font.getBestCmap()
         self.assertIsNotNone(cmap)
-        for codepoint, name in zip(aarth.GLYPH_CODEPOINTS, aarth.GLYPH_NAMES):
+        for codepoint, name in zip(aarth.ALPHABET_CODEPOINTS, aarth.ALPHABET_NAMES):
             with self.subTest(name=name, codepoint=f"U+{codepoint:04X}"):
                 self.assertIn(codepoint, cmap)
                 self.assertEqual(cmap[codepoint], name)
@@ -109,7 +109,7 @@ class GenerateFontTest(unittest.TestCase):
         font = TTFont(self.output_dir / "aarth.woff2")
         self.assertEqual(font.flavor, "woff2")
         cmap = font.getBestCmap()
-        self.assertEqual(len(cmap), len(aarth.GLYPH_CODEPOINTS))
+        self.assertEqual(len(cmap), len(aarth.ALPHABET_CODEPOINTS))
 
 
 if __name__ == "__main__":

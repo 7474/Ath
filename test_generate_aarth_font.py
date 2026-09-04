@@ -7,8 +7,8 @@ from pathlib import Path
 import numpy as np
 
 from generate_aarth_font import (
-    GLYPH_CODEPOINTS,
-    GLYPH_NAMES,
+    ALPHABET_CODEPOINTS,
+    ALPHABET_NAMES,
     SOURCE_INK_LEVEL,
     TRACE_BLACKLEVEL,
     TRACE_SCALE,
@@ -41,7 +41,7 @@ class GlyphTracePrepTests(unittest.TestCase):
         cls.boxes = find_glyph_boxes(cls.binary)
 
     def test_detects_full_alphabet(self):
-        self.assertEqual(len(self.boxes), len(GLYPH_CODEPOINTS))
+        self.assertEqual(len(self.boxes), len(ALPHABET_CODEPOINTS))
 
     def test_trace_canvases_are_upscaled_silhouettes(self):
         box = self.boxes[0]
@@ -58,7 +58,7 @@ class GlyphTracePrepTests(unittest.TestCase):
 
     def test_inclusive_ink_level_seals_p_stroke_gap(self):
         """Ath 'p' has a 1-px break in the bottom bowl under Otsu."""
-        p_idx = GLYPH_NAMES.index("p")
+        p_idx = ALPHABET_NAMES.index("p")
         box = self.boxes[p_idx]
         otsu = crop_glyph(self.binary, box)  # white = ink
         native_breaks = _horizontal_breaks(otsu)
@@ -80,7 +80,7 @@ class GlyphTracePrepTests(unittest.TestCase):
             "g": 3,
         }
         for name, n in expected.items():
-            idx = GLYPH_NAMES.index(name)
+            idx = ALPHABET_NAMES.index(name)
             box = self.boxes[idx]
             masks = split_ink_components(
                 crop_glyph(self.gray, box),

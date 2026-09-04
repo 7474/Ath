@@ -2,6 +2,8 @@
 
 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) の字形を抽出し、Web フォント（`aarth.ttf` / `aarth.woff2`）にしたものです。
 
+字母に加え、同じラスタ入力（または別画像）から **数字 0–9** もグリフ化できます。数字の公式ラスタがリポジトリに無い場合は、下の [入力テンプレート](#入力テンプレート) に描いて `--image` または `--digits-image` で渡してください。数字だけ足すなら読み取り用、全グリフを描くなら未記入シートを使います。
+
 ## デモ
 
 公開デモ（GitHub Pages）: **https://7474.github.io/Ath/**
@@ -52,6 +54,18 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 | z | U+007A | `z` |
 | d | U+0064 | `d` |
 | b | U+0062 | `b` |
+| 0 | U+0030 | `0` |
+| 1 | U+0031 | `1` |
+| 2 | U+0032 | `2` |
+| 3 | U+0033 | `3` |
+| 4 | U+0034 | `4` |
+| 5 | U+0035 | `5` |
+| 6 | U+0036 | `6` |
+| 7 | U+0037 | `7` |
+| 8 | U+0038 | `8` |
+| 9 | U+0039 | `9` |
+
+数字 0–9 は、入力ラスタに数字セルがあるときだけフォントに入ります。デフォルトの Wikipedia 字母画像だけを使うと、字母 28 字のみになります。
 
 ---
 
@@ -134,7 +148,7 @@ python3 generate_aarth_font.py
 スクリプトは次を行います。
 
 1. ローカルに画像がなければ Wikimedia Commons から `Ath_(alphabet).png` を取得する（`--image <path>` でも指定可）。
-2. 画像を二値化し、28 個のグリフ領域を検出する。
+2. 画像を二値化し、28 個の字母領域を検出する。同じシートまたは `--digits-image` に数字 0–9 があれば続けて検出する。
 3. 成分ごとにシルエットを整え、`potrace` でベクター化する（bitmap → SVG cubic Bézier）。
 4. CFF ベースの OpenType フォントを組み立て、WOFF2 に圧縮する。
 
@@ -156,26 +170,81 @@ python3 -m http.server 8000
 
 ---
 
+## 入力テンプレート
+
+字母と数字を **1 枚のラスタ画像** から読むときのセル配置です。左上から行優先（左→右、上→下）。ラベルはセルの下に小さく書き、グリフ本体より十分低くしてください（検出時にラベルは捨てます）。
+
+```
+a   i   u   é   o   e   c
+s   t   l   n   h   p   f
+m   ï   ai  y   œ   r   ü
+au  ÿ   eu  g   z   d   b
+0   1   2   3   4   5   6
+7   8   9
+```
+
+同じ配置のシートを 2 種類同梱しています。
+
+| ファイル | 用途 |
+|---|---|
+| `templates/ath_source_template.png` | **読み取り用。** 字母 28 字は Wikipedia 出典を埋め込み、数字セルだけ空欄 |
+| `templates/ath_blank_template.png` | **未記入。** 字母・数字とも空欄。全グリフを手描きするとき |
+
+再生成:
+
+```bash
+python3 generate_aarth_font.py --write-template templates/
+```
+
+読み取り用:
+
+![Aarth source template](templates/ath_source_template.png)
+
+未記入（空白）:
+
+![Aarth blank template](templates/ath_blank_template.png)
+
+使い方:
+
+1. 数字だけ足すなら読み取り用をコピーし、空の数字セルに黒インクで 0–9 を描く。全字形を描くなら未記入シートを使う。
+2. 白地・黒字形のまま PNG で保存する（ガイドやラベルは薄いグレーのまま残してよい）。
+3. フォントを生成する。
+
+```bash
+# 字母＋数字が 1 枚に入っている場合
+python3 generate_aarth_font.py --image path/to/filled_template.png
+
+# 字母は従来画像、数字だけ別ラスタ（7+3 または横 10 セル）
+python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/digits.png
+```
+
+数字だけを描く場合も、上の 5–6 行目と同じ **7+3**（または横一列の 10 セル）にしてください。アースの数字字形は原作イラストの赤井孝美氏による設計です。リポジトリにはパブリックドメインの数字ラスタが無いため、数字セルは空欄のままです。全グリフを自前で描く場合は未記入テンプレートを使ってください。
+
+---
+
 ## Command-line options
 
 | Option | Default | Description |
 |---|---|---|
-| `--image` | Wikimedia URL | Local path or HTTP URL of the source PNG |
+| `--image` | Wikimedia URL | Local path or HTTP URL of the alphabet (or combined) PNG |
+| `--digits-image` | off | Optional PNG of numerals 0–9 (`7+3` or one row of 10) |
+| `--write-template` | off | Write reading + blank templates to a PNG path or directory, then exit |
 | `--output-dir` | `.` | Directory to write output files |
-| `--debug` | off | Save `debug_boxes.png` showing detected bounding boxes |
+| `--debug` | off | Save `debug_boxes.png` (and `debug_digit_boxes.png` when digits are present) |
 
 ---
 
 ## Pipeline overview
 
 ```
-Ath_(alphabet).png
+Ath_(alphabet).png  [+ optional digits raster / extra template rows]
         │
         ▼
   OpenCV binarise + denoise
         │
         ▼
-  cv2.findContours → merge overlines/umlauts → 28 glyph boxes (row-major)
+  cv2.findContours → merge overlines/umlauts
+        → 4×7 alphabet boxes, then 0–9 if present (row-major)
         │
         ▼  (per glyph)
   per-component silhouette → SDF smooth + 8× → PGM → potrace --svg --blacklevel → SVG path
