@@ -15,6 +15,7 @@ class DesignerCreditTest(unittest.TestCase):
             ROOT / "LICENSE.md",
             ROOT / "README.md",
             ROOT / "index.html",
+            ROOT / "ath" / "index.html",
             ROOT / "templates" / "digits" / "NOTICE.md",
         ]
         for path in paths:

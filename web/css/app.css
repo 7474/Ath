@@ -1,9 +1,11 @@
 @font-face {
   font-family: "Aarth";
-  src: url("/font/aarth.woff2") format("woff2"),
-       url("/font/aarth.ttf") format("truetype"),
+  src: url("../../aarth.woff2") format("woff2"),
+       url("../../aarth.ttf") format("truetype"),
        url("../aarth.woff2") format("woff2"),
-       url("../aarth.ttf") format("truetype");
+       url("../aarth.ttf") format("truetype"),
+       url("/font/aarth.woff2") format("woff2"),
+       url("/font/aarth.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;

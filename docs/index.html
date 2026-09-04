@@ -1,612 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aarth (Ath Alphabet) Webfont Demo</title>
+  <title>アーヴ語とアース — Ath / Baronh</title>
   <link rel="stylesheet" href="aarth.css">
+  <link rel="stylesheet" href="site.css">
   <style>
-    /* ------------------------------------------------------------------ */
-    /* Base styles                                                         */
-    /* ------------------------------------------------------------------ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { margin: 0; padding: 0; }
 
     body {
       font-family: system-ui, sans-serif;
       background: #fafaf8;
       color: #222;
-      padding: 2rem;
-      max-width: 900px;
-      margin: 0 auto;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Translate chrome — always Latin so the control stays usable         */
-    /* ------------------------------------------------------------------ */
-    .translate-bar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      margin: -2rem -2rem 1.5rem;
-      padding: .85rem 2rem;
-      background: rgba(250, 250, 248, .94);
-      border-bottom: 1px solid #e0e0e0;
-      backdrop-filter: blur(8px);
+    h1 { font-size: 1.9rem; margin-bottom: .35rem; }
+
+    h2.section {
+      font-size: 1.2rem;
+      color: #555;
+      margin: 2rem 0 .6rem;
     }
 
-    .translate-langs {
-      display: flex;
-      align-items: baseline;
-      gap: .75rem;
-      min-width: 0;
-    }
-
-    .translate-logo {
+    .hero-ath {
       font-family: 'Aarth', serif;
-      font-size: 1.7rem;
+      font-size: clamp(2.4rem, 8vw, 4.2rem);
       letter-spacing: .08em;
-      line-height: 1;
-    }
-
-    .translate-meta {
-      font-size: .8rem;
-      color: #666;
-      letter-spacing: .02em;
-    }
-
-    #translate-button {
-      flex-shrink: 0;
-      font: 600 .95rem/1.2 system-ui, sans-serif;
-      padding: .5rem 1.15rem;
-      border: 1px solid #1a1a1a;
-      border-radius: 999px;
-      background: #1a1a1a;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    #translate-button:hover { background: #333; }
-
-    #translate-button:focus-visible {
-      outline: 2px solid #1a1a1a;
-      outline-offset: 3px;
-    }
-
-    body.translated #translate-button {
-      background: #fff;
-      color: #1a1a1a;
-    }
-
-    .page-content {
-      transition: filter .28s ease, opacity .28s ease;
-    }
-
-    .page-content.is-switching {
-      filter: blur(6px);
-      opacity: .4;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .page-content { transition: none; }
-      .page-content.is-switching { filter: none; opacity: 1; }
-    }
-
-    /* Default: the document reads as Ath. Translate restores Latin copy. */
-    body:not(.translated) .page-content {
-      font-family: 'Aarth', Georgia, serif;
-      text-transform: lowercase;
-      letter-spacing: .04em;
-    }
-
-    /* A / I / E are digraph keys — do not lowercase them. */
-    body:not(.translated) .alpha-cell .glyph {
-      text-transform: none;
-    }
-
-    body:not(.translated) .alpha-cell .label,
-    body:not(.translated) code,
-    body:not(.translated) pre {
-      font-family: 'Aarth', ui-monospace, monospace;
-    }
-
-    body.translated .page-content {
-      font-family: system-ui, sans-serif;
-      text-transform: none;
-      letter-spacing: normal;
-    }
-
-    /* Specimens stay in Aarth after Translate so this page remains a font demo. */
-    body.translated .aarth,
-    body.translated .aarth-hero,
-    body.translated .alpha-cell .glyph,
-    body.translated .size-scale p,
-    body.translated .aarth-para {
-      font-family: 'Aarth', serif;
-    }
-
-    body.translated .alpha-cell .label,
-    body.translated code,
-    body.translated pre {
-      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-    }
-
-    h1, h2 { margin-bottom: .5rem; }
-    h1 { font-size: 1.8rem; margin-bottom: 1.5rem; }
-    h2 { font-size: 1.2rem; color: #555; margin-top: 2rem; }
-
-    /* ------------------------------------------------------------------ */
-    /* Aarth font utility class                                            */
-    /* ------------------------------------------------------------------ */
-    .aarth {
-      font-family: 'Aarth', serif;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Demo sections                                                        */
-    /* ------------------------------------------------------------------ */
-    .demo-block {
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-top: 1rem;
-      max-width: 100%;
-      min-width: 0;
-      overflow-x: auto;
-    }
-
-    /* Large heading */
-    .aarth-hero {
-      font-family: 'Aarth', serif;
-      font-size: 5rem;
       line-height: 1.2;
-      letter-spacing: .08em;
-      color: #1a1a1a;
-      overflow-wrap: anywhere;
+      margin: .2rem 0 1rem;
     }
 
-    /* Alphabet table */
-    .alpha-grid {
+    .teaser-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: .5rem;
-      margin-top: 1rem;
-    }
-
-    .alpha-cell {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: .3rem;
-      min-width: 0;
-    }
-
-    .alpha-cell .glyph {
-      font-family: 'Aarth', serif;
-      font-size: clamp(1.35rem, 6vw, 2.8rem);
-      line-height: 1.35;
-    }
-
-    .alpha-cell .label {
-      font-size: .7rem;
-      color: #888;
-      font-family: monospace;
-    }
-
-    /* Character mapping — keep Latin columns readable in Ath mode.
-       Punctuation is not in the webfont; digits are optional (fill the
-       source template). A I E must not be lowercased (digraph keys). */
-    .mapping-intro {
-      margin-bottom: .8rem;
-      line-height: 1.5;
-    }
-
-    .mapping-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: system-ui, sans-serif;
-      text-transform: none;
-      letter-spacing: normal;
-      font-size: .95rem;
-    }
-
-    .mapping-table th,
-    .mapping-table td {
-      text-align: left;
-      padding: .4rem .55rem;
-      border-bottom: 1px solid #eee;
-      vertical-align: middle;
-    }
-
-    .mapping-table th {
-      color: #555;
-      font-weight: 600;
-      font-size: .78rem;
-      letter-spacing: .02em;
-    }
-
-    .mapping-table tbody tr:last-child td { border-bottom: none; }
-
-    .mapping-table .glyph {
-      font-family: 'Aarth', serif;
-      font-size: 1.55rem;
-      line-height: 1.2;
-      letter-spacing: .04em;
-      text-transform: none;
-    }
-
-    .mapping-table .phoneme,
-    .mapping-table .unicode,
-    .mapping-table .key {
-      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-      font-size: .88rem;
-    }
-
-    body:not(.translated) .mapping-table,
-    body:not(.translated) .mapping-table .phoneme,
-    body:not(.translated) .mapping-table .unicode,
-    body:not(.translated) .mapping-table .key,
-    body.translated .mapping-table .phoneme,
-    body.translated .mapping-table .unicode,
-    body.translated .mapping-table .key {
-      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-      text-transform: none;
-      letter-spacing: normal;
-    }
-
-    body:not(.translated) .mapping-table th,
-    body.translated .mapping-table th {
-      font-family: system-ui, sans-serif;
-    }
-
-    body:not(.translated) .mapping-table .glyph,
-    body.translated .mapping-table .glyph {
-      font-family: 'Aarth', serif;
-      text-transform: none;
-    }
-
-    body:not(.translated) .mapping-table code,
-    body.translated .mapping-table code {
-      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-      text-transform: none;
-    }
-
-    /* Size scale — unspaced glyph strings must wrap instead of
-       widening the viewport on narrow screens. */
-    .size-scale {
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-    }
-
-    .size-scale p {
-      font-family: 'Aarth', serif;
-      line-height: 1.3;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    /* Paragraph */
-    .aarth-para {
-      font-family: 'Aarth', serif;
-      font-size: 1.6rem;
-      line-height: 1.6;
-      letter-spacing: .04em;
-    }
-
-    code {
-      background: #f0f0f0;
-      color: #1a1a1a;
-      border-radius: 3px;
-      padding: .1em .35em;
-      font-size: .9em;
-    }
-
-    pre {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      border-radius: 8px;
-      padding: 1.2rem;
-      overflow-x: auto;
-      max-width: 100%;
-      font-size: .9rem;
-      line-height: 1.6;
-      margin-top: .5rem;
-    }
-
-    .snippet-actions {
-      display: flex;
-      gap: .5rem;
-      margin-top: .6rem;
-      flex-wrap: wrap;
-    }
-
-    .snippet-actions button {
-      font: .85rem/1.2 system-ui, sans-serif;
-      text-transform: none;
-      padding: .35rem .7rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
-      cursor: pointer;
-    }
-
-    .snippet-actions button:hover { background: #f3f3f3; }
-
-    .use-note {
+      gap: .35rem;
       margin-top: .8rem;
-      color: #444;
-      line-height: 1.5;
     }
 
-    .use-note a { color: #1a5fb4; }
-
-    /* <pre><code> must not inherit the inline-code chip background,
-       or the light text on #f0f0f0 becomes unreadable. */
-    pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-      font-size: inherit;
-      border-radius: 0;
+    .teaser-grid span {
+      font-family: 'Aarth', serif;
+      font-size: clamp(1.2rem, 4.5vw, 2rem);
+      text-align: center;
+      line-height: 1.4;
     }
 
     .notice {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 1.2rem 1.3rem;
       font-size: .95rem;
       line-height: 1.75;
       color: #333;
     }
 
     .notice a { color: #1a5fb4; }
-
     .notice p + p { margin-top: .8rem; }
-
-    footer {
-      margin-top: 3rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #e0e0e0;
-      color: #666;
-      font-size: .85rem;
-    }
   </style>
 </head>
 <body>
 
-  <header class="translate-bar">
-    <div class="translate-langs">
-      <span class="translate-logo" aria-hidden="true">aarth</span>
-      <span class="translate-meta" id="translate-meta">Ath</span>
-    </div>
-    <div style="display:flex;gap:.6rem;align-items:center;flex-shrink:0">
-      <a href="web/index.html" style="font:600 .9rem/1.2 system-ui,sans-serif;color:#1a1a1a;text-decoration:none">Baronh 翻訳</a>
-      <button type="button" id="translate-button" aria-pressed="false">Translate</button>
-    </div>
+  <header class="site-bar">
+    <a class="site-brand" href="./">
+      <span class="site-logo" aria-hidden="true">aarth</span>
+      <span class="site-meta">アーヴ語 · アース</span>
+    </a>
+    <nav class="site-nav" aria-label="サイト">
+      <a href="./" aria-current="page">概要</a>
+      <a href="ath/">アース</a>
+      <a href="web/">翻訳</a>
+    </nav>
   </header>
 
-  <main class="page-content">
-  <h1>Aarth (Ath Alphabet) — Webfont Demo</h1>
+  <main class="site-main">
+    <p class="hero-ath" lang="ath">aarth · baronh</p>
+    <h1>アーヴ語とアース</h1>
+    <p class="site-lead">
+      森岡浩之『星界シリーズ』に登場する架空言語・文字についての二次創作サイトです。
+      <strong>アース（Ath）</strong>の字形デモと、<strong>アーヴ語（Baronh）</strong>の翻訳ツールを公開しています。
+    </p>
 
-  <!-- Hero -->
-  <section>
-    <h2>Hero text</h2>
-    <div class="demo-block">
-      <p class="aarth-hero">aarth</p>
+    <div class="site-cards">
+      <a class="site-card" href="ath/">
+        <p class="ath-sample" lang="ath">aarth</p>
+        <h2>アース — 字形デモ</h2>
+        <p>
+          字母 28 字と数字 0–9 のウェブフォント。ページ全体をアースで表示し、Translate で読み下せます。
+        </p>
+      </a>
+      <a class="site-card" href="web/">
+        <p class="ath-sample" lang="ath">baronh</p>
+        <h2>アーヴ語 — 翻訳</h2>
+        <p>
+          辞書と文法規則で、日本語・英語とアーヴ語を行き来します。ブラウザ内で完結します。
+        </p>
+      </a>
     </div>
-  </section>
 
-  <!-- Full alphabet -->
-  <section>
-    <h2>Full glyph inventory</h2>
-    <div class="demo-block">
-      <div class="alpha-grid">
-        <!-- Row 0 -->
-        <div class="alpha-cell"><span class="glyph">a</span><span class="label">a</span></div>
-        <div class="alpha-cell"><span class="glyph">i</span><span class="label">i</span></div>
-        <div class="alpha-cell"><span class="glyph">u</span><span class="label">u</span></div>
-        <div class="alpha-cell"><span class="glyph">é</span><span class="label">é</span></div>
-        <div class="alpha-cell"><span class="glyph">o</span><span class="label">o</span></div>
-        <div class="alpha-cell"><span class="glyph">e</span><span class="label">e</span></div>
-        <div class="alpha-cell"><span class="glyph">c</span><span class="label">c</span></div>
-        <!-- Row 1 -->
-        <div class="alpha-cell"><span class="glyph">s</span><span class="label">s</span></div>
-        <div class="alpha-cell"><span class="glyph">t</span><span class="label">t</span></div>
-        <div class="alpha-cell"><span class="glyph">l</span><span class="label">l</span></div>
-        <div class="alpha-cell"><span class="glyph">n</span><span class="label">n</span></div>
-        <div class="alpha-cell"><span class="glyph">h</span><span class="label">h</span></div>
-        <div class="alpha-cell"><span class="glyph">p</span><span class="label">p</span></div>
-        <div class="alpha-cell"><span class="glyph">f</span><span class="label">f</span></div>
-        <!-- Row 2 -->
-        <div class="alpha-cell"><span class="glyph">m</span><span class="label">m</span></div>
-        <div class="alpha-cell"><span class="glyph">ï</span><span class="label">ï</span></div>
-        <div class="alpha-cell"><span class="glyph">A</span><span class="label">ai</span></div>
-        <div class="alpha-cell"><span class="glyph">y</span><span class="label">y</span></div>
-        <div class="alpha-cell"><span class="glyph">œ</span><span class="label">œ</span></div>
-        <div class="alpha-cell"><span class="glyph">r</span><span class="label">r</span></div>
-        <div class="alpha-cell"><span class="glyph">ü</span><span class="label">ü</span></div>
-        <!-- Row 3 -->
-        <div class="alpha-cell"><span class="glyph">I</span><span class="label">au</span></div>
-        <div class="alpha-cell"><span class="glyph">ÿ</span><span class="label">ÿ</span></div>
-        <div class="alpha-cell"><span class="glyph">E</span><span class="label">eu</span></div>
-        <div class="alpha-cell"><span class="glyph">g</span><span class="label">g</span></div>
-        <div class="alpha-cell"><span class="glyph">z</span><span class="label">z</span></div>
-        <div class="alpha-cell"><span class="glyph">d</span><span class="label">d</span></div>
-        <div class="alpha-cell"><span class="glyph">b</span><span class="label">b</span></div>
-        <!-- Numerals (Takami Akai) -->
-        <div class="alpha-cell"><span class="glyph">0</span><span class="label">0</span></div>
-        <div class="alpha-cell"><span class="glyph">1</span><span class="label">1</span></div>
-        <div class="alpha-cell"><span class="glyph">2</span><span class="label">2</span></div>
-        <div class="alpha-cell"><span class="glyph">3</span><span class="label">3</span></div>
-        <div class="alpha-cell"><span class="glyph">4</span><span class="label">4</span></div>
-        <div class="alpha-cell"><span class="glyph">5</span><span class="label">5</span></div>
-        <div class="alpha-cell"><span class="glyph">6</span><span class="label">6</span></div>
-        <div class="alpha-cell"><span class="glyph">7</span><span class="label">7</span></div>
-        <div class="alpha-cell"><span class="glyph">8</span><span class="label">8</span></div>
-        <div class="alpha-cell"><span class="glyph">9</span><span class="label">9</span></div>
-      </div>
+    <h2 class="section">アース（Ath）</h2>
+    <p class="site-lead">
+      アーヴ語を書く文字です。字母は原作者の<strong>森岡浩之</strong>、数字は原作イラストの<strong>赤井孝美</strong>が設計しました。
+      このサイトのウェブフォントは、その字形をラスタから抽出し OpenType にしたものです。
+    </p>
+    <div class="teaser-grid" aria-hidden="true">
+      <span>a</span><span>i</span><span>u</span><span>é</span><span>o</span><span>e</span><span>c</span>
+      <span>s</span><span>t</span><span>l</span><span>n</span><span>h</span><span>p</span><span>f</span>
     </div>
-  </section>
 
-  <!-- Character mapping -->
-  <section id="character-mapping">
-    <h2>Character mapping</h2>
-    <div class="demo-block">
-      <p class="mapping-intro">The 28 Ath phonemes (letters designed by Hiroyuki Morioka) and numerals 0–9 (designed by Takami Akai) are mapped to the following Unicode code points:</p>
-      <table class="mapping-table">
-        <thead>
-          <tr>
-            <th scope="col">Glyph</th>
-            <th scope="col">Ath phoneme</th>
-            <th scope="col">Unicode</th>
-            <th scope="col">Key to type</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td class="glyph">a</td><td class="phoneme">a</td><td class="unicode">U+0061</td><td class="key"><code>a</code></td></tr>
-          <tr><td class="glyph">i</td><td class="phoneme">i</td><td class="unicode">U+0069</td><td class="key"><code>i</code></td></tr>
-          <tr><td class="glyph">u</td><td class="phoneme">u</td><td class="unicode">U+0075</td><td class="key"><code>u</code></td></tr>
-          <tr><td class="glyph">é</td><td class="phoneme">é</td><td class="unicode">U+00E9</td><td class="key"><code>é</code></td></tr>
-          <tr><td class="glyph">o</td><td class="phoneme">o</td><td class="unicode">U+006F</td><td class="key"><code>o</code></td></tr>
-          <tr><td class="glyph">e</td><td class="phoneme">e</td><td class="unicode">U+0065</td><td class="key"><code>e</code></td></tr>
-          <tr><td class="glyph">c</td><td class="phoneme">c</td><td class="unicode">U+0063</td><td class="key"><code>c</code></td></tr>
-          <tr><td class="glyph">s</td><td class="phoneme">s</td><td class="unicode">U+0073</td><td class="key"><code>s</code></td></tr>
-          <tr><td class="glyph">t</td><td class="phoneme">t</td><td class="unicode">U+0074</td><td class="key"><code>t</code></td></tr>
-          <tr><td class="glyph">l</td><td class="phoneme">l</td><td class="unicode">U+006C</td><td class="key"><code>l</code></td></tr>
-          <tr><td class="glyph">n</td><td class="phoneme">n</td><td class="unicode">U+006E</td><td class="key"><code>n</code></td></tr>
-          <tr><td class="glyph">h</td><td class="phoneme">h</td><td class="unicode">U+0068</td><td class="key"><code>h</code></td></tr>
-          <tr><td class="glyph">p</td><td class="phoneme">p</td><td class="unicode">U+0070</td><td class="key"><code>p</code></td></tr>
-          <tr><td class="glyph">f</td><td class="phoneme">f</td><td class="unicode">U+0066</td><td class="key"><code>f</code></td></tr>
-          <tr><td class="glyph">m</td><td class="phoneme">m</td><td class="unicode">U+006D</td><td class="key"><code>m</code></td></tr>
-          <tr><td class="glyph">ï</td><td class="phoneme">ï</td><td class="unicode">U+00EF</td><td class="key"><code>ï</code></td></tr>
-          <tr><td class="glyph">A</td><td class="phoneme">ai (digraph)</td><td class="unicode">U+0041</td><td class="key"><code>A</code></td></tr>
-          <tr><td class="glyph">y</td><td class="phoneme">y</td><td class="unicode">U+0079</td><td class="key"><code>y</code></td></tr>
-          <tr><td class="glyph">œ</td><td class="phoneme">œ</td><td class="unicode">U+0153</td><td class="key"><code>œ</code></td></tr>
-          <tr><td class="glyph">r</td><td class="phoneme">r</td><td class="unicode">U+0072</td><td class="key"><code>r</code></td></tr>
-          <tr><td class="glyph">ü</td><td class="phoneme">ü</td><td class="unicode">U+00FC</td><td class="key"><code>ü</code></td></tr>
-          <tr><td class="glyph">I</td><td class="phoneme">au (digraph)</td><td class="unicode">U+0049</td><td class="key"><code>I</code></td></tr>
-          <tr><td class="glyph">ÿ</td><td class="phoneme">ÿ</td><td class="unicode">U+00FF</td><td class="key"><code>ÿ</code></td></tr>
-          <tr><td class="glyph">E</td><td class="phoneme">eu (digraph)</td><td class="unicode">U+0045</td><td class="key"><code>E</code></td></tr>
-          <tr><td class="glyph">g</td><td class="phoneme">g</td><td class="unicode">U+0067</td><td class="key"><code>g</code></td></tr>
-          <tr><td class="glyph">z</td><td class="phoneme">z</td><td class="unicode">U+007A</td><td class="key"><code>z</code></td></tr>
-          <tr><td class="glyph">d</td><td class="phoneme">d</td><td class="unicode">U+0064</td><td class="key"><code>d</code></td></tr>
-          <tr><td class="glyph">b</td><td class="phoneme">b</td><td class="unicode">U+0062</td><td class="key"><code>b</code></td></tr>
-          <tr><td class="glyph">0</td><td class="phoneme">0</td><td class="unicode">U+0030</td><td class="key"><code>0</code></td></tr>
-          <tr><td class="glyph">1</td><td class="phoneme">1</td><td class="unicode">U+0031</td><td class="key"><code>1</code></td></tr>
-          <tr><td class="glyph">2</td><td class="phoneme">2</td><td class="unicode">U+0032</td><td class="key"><code>2</code></td></tr>
-          <tr><td class="glyph">3</td><td class="phoneme">3</td><td class="unicode">U+0033</td><td class="key"><code>3</code></td></tr>
-          <tr><td class="glyph">4</td><td class="phoneme">4</td><td class="unicode">U+0034</td><td class="key"><code>4</code></td></tr>
-          <tr><td class="glyph">5</td><td class="phoneme">5</td><td class="unicode">U+0035</td><td class="key"><code>5</code></td></tr>
-          <tr><td class="glyph">6</td><td class="phoneme">6</td><td class="unicode">U+0036</td><td class="key"><code>6</code></td></tr>
-          <tr><td class="glyph">7</td><td class="phoneme">7</td><td class="unicode">U+0037</td><td class="key"><code>7</code></td></tr>
-          <tr><td class="glyph">8</td><td class="phoneme">8</td><td class="unicode">U+0038</td><td class="key"><code>8</code></td></tr>
-          <tr><td class="glyph">9</td><td class="phoneme">9</td><td class="unicode">U+0039</td><td class="key"><code>9</code></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+    <h2 class="section">アーヴ語（Baronh）</h2>
+    <p class="site-lead">
+      公式の完全辞書は公開されていないため、翻訳は Wikipedia「アーヴ語」の文法とファンサイトの語彙を再構成した規則ベースです。
+      辞書にない固有名詞は発音からアーヴ語の正書法へ転記します。任意で OpenAI 互換 API も使えます。
+    </p>
 
-  <!-- Size scale -->
-  <section>
-    <h2>Size scale</h2>
-    <div class="demo-block size-scale">
-      <p style="font-size:4rem">abcdefghilmnoprs 0123456789</p>
-      <p style="font-size:2.5rem">abcdefghilmnoprs 0123456789</p>
-      <p style="font-size:1.5rem">abcdefghilmnoprs 0123456789</p>
-      <p style="font-size:1rem">abcdefghilmnoprs 0123456789</p>
-    </div>
-  </section>
-
-  <!-- Sample sentence -->
-  <section>
-    <h2>Sample text (romanised Ath phonetics)</h2>
-    <div class="demo-block">
-      <p class="aarth-para">lotr atosr nea rhoibhe</p>
-      <p class="aarth-para" style="margin-top:.8rem">fhemainr tlaicr suanaer</p>
-    </div>
-  </section>
-
-  <!-- CSS usage snippet -->
-  <section>
-    <h2>Use via URL (no download)</h2>
-    <div class="demo-block">
-      <p>
-        jsDelivr serves files from this public GitHub repository automatically.
-        No signup, application, npm publish, or config file is required.
-        Link the stylesheet; fonts resolve relative to the CSS URL.
-      </p>
-      <pre><code id="snippet-jsdelivr">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css"&gt;
-
-&lt;style&gt;
-  .ath-text { font-family: 'Aarth', serif; }
-&lt;/style&gt;</code></pre>
-      <div class="snippet-actions">
-        <button type="button" data-copy="snippet-jsdelivr">Copy</button>
-      </div>
-      <p class="use-note">
-        Then wrap text in <code>&lt;span class="ath-text"&gt;…&lt;/span&gt;</code>.
-        For production, replace <code>@main</code> with a commit SHA
-        (branch URLs are cached about 12 hours).
-        <code>raw.githubusercontent.com</code> is not suitable.
-      </p>
-      <p class="use-note">When the font files sit next to your page, use a relative path:</p>
-      <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;
-
-&lt;style&gt;
-  .ath-text { font-family: 'Aarth', serif; }
-&lt;/style&gt;</code></pre>
-      <div class="snippet-actions">
-        <button type="button" data-copy="snippet-link">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Use @font-face with font URLs</h2>
-    <div class="demo-block">
-      <p>If you prefer to declare the face yourself:</p>
-      <pre><code id="snippet-font-face">@font-face {
-  font-family: 'Aarth';
-  src: url('./aarth.woff2') format('woff2'),
-       url('./aarth.ttf')   format('truetype');
-  font-weight: normal;
-  font-style:  normal;
-  font-display: swap;
-}
-
-.ath-text {
-  font-family: 'Aarth', serif;
-}</code></pre>
-      <div class="snippet-actions">
-        <button type="button" data-copy="snippet-font-face">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Use a local copy</h2>
-    <div class="demo-block">
-      <p>For offline apps, copy <code>aarth.woff2</code> (and optionally <code>aarth.ttf</code>) next to your CSS, then use the same <code>@font-face</code> with relative paths.</p>
-      <p class="use-note">
-        Character mapping: see the
-        <a href="#character-mapping">full table</a>.
-        Use standard lowercase a–z plus
-        <code>é ï œ ü ÿ</code> for the special vowels,
-        uppercase <code>A I E</code> for the digraphs <em>ai, au, eu</em>,
-        and digits <code>0–9</code> when numerals are in the webfont.
-      </p>
-    </div>
-  </section>
-
-  <!-- Source / license -->
-  <section>
-    <h2>出典・ライセンス</h2>
-    <div class="demo-block notice">
+    <h2 class="section">出典・ライセンス</h2>
+    <div class="notice">
       <p>
         <a href="https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E">Wikipedia「アーヴ語」</a>
         によれば、アースの<strong>字母は原作者の森岡浩之</strong>、<strong>数字は原作イラストの赤井孝美</strong>が設計しました。
-        アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字体系であり、本フォントはその設定に基づく<strong>二次創作</strong>です。
+        アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字体系であり、本サイトのフォントと翻訳ツールはその設定に基づく<strong>二次創作</strong>です。
       </p>
       <p>
         字母ラスタは
@@ -623,70 +136,15 @@
         詳細は <a href="https://github.com/7474/Ath/blob/main/LICENSE.md">LICENSE.md</a> を参照してください。
       </p>
     </div>
-  </section>
-
-  <footer>
-    Ath letters designed by Hiroyuki Morioka; numerals by Takami Akai
-    (<a href="https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E">アーヴ語</a>).
-    Digit rasters and this webfont:
-    <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>.
-    <a href="https://github.com/7474/Ath">View the source on GitHub</a>.
-    <a href="web/index.html">アーヴ語翻訳ツール</a>.
-  </footer>
   </main>
 
-  <script>
-    (function () {
-      document.querySelectorAll('[data-copy]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var target = document.getElementById(btn.getAttribute('data-copy'));
-          if (!target) return;
-          var text = target.textContent;
-          var done = function () {
-            var prev = btn.textContent;
-            btn.textContent = 'Copied';
-            setTimeout(function () { btn.textContent = prev; }, 1500);
-          };
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done).catch(function () {
-              window.prompt('Copy:', text);
-            });
-          } else {
-            window.prompt('Copy:', text);
-          }
-        });
-      });
-
-      var translateButton = document.getElementById('translate-button');
-      var translateMeta = document.getElementById('translate-meta');
-      var pageContent = document.querySelector('.page-content');
-      var switchingTimer = 0;
-
-      function applyTranslation(translated) {
-        document.body.classList.toggle('translated', translated);
-        translateButton.setAttribute('aria-pressed', String(translated));
-        translateButton.textContent = translated ? 'Show Ath' : 'Translate';
-        if (translateMeta) translateMeta.textContent = translated ? 'Latin' : 'Ath';
-        if (pageContent) pageContent.classList.remove('is-switching');
-      }
-
-      if (translateButton) {
-        translateButton.addEventListener('click', function () {
-          var next = !document.body.classList.contains('translated');
-          var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          window.clearTimeout(switchingTimer);
-          if (reduceMotion || !pageContent) {
-            applyTranslation(next);
-            return;
-          }
-          pageContent.classList.add('is-switching');
-          switchingTimer = window.setTimeout(function () {
-            applyTranslation(next);
-          }, 180);
-        });
-      }
-    })();
-  </script>
+  <footer class="site-footer">
+    アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字です。
+    字母の設計は森岡浩之、数字の設計は赤井孝美。
+    ウェブフォントは
+    <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>。
+    <a href="https://github.com/7474/Ath">GitHub</a>
+  </footer>
 
 </body>
 </html>

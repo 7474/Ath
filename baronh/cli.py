@@ -239,7 +239,7 @@ def cmd_reading(args: argparse.Namespace) -> int:
 
 class _TranslatorHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(WEB_DIR), **kwargs)
+        super().__init__(*args, directory=str(ROOT_DIR), **kwargs)
 
     def log_message(self, fmt: str, *log_args) -> None:
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % log_args))
@@ -247,8 +247,6 @@ class _TranslatorHandler(SimpleHTTPRequestHandler):
     def translate_path(self, path: str) -> str:
         parsed = urlparse(path)
         rel = unquote(parsed.path)
-        if rel in {"/", "/index.html"}:
-            return str(WEB_DIR / "index.html")
         if rel.startswith("/data/"):
             web_target = (WEB_DIR / rel.lstrip("/")).resolve()
             if str(web_target).startswith(str(WEB_DIR.resolve())) and web_target.is_file():
@@ -271,7 +269,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
     write_lexicon(lexicon, WEB_DIR / "data" / "lexicon.json")
     server = ThreadingHTTPServer((args.host, args.port), _TranslatorHandler)
     url = f"http://{args.host}:{args.port}/"
-    print(f"アーヴ語翻訳 UI: {url}", file=sys.stderr)
+    print(f"アーヴ語とアース: {url}", file=sys.stderr)
+    print(f"翻訳: {url}web/", file=sys.stderr)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -347,7 +346,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_ingest)
 
-    p = sub.add_parser("serve", help="ブラウザ向け UI を起動する")
+    p = sub.add_parser("serve", help="概要・アース・翻訳のサイトを起動する")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8765)
     p.set_defaults(func=cmd_serve)
