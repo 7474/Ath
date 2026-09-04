@@ -58,15 +58,21 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("訳語をベクトル検索", web)
         self.assertIn('value="agent"', web)
 
-    def test_translator_page_documents_usage_not_construction(self):
+    def test_translator_page_leads_with_tool_not_construction(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
-        self.assertIn("使い方", web)
-        self.assertIn("原文を入れて「翻訳」", web)
+        tool_at = web.find('id="source-text"')
+        dict_at = web.find(">辞書<")
+        self.assertGreater(tool_at, 0)
+        self.assertGreater(dict_at, tool_at)
+        self.assertNotIn("使い方", web)
         self.assertNotIn("python -m baronh", web)
         self.assertNotIn("export-web", web)
         self.assertNotIn("GitHub Actions", web)
         self.assertNotIn("DEPLOY.md", web)
         self.assertNotIn("Cloud Run", web)
+        css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertIn("ファーストビュー", css)
+        self.assertIn("min-height: 5.25rem", css)
 
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
