@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unicodedata
 
 ATH_DIGRAPHS = (("ai", "A"), ("au", "I"), ("eu", "E"))
@@ -193,6 +194,198 @@ def _soft_h(pair: str, vowel: str) -> str:
     }
     idx = VOWEL_INDEX.get(vowel, 2)
     return table[pair][idx]
+
+
+PHONETIC_NOTE = "発音転記（辞書にない固有名詞）"
+PHONETIC_SUMMARY = (
+    "辞書にない固有名詞は発音から転記しています。辞書の見出しではありません。"
+)
+
+# 仮名モーラ → アーヴ語ローマ字（c=/k/, ch/sh は摩擦音なので チは ti）。
+_KANA_BARONH: tuple[tuple[str, str], ...] = (
+    ("キャ", "cia"), ("キュ", "ciu"), ("キョ", "cio"),
+    ("ギャ", "gia"), ("ギュ", "giu"), ("ギョ", "gio"),
+    ("シャ", "sha"), ("シュ", "shu"), ("ショ", "sho"),
+    ("ジャ", "ja"), ("ジュ", "ju"), ("ジョ", "jo"),
+    ("チャ", "tia"), ("チュ", "tiu"), ("チョ", "tio"),
+    ("ニャ", "nia"), ("ニュ", "niu"), ("ニョ", "nio"),
+    ("ヒャ", "hia"), ("ヒュ", "hiu"), ("ヒョ", "hio"),
+    ("ビャ", "bia"), ("ビュ", "biu"), ("ビョ", "bio"),
+    ("ピャ", "pia"), ("ピュ", "piu"), ("ピョ", "pio"),
+    ("ミャ", "mia"), ("ミュ", "miu"), ("ミョ", "mio"),
+    ("リャ", "ria"), ("リュ", "riu"), ("リョ", "rio"),
+    ("ファ", "fa"), ("フィ", "fi"), ("フェ", "fe"), ("フォ", "fo"), ("フュ", "fiu"),
+    ("ヴァ", "va"), ("ヴィ", "vi"), ("ヴェ", "ve"), ("ヴォ", "vo"), ("ヴュ", "viu"),
+    ("ティ", "ti"), ("テュ", "tiu"), ("トゥ", "tu"),
+    ("ディ", "di"), ("デュ", "diu"), ("ドゥ", "du"),
+    ("ウィ", "wi"), ("ウェ", "we"), ("ウォ", "wo"),
+    ("ア", "a"), ("イ", "i"), ("ウ", "u"), ("エ", "e"), ("オ", "o"),
+    ("カ", "ca"), ("キ", "ci"), ("ク", "cu"), ("ケ", "ce"), ("コ", "co"),
+    ("サ", "sa"), ("シ", "si"), ("ス", "su"), ("セ", "se"), ("ソ", "so"),
+    ("タ", "ta"), ("チ", "ti"), ("ツ", "tu"), ("テ", "te"), ("ト", "to"),
+    ("ナ", "na"), ("ニ", "ni"), ("ヌ", "nu"), ("ネ", "ne"), ("ノ", "no"),
+    ("ハ", "ha"), ("ヒ", "hi"), ("フ", "fu"), ("ヘ", "he"), ("ホ", "ho"),
+    ("マ", "ma"), ("ミ", "mi"), ("ム", "mu"), ("メ", "me"), ("モ", "mo"),
+    ("ヤ", "ia"), ("ユ", "iu"), ("ヨ", "io"),
+    ("ラ", "ra"), ("リ", "ri"), ("ル", "ru"), ("レ", "re"), ("ロ", "ro"),
+    ("ワ", "wa"), ("ヲ", "wo"), ("ン", "n"),
+    ("ガ", "ga"), ("ギ", "gi"), ("グ", "gu"), ("ゲ", "ge"), ("ゴ", "go"),
+    ("ザ", "za"), ("ジ", "ji"), ("ズ", "zu"), ("ゼ", "ze"), ("ゾ", "zo"),
+    ("ダ", "da"), ("ヂ", "di"), ("ヅ", "du"), ("デ", "de"), ("ド", "do"),
+    ("バ", "ba"), ("ビ", "bi"), ("ブ", "bu"), ("ベ", "be"), ("ボ", "bo"),
+    ("パ", "pa"), ("ピ", "pi"), ("プ", "pu"), ("ペ", "pe"), ("ポ", "po"),
+    ("ヴ", "vu"),
+)
+
+_KANA_BARONH_SORTED = tuple(sorted(_KANA_BARONH, key=lambda item: len(item[0]), reverse=True))
+
+_HONORIFICS = ("さん", "さま", "様", "くん", "君", "ちゃん", "氏")
+
+
+def hira_to_kata(text: str) -> str:
+    out: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if 0x3041 <= code <= 0x3096:
+            out.append(chr(code + 0x60))
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def split_honorific(text: str) -> tuple[str, str]:
+    for suffix in _HONORIFICS:
+        if text.endswith(suffix) and len(text) > len(suffix) + 0:
+            core = text[: -len(suffix)]
+            if core:
+                return core, suffix
+    return text, ""
+
+
+def is_katakana_name(text: str) -> bool:
+    core, _hon = split_honorific(text)
+    core = core.replace("・", "").replace("＝", "").replace("-", "")
+    if len(core) < 2:
+        return False
+    return all("ァ" <= ch <= "ヶ" or ch in "ー・ヴヵヶ" for ch in core.replace("・", "ア"))
+
+
+def is_hiragana_span(text: str) -> bool:
+    core, _hon = split_honorific(text)
+    core = core.replace("ー", "")
+    if len(core) < 2:
+        return False
+    return all("ぁ" <= ch <= "ゖ" or ch in "ー" for ch in core)
+
+
+def is_latin_name(text: str, *, require_capital: bool = True) -> bool:
+    stripped = text.strip(".,!?;:")
+    letters = stripped.replace("-", "").replace("'", "")
+    if len(stripped) < 2 or not letters.isalpha():
+        return False
+    if not re.fullmatch(r"[A-Za-zÉéÏïÜüŸÿŒœ][A-Za-zÉéÏïÜüŸÿŒœ''\-]*", stripped):
+        return False
+    if require_capital:
+        return stripped[0].isupper()
+    return True
+
+
+def looks_like_proper_noun(text: str, *, nxt: str = "", copula: bool = False) -> bool:
+    core, hon = split_honorific(text)
+    if hon:
+        text = core
+    if is_katakana_name(text):
+        return True
+    if is_latin_name(text, require_capital=True):
+        return True
+    if is_hiragana_span(text) and (nxt in {"は", "が", "を", "の", "に", "へ", "と", "も", "よ"} or copula or hon):
+        return True
+    return False
+
+
+def kana_to_baronh(text: str) -> str:
+    """日本語の発音（仮名）をアーヴ語ローマ字へ転記する。"""
+    src = hira_to_kata(unicodedata.normalize("NFKC", text or "")).replace("＝", "・")
+    src = src.replace("ヵ", "カ").replace("ヶ", "ケ")
+    pieces: list[str] = []
+    i = 0
+    geminate = False
+    while i < len(src):
+        ch = src[i]
+        if ch in "・･/／":
+            pieces.append(" ")
+            i += 1
+            continue
+        if ch in "ーｰ":
+            i += 1
+            continue
+        if ch == "ッ":
+            geminate = True
+            i += 1
+            continue
+        matched = None
+        for kana, roman in _KANA_BARONH_SORTED:
+            if src.startswith(kana, i):
+                matched = (kana, roman)
+                break
+        if not matched:
+            i += 1
+            continue
+        kana, roman = matched
+        # トウ / キョウ などの長音のウは落とす
+        if roman == "u" and pieces:
+            prev = pieces[-1].rstrip()
+            if prev.endswith("o"):
+                i += len(kana)
+                continue
+        if geminate and roman and roman[0] not in "aeiouïüÿéœ":
+            roman = roman[0] + roman
+            geminate = False
+        else:
+            geminate = False
+        pieces.append(roman)
+        i += len(kana)
+    out = "".join(pieces)
+    while "  " in out:
+        out = out.replace("  ", " ")
+    return out.strip()
+
+
+def latin_to_baronh(text: str) -> str:
+    """ラテン文字の固有名詞をアーヴ語綴りに寄せる（k→c など）。"""
+    src = unicodedata.normalize("NFC", text.strip().strip(".,!?;:"))
+    out: list[str] = []
+    i = 0
+    lower = src
+    while i < len(lower):
+        pair = lower[i : i + 2]
+        if pair.lower() in {"th", "sh", "ch", "ph", "wh"}:
+            out.append(pair.lower() if pair.lower() != "wh" else "w")
+            i += 2
+            continue
+        ch = lower[i]
+        mapped = {"k": "c", "K": "c", "q": "c", "Q": "c", "x": "cs", "X": "cs"}.get(ch)
+        if mapped:
+            out.append(mapped)
+        elif ch.isalpha() or ch in "'’-":
+            out.append(ch.lower() if ch.isalpha() else ch)
+        i += 1
+    return "".join(out)
+
+
+def transcribe_proper_to_baronh(text: str) -> str:
+    core, _hon = split_honorific(text.strip())
+    core = core.strip(".,!?;:")
+    if not core:
+        return ""
+    if re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", core) and not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", core):
+        return latin_to_baronh(core)
+    return kana_to_baronh(core)
+
+
+def transcribe_baronh_to_kana(text: str) -> str:
+    """未登録のアーヴ語固有名詞を仮名読みにする。"""
+    return reading_ja(text, drop_silent_final=False)
 
 
 def speakable_text(text: str, lang: str) -> str:

@@ -7,7 +7,19 @@ from dataclasses import dataclass, field
 
 from baronh.grammar import FormIndex, conjugate, decline, topic_contract
 from baronh.lexicon import CASE_PARTICLE_JA, Entry, Lexicon, _split_ja_aliases
-from baronh.phonology import normalize_baronh, reading_ja, to_ath_keys
+from baronh.phonology import (
+    PHONETIC_NOTE,
+    PHONETIC_SUMMARY,
+    is_latin_name,
+    looks_like_proper_noun,
+    latin_to_baronh,
+    reading_ja,
+    split_honorific,
+    to_ath_keys,
+    transcribe_baronh_to_kana,
+    transcribe_proper_to_baronh,
+    normalize_baronh,
+)
 
 LANGS = ("baronh", "ja", "en")
 
@@ -50,6 +62,7 @@ EN_PREP = {
 
 JA_COPULA_RE = re.compile(r"(です|だ|である|であります)(か)?$")
 JA_QUESTION_RE = re.compile(r"[か？?]$")
+JA_COPULA = {"です", "だ", "である", "であります", "でした", "だった"}
 
 
 @dataclass
@@ -276,6 +289,28 @@ def _lookup_ja(lexicon: Lexicon, word: str) -> list[Entry]:
     return []
 
 
+def _phonetic_noun_entry(source: str, lemma: str) -> Entry:
+    return Entry(
+        lemma=lemma,
+        pos="noun",
+        gloss_ja=source,
+        gloss_en=source,
+        tags=["phonetic", "proper"],
+        notes=PHONETIC_NOTE,
+        source="phonetic",
+    )
+
+
+def _try_phonetic_noun(tok: str, nxt: str) -> Entry | None:
+    if not looks_like_proper_noun(tok, nxt=nxt, copula=nxt in JA_COPULA):
+        return None
+    core, _hon = split_honorific(tok)
+    lemma = transcribe_proper_to_baronh(core)
+    if not lemma:
+        return None
+    return _phonetic_noun_entry(tok, lemma)
+
+
 def _apply_case(entry: Entry, case: str) -> str:
     if entry.pos in {"noun", "pronoun"} and case in CASE_PARTICLE_JA:
         return decline(entry)[case]
@@ -289,6 +324,7 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
     pieces: list[str] = []
     analysis: list[TokenGloss] = []
     unknown: list[str] = []
+    phonetic_pairs: list[str] = []
     pending_noun: Entry | None = None
     pending_src = ""
     used_topic = False
@@ -297,6 +333,8 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         nonlocal pending_noun, pending_src, used_topic
         if pending_noun is None:
             return
+        phonetic = "phonetic" in pending_noun.tags
+        mark = f" / {PHONETIC_NOTE}" if phonetic else ""
         if case == "topic":
             form = decline(pending_noun)["nom"] if pending_noun.pos in {"noun", "pronoun"} else pending_noun.lemma
             if pending_noun.pos == "pronoun":
@@ -306,20 +344,20 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
                 surface = form + " a"
                 used_topic = True
             pieces.append(surface)
-            analysis.append(TokenGloss(pending_src + "は", surface, "主題"))
+            analysis.append(TokenGloss(pending_src + "は", surface, "主題" + mark))
         elif case == "vocative":
             form = decline(pending_noun)["nom"] if pending_noun.pos in {"noun", "pronoun"} else pending_noun.lemma
             surface = f"{form} éü"
             pieces.append(surface)
-            analysis.append(TokenGloss(pending_src + "よ", surface, "呼びかけ"))
+            analysis.append(TokenGloss(pending_src + "よ", surface, "呼びかけ" + mark))
         elif case == "cite":
             form = decline(pending_noun)["acc"] if pending_noun.pos in {"noun", "pronoun"} else pending_noun.lemma
             pieces.append(form)
-            analysis.append(TokenGloss(pending_src, form, extra or "引用対象"))
+            analysis.append(TokenGloss(pending_src, form, (extra or "引用対象") + mark))
         else:
             form = _apply_case(pending_noun, case if case in CASE_PARTICLE_JA else "nom")
             pieces.append(form)
-            analysis.append(TokenGloss(pending_src, form, extra or CASE_PARTICLE_JA.get(case, "")))
+            analysis.append(TokenGloss(pending_src, form, (extra or CASE_PARTICLE_JA.get(case, "")) + mark))
         pending_noun = None
         pending_src = ""
 
@@ -346,6 +384,18 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
             continue
         entries = _lookup_ja(lexicon, tok)
         if not entries:
+            core, hon = split_honorific(tok)
+            if hon:
+                entries = _lookup_ja(lexicon, core)
+        if not entries:
+            nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
+            phonetic = _try_phonetic_noun(tok, nxt)
+            if phonetic:
+                phonetic_pairs.append(f"{tok}→{phonetic.lemma}")
+                pending_noun = phonetic
+                pending_src = tok
+                i += 1
+                continue
             unknown.append(tok)
             pieces.append(tok)
             analysis.append(TokenGloss(tok, tok, "未登録"))
@@ -424,6 +474,8 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
     elif surface and not surface.endswith((".", "!", "?")):
         surface = surface + "."
     notes = []
+    if phonetic_pairs:
+        notes.append(PHONETIC_SUMMARY + " " + "、".join(phonetic_pairs) + "。")
     if unknown:
         notes.append("未登録の語は原文のまま残しています。ingest で辞書を足せます。")
     return TranslationResult(
@@ -445,6 +497,7 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
     pieces: list[str] = []
     analysis: list[TokenGloss] = []
     unknown: list[str] = []
+    phonetic_pairs: list[str] = []
     pending: Entry | None = None
     pending_src = ""
     skip_next_prep = False
@@ -456,8 +509,9 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         form = _apply_case(pending, case if case in CASE_PARTICLE_JA else "nom")
         if case == "topic" and pending.pos == "pronoun":
             form = topic_contract(decline(pending)["nom"])
+        mark = f" / {PHONETIC_NOTE}" if "phonetic" in pending.tags else ""
         pieces.append(form)
-        analysis.append(TokenGloss(pending_src, form, case))
+        analysis.append(TokenGloss(pending_src, form, case + mark))
         pending = None
         pending_src = ""
 
@@ -477,6 +531,14 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         if not entries and low.endswith("s"):
             entries = lexicon.lookup(low[:-1], lang="en")
         if not entries:
+            if is_latin_name(tok, require_capital=True):
+                lemma = latin_to_baronh(tok)
+                phonetic = _phonetic_noun_entry(tok, lemma)
+                phonetic_pairs.append(f"{tok}→{lemma}")
+                pending = phonetic
+                pending_src = tok
+                i += 1
+                continue
             unknown.append(tok)
             pieces.append(tok)
             analysis.append(TokenGloss(tok, tok, "unknown"))
@@ -543,7 +605,10 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         ath_keys=to_ath_keys(surface),
         reading_ja=reading_ja(surface),
         analysis=analysis,
-        notes=["英語は語順の解析が粗いため、短い句向けです。"] if unknown else [],
+        notes=[item for item in [
+            (PHONETIC_SUMMARY + " " + "、".join(phonetic_pairs) + "。") if phonetic_pairs else "",
+            "英語は語順の解析が粗いため、短い句向けです。" if unknown else "",
+        ] if item],
         unknown=unknown,
     )
 
@@ -554,6 +619,7 @@ def _translate_baronh_out(text: str, lexicon: Lexicon, target: str) -> Translati
     pieces: list[str] = []
     analysis: list[TokenGloss] = []
     unknown: list[str] = []
+    phonetic_pairs: list[str] = []
     question = False
     i = 0
     while i < len(tokens):
@@ -588,6 +654,20 @@ def _translate_baronh_out(text: str, lexicon: Lexicon, target: str) -> Translati
             hits = index.lookup({"f": "fe", "d": "de", "s": "se"}.get(tok[0].lower(), tok))
             extras.append("topic")
         if not hits:
+            if is_latin_name(tok, require_capital=False) or re.fullmatch(
+                r"[A-Za-zÉéÏïÜüŸÿŒœ][A-Za-zÉéÏïÜüŸÿŒœ''\-]*", tok
+            ):
+                if target == "ja":
+                    kana = transcribe_baronh_to_kana(tok)
+                    pieces.append(kana)
+                    analysis.append(TokenGloss(tok, kana, PHONETIC_NOTE))
+                    phonetic_pairs.append(f"{tok}→{kana}")
+                else:
+                    pieces.append(tok)
+                    analysis.append(TokenGloss(tok, tok, PHONETIC_NOTE))
+                    phonetic_pairs.append(tok)
+                i += 1
+                continue
             unknown.append(tok)
             pieces.append(tok)
             analysis.append(TokenGloss(tok, tok, "unknown"))
@@ -640,7 +720,10 @@ def _translate_baronh_out(text: str, lexicon: Lexicon, target: str) -> Translati
         ath_keys=to_ath_keys(text),
         reading_ja=reading_ja(text),
         analysis=analysis,
-        notes=["規則ベースの直訳です。語順は原文に近い語釈の連結です。"],
+        notes=[item for item in [
+            "規則ベースの直訳です。語順は原文に近い語釈の連結です。",
+            (PHONETIC_SUMMARY + " " + "、".join(phonetic_pairs) + "。") if phonetic_pairs else "",
+        ] if item],
         unknown=unknown,
     )
 

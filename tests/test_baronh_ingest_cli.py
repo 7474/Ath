@@ -99,6 +99,7 @@ class OpenAIPromptTest(unittest.TestCase):
     def test_prompt_mentions_cases(self):
         self.assertIn("主格", GRAMMAR_BRIEF)
         self.assertIn("F'a", GRAMMAR_BRIEF)
+        self.assertIn("固有名詞", GRAMMAR_BRIEF)
 
 
 if __name__ == "__main__":

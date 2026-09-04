@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Iterator
@@ -332,10 +333,13 @@ class Lexicon:
             take(self._by_gloss_ja.get(key, []))
         if lang in ("auto", "en"):
             take(self._by_gloss_en.get(key, []))
-        if not found and len(key) >= 2:
+        if not found and len(key) >= 3:
+            # 日本語の部分一致は「ジント」⊂「サイ・ジント様」のように固有名詞を壊す
+            if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", query):
+                return found
             for entry in self.entries:
-                blob = " ".join([entry.lemma, entry.gloss_ja, entry.gloss_en, entry.notes])
-                if key in _normalize_key(blob):
+                blob = _normalize_key(" ".join([entry.lemma, entry.gloss_en]))
+                if key in blob:
                     take([entry])
         return found
 

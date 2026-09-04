@@ -27,6 +27,161 @@
     "を": "acc", "の": "gen", "に": "dat", "へ": "all", "で": "ins",
     "と": "cite", "よ": "vocative", "か": "question", "も": "also"
   };
+  var PHONETIC_NOTE = "発音転記（辞書にない固有名詞）";
+  var PHONETIC_SUMMARY = "辞書にない固有名詞は発音から転記しています。辞書の見出しではありません。";
+  var JA_COPULA = { "です": 1, "だ": 1, "である": 1, "であります": 1, "でした": 1, "だった": 1 };
+  var HONORIFICS = ["さん", "さま", "様", "くん", "君", "ちゃん", "氏"];
+  var KANA_BARONH = [
+    ["キャ", "cia"], ["キュ", "ciu"], ["キョ", "cio"],
+    ["ギャ", "gia"], ["ギュ", "giu"], ["ギョ", "gio"],
+    ["シャ", "sha"], ["シュ", "shu"], ["ショ", "sho"],
+    ["ジャ", "ja"], ["ジュ", "ju"], ["ジョ", "jo"],
+    ["チャ", "tia"], ["チュ", "tiu"], ["チョ", "tio"],
+    ["ニャ", "nia"], ["ニュ", "niu"], ["ニョ", "nio"],
+    ["ヒャ", "hia"], ["ヒュ", "hiu"], ["ヒョ", "hio"],
+    ["ビャ", "bia"], ["ビュ", "biu"], ["ビョ", "bio"],
+    ["ピャ", "pia"], ["ピュ", "piu"], ["ピョ", "pio"],
+    ["ミャ", "mia"], ["ミュ", "miu"], ["ミョ", "mio"],
+    ["リャ", "ria"], ["リュ", "riu"], ["リョ", "rio"],
+    ["ファ", "fa"], ["フィ", "fi"], ["フェ", "fe"], ["フォ", "fo"], ["フュ", "fiu"],
+    ["ヴァ", "va"], ["ヴィ", "vi"], ["ヴェ", "ve"], ["ヴォ", "vo"], ["ヴュ", "viu"],
+    ["ティ", "ti"], ["テュ", "tiu"], ["トゥ", "tu"],
+    ["ディ", "di"], ["デュ", "diu"], ["ドゥ", "du"],
+    ["ウィ", "wi"], ["ウェ", "we"], ["ウォ", "wo"],
+    ["ア", "a"], ["イ", "i"], ["ウ", "u"], ["エ", "e"], ["オ", "o"],
+    ["カ", "ca"], ["キ", "ci"], ["ク", "cu"], ["ケ", "ce"], ["コ", "co"],
+    ["サ", "sa"], ["シ", "si"], ["ス", "su"], ["セ", "se"], ["ソ", "so"],
+    ["タ", "ta"], ["チ", "ti"], ["ツ", "tu"], ["テ", "te"], ["ト", "to"],
+    ["ナ", "na"], ["ニ", "ni"], ["ヌ", "nu"], ["ネ", "ne"], ["ノ", "no"],
+    ["ハ", "ha"], ["ヒ", "hi"], ["フ", "fu"], ["ヘ", "he"], ["ホ", "ho"],
+    ["マ", "ma"], ["ミ", "mi"], ["ム", "mu"], ["メ", "me"], ["モ", "mo"],
+    ["ヤ", "ia"], ["ユ", "iu"], ["ヨ", "io"],
+    ["ラ", "ra"], ["リ", "ri"], ["ル", "ru"], ["レ", "re"], ["ロ", "ro"],
+    ["ワ", "wa"], ["ヲ", "wo"], ["ン", "n"],
+    ["ガ", "ga"], ["ギ", "gi"], ["グ", "gu"], ["ゲ", "ge"], ["ゴ", "go"],
+    ["ザ", "za"], ["ジ", "ji"], ["ズ", "zu"], ["ゼ", "ze"], ["ゾ", "zo"],
+    ["ダ", "da"], ["ヂ", "di"], ["ヅ", "du"], ["デ", "de"], ["ド", "do"],
+    ["バ", "ba"], ["ビ", "bi"], ["ブ", "bu"], ["ベ", "be"], ["ボ", "bo"],
+    ["パ", "pa"], ["ピ", "pi"], ["プ", "pu"], ["ペ", "pe"], ["ポ", "po"],
+    ["ヴ", "vu"]
+  ].sort(function (a, b) { return b[0].length - a[0].length; });
+
+  function hiraToKata(text) {
+    return String(text || "").replace(/[\u3041-\u3096]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0x60);
+    });
+  }
+
+  function splitHonorific(text) {
+    var i, suf, src = String(text || "");
+    for (i = 0; i < HONORIFICS.length; i++) {
+      suf = HONORIFICS[i];
+      if (src.length > suf.length && src.slice(-suf.length) === suf) {
+        return { core: src.slice(0, -suf.length), hon: suf };
+      }
+    }
+    return { core: src, hon: "" };
+  }
+
+  function isKatakanaName(text) {
+    var core = splitHonorific(text).core.replace(/[・＝\-]/g, "");
+    if (core.length < 2) return false;
+    return /^[ァ-ヶーヴ]+$/.test(core);
+  }
+
+  function isHiraganaSpan(text) {
+    var core = splitHonorific(text).core.replace(/ー/g, "");
+    if (core.length < 2) return false;
+    return /^[ぁ-ゖー]+$/.test(core);
+  }
+
+  function isLatinName(text, requireCapital) {
+    var stripped = String(text || "").replace(/[.,!?;:]/g, "");
+    if (stripped.length < 2 || !/^[A-Za-zÉéÏïÜüŸÿŒœ][A-Za-zÉéÏïÜüŸÿŒœ''\-]*$/.test(stripped)) return false;
+    if (requireCapital !== false) return stripped.charAt(0) === stripped.charAt(0).toUpperCase() && /[A-ZÉÏÜŸŒ]/.test(stripped.charAt(0));
+    return true;
+  }
+
+  function looksLikeProperNoun(text, nxt, copula) {
+    var split = splitHonorific(text);
+    var core = split.hon ? split.core : text;
+    if (isKatakanaName(core)) return true;
+    if (isLatinName(core, true)) return true;
+    if (isHiraganaSpan(core) && (JA_PARTICLES[nxt] || copula || split.hon)) return true;
+    return false;
+  }
+
+  function kanaToBaronh(text) {
+    var src = hiraToKata(String(text || "").normalize("NFKC")).replace(/＝/g, "・").replace(/ヵ/g, "カ").replace(/ヶ/g, "ケ");
+    var pieces = [];
+    var i = 0;
+    var geminate = false;
+    while (i < src.length) {
+      var ch = src.charAt(i);
+      if ("・･/／".indexOf(ch) >= 0) { pieces.push(" "); i++; continue; }
+      if (ch === "ー" || ch === "ｰ") { i++; continue; }
+      if (ch === "ッ") { geminate = true; i++; continue; }
+      var matched = null;
+      var k;
+      for (k = 0; k < KANA_BARONH.length; k++) {
+        if (src.slice(i, i + KANA_BARONH[k][0].length) === KANA_BARONH[k][0]) { matched = KANA_BARONH[k]; break; }
+      }
+      if (!matched) { i++; continue; }
+      var roman = matched[1];
+      if (roman === "u" && pieces.length) {
+        var prev = pieces[pieces.length - 1].replace(/\s+$/g, "");
+        if (/o$/.test(prev)) { i += matched[0].length; continue; }
+      }
+      if (geminate && roman && "aeiouïüÿéœ".indexOf(roman.charAt(0)) < 0) {
+        roman = roman.charAt(0) + roman;
+        geminate = false;
+      } else geminate = false;
+      pieces.push(roman);
+      i += matched[0].length;
+    }
+    return pieces.join("").replace(/\s+/g, " ").trim();
+  }
+
+  function latinToBaronh(text) {
+    var src = String(text || "").trim().replace(/[.,!?;:]+$/g, "");
+    var out = "";
+    var i = 0;
+    while (i < src.length) {
+      var pair = src.slice(i, i + 2).toLowerCase();
+      if (pair === "th" || pair === "sh" || pair === "ch" || pair === "ph") { out += pair; i += 2; continue; }
+      if (pair === "wh") { out += "w"; i += 2; continue; }
+      var ch = src.charAt(i);
+      var low = ch.toLowerCase();
+      if (low === "k" || low === "q") out += "c";
+      else if (low === "x") out += "cs";
+      else if (/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(ch)) out += low;
+      else if ("'-".indexOf(ch) >= 0) out += ch;
+      i++;
+    }
+    return out;
+  }
+
+  function transcribeProperToBaronh(text) {
+    var core = splitHonorific(String(text || "").trim()).core.replace(/[.,!?;:]+$/g, "");
+    if (!core) return "";
+    if (/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(core) && !/[\u3040-\u30ff\u4e00-\u9fff]/.test(core)) return latinToBaronh(core);
+    return kanaToBaronh(core);
+  }
+
+  function phoneticNounEntry(source, lemma) {
+    return { lemma: lemma, pos: "noun", gloss_ja: source, gloss_en: source, tags: ["phonetic", "proper"], notes: PHONETIC_NOTE, source: "phonetic", declension: "", paradigm: {} };
+  }
+
+  function tryPhoneticNoun(tok, nxt) {
+    if (!looksLikeProperNoun(tok, nxt, !!JA_COPULA[nxt])) return null;
+    var lemma = transcribeProperToBaronh(splitHonorific(tok).core);
+    if (!lemma) return null;
+    return phoneticNounEntry(tok, lemma);
+  }
+
+  function isPhonetic(entry) {
+    return entry && ((entry.tags || []).indexOf("phonetic") >= 0 || entry.source === "phonetic");
+  }
   var JA_ATOMIC = ["から", "まで", "より", "である", "であります", "でした", "だった", "です", "だ"];
   var JA_FINAL_ONLY = { "か": 1, "よ": 1, "ね": 1 };
   var EN_PREP = { of: "gen", to: "dat", toward: "all", towards: "all", into: "all", from: "abl", with: "ins", by: "ins", at: "all", in: "all" };
@@ -260,9 +415,9 @@
     if (lang === "auto" || lang === "baronh") take(this.byLemma[key]);
     if (lang === "auto" || lang === "ja") take(this.byJa[key]);
     if (lang === "auto" || lang === "en") take(this.byEn[key]);
-    if (!found.length && key.length >= 2) {
+    if (!found.length && key.length >= 3 && !/[\u3040-\u30ff\u4e00-\u9fff]/.test(query)) {
       this.entries.forEach(function (e) {
-        if ((e.lemma + " " + e.gloss_ja + " " + e.gloss_en).toLowerCase().indexOf(query.toLowerCase()) >= 0) take([e]);
+        if ((e.lemma + " " + e.gloss_en).toLowerCase().indexOf(String(query).toLowerCase()) >= 0) take([e]);
       });
     }
     return found;
@@ -489,26 +644,28 @@
     var pieces = [];
     var analysis = [];
     var unknown = [];
+    var phoneticPairs = [];
     var pending = null;
     var pendingSrc = "";
 
     function flush(caseName) {
       if (!pending) return;
       var form, surface;
+      var mark = isPhonetic(pending) ? " / " + PHONETIC_NOTE : "";
       if (caseName === "topic") {
         form = (pending.pos === "noun" || pending.pos === "pronoun") ? decline(pending).nom : pending.lemma;
         surface = pending.pos === "pronoun" ? topicContract(form) : form + " a";
         pieces.push(surface);
-        analysis.push({ source: pendingSrc + "は", target: surface, note: "主題" });
+        analysis.push({ source: pendingSrc + "は", target: surface, note: "主題" + mark });
       } else if (caseName === "vocative") {
         form = (pending.pos === "noun" || pending.pos === "pronoun") ? decline(pending).nom : pending.lemma;
         surface = form + " éü";
         pieces.push(surface);
-        analysis.push({ source: pendingSrc + "よ", target: surface, note: "呼びかけ" });
+        analysis.push({ source: pendingSrc + "よ", target: surface, note: "呼びかけ" + mark });
       } else {
         form = applyCase(pending, CASE_PARTICLE[caseName] ? caseName : "nom");
         pieces.push(form);
-        analysis.push({ source: pendingSrc, target: form, note: CASE_PARTICLE[caseName] || "" });
+        analysis.push({ source: pendingSrc, target: form, note: (CASE_PARTICLE[caseName] || "") + mark });
       }
       pending = null;
       pendingSrc = "";
@@ -528,6 +685,18 @@
       }
       var entries = lookupJa(lexicon, tok);
       if (!entries.length) {
+        var hon = splitHonorific(tok);
+        if (hon.hon) entries = lookupJa(lexicon, hon.core);
+      }
+      if (!entries.length) {
+        var nxt0 = tokens[i + 1] || "";
+        var phonetic = tryPhoneticNoun(tok, nxt0);
+        if (phonetic) {
+          phoneticPairs.push(tok + "→" + phonetic.lemma);
+          pending = phonetic;
+          pendingSrc = tok;
+          continue;
+        }
         unknown.push(tok);
         pieces.push(tok);
         analysis.push({ source: tok, target: tok, note: "未登録" });
@@ -575,7 +744,10 @@
     }
     var surface = pieces.filter(Boolean).join(" ");
     if (surface && !/[.!?]$/.test(surface)) surface += question ? "?" : ".";
-    return result("ja", "baronh", text, surface, analysis, unknown.length ? ["未登録の語は原文のまま残しています。"] : [], unknown);
+    var notes = [];
+    if (phoneticPairs.length) notes.push(PHONETIC_SUMMARY + " " + phoneticPairs.join("、") + "。");
+    if (unknown.length) notes.push("未登録の語は原文のまま残しています。");
+    return result("ja", "baronh", text, surface, analysis, notes, unknown);
   }
 
   function enToBaronh(text, lexicon) {
@@ -584,14 +756,16 @@
     var pieces = [];
     var analysis = [];
     var unknown = [];
+    var phoneticPairs = [];
     var pending = null;
     var pendingSrc = "";
     function flush(caseName) {
       if (!pending) return;
       var form = applyCase(pending, CASE_PARTICLE[caseName] ? caseName : "nom");
       if (caseName === "topic" && pending.pos === "pronoun") form = topicContract(decline(pending).nom);
+      var mark = isPhonetic(pending) ? " / " + PHONETIC_NOTE : "";
       pieces.push(form);
-      analysis.push({ source: pendingSrc, target: form, note: caseName });
+      analysis.push({ source: pendingSrc, target: form, note: caseName + mark });
       pending = null;
     }
     for (var i = 0; i < tokens.length; i++) {
@@ -601,7 +775,18 @@
       if (EN_PREP[low]) { flush(EN_PREP[low]); continue; }
       var entries = lexicon.lookup(low, "en");
       if (!entries.length && low.endsWith("s")) entries = lexicon.lookup(low.slice(0, -1), "en");
-      if (!entries.length) { unknown.push(tok); pieces.push(tok); continue; }
+      if (!entries.length) {
+        if (isLatinName(tok, true)) {
+          var lemma = latinToBaronh(tok);
+          phoneticPairs.push(tok + "→" + lemma);
+          pending = phoneticNounEntry(tok, lemma);
+          pendingSrc = tok;
+          continue;
+        }
+        unknown.push(tok);
+        pieces.push(tok);
+        continue;
+      }
       var nxt = (tokens[i + 1] || "").toLowerCase();
       var nounish = entries.find(function (e) { return e.pos === "noun" || e.pos === "pronoun"; });
       var verbish = entries.find(function (e) { return e.pos === "verb"; });
@@ -622,7 +807,9 @@
     if (question) pieces.push("sa");
     var surface = pieces.filter(Boolean).join(" ");
     if (surface && !/[.!?]$/.test(surface)) surface += question ? "?" : ".";
-    return result("en", "baronh", text, surface, analysis, [], unknown);
+    var notes = [];
+    if (phoneticPairs.length) notes.push(PHONETIC_SUMMARY + " " + phoneticPairs.join("、") + "。");
+    return result("en", "baronh", text, surface, analysis, notes, unknown);
   }
 
   function baronhOut(text, lexicon, target) {
@@ -631,6 +818,7 @@
     var pieces = [];
     var analysis = [];
     var unknown = [];
+    var phoneticPairs = [];
     var question = false;
     tokens.forEach(function (tok) {
       if (".!?,".indexOf(tok) >= 0) { if (tok === "?" ) question = true; return; }
@@ -643,7 +831,24 @@
         surface = { f: "fe", d: "de", s: "se" }[tok[0].toLowerCase()] || surface;
       }
       var hits = index.lookup(surface);
-      if (!hits.length) { unknown.push(tok); pieces.push(tok); return; }
+      if (!hits.length) {
+        if (/^[A-Za-zÉéÏïÜüŸÿŒœ][A-Za-zÉéÏïÜüŸÿŒœ''\-]*$/.test(tok)) {
+          if (target === "ja") {
+            var kana = readingJa(tok);
+            pieces.push(kana);
+            analysis.push({ source: tok, target: kana, note: PHONETIC_NOTE });
+            phoneticPairs.push(tok + "→" + kana);
+          } else {
+            pieces.push(tok);
+            analysis.push({ source: tok, target: tok, note: PHONETIC_NOTE });
+            phoneticPairs.push(tok);
+          }
+          return;
+        }
+        unknown.push(tok);
+        pieces.push(tok);
+        return;
+      }
       var hit = hits[0];
       var word = target === "ja" ? (hit.entry.gloss_ja || "").split("/")[0] : (hit.entry.gloss_en || "").split("/")[0];
       if (extras[0] === "topic") word = target === "ja" ? word + "は" : word + " (topic)";
@@ -660,7 +865,9 @@
       if (question && !/[か？]$/.test(surface)) surface += "か";
       if (surface && !/[。？！か]$/.test(surface)) surface += "。";
     }
-    return result("baronh", target, text, surface, analysis, ["規則ベースの直訳です。"], unknown);
+    var notes = ["規則ベースの直訳です。"];
+    if (phoneticPairs.length) notes.push(PHONETIC_SUMMARY + " " + phoneticPairs.join("、") + "。");
+    return result("baronh", target, text, surface, analysis, notes, unknown);
   }
 
   function translate(text, lexicon, sourceLang, targetLang) {

@@ -265,7 +265,7 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
 
 ## アーヴ語翻訳（CLI / Web）
 
-アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、文法の骨格は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）に依り、語彙は下記ファンサイトを走査して拡充しています。追加の個人辞書は `data/user_lexicon.json` に足せます。
+アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、文法の骨格は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）に依り、語彙は下記ファンサイトを走査して拡充しています。辞書にない固有名詞は発音からローマ字へ転記し、訳にその旨を示します。追加の個人辞書は `data/user_lexicon.json` に足せます。
 
 構成は次のとおりです。生成 AI は使わなくても動きます。
 

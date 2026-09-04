@@ -190,6 +190,8 @@ button.primary:disabled { opacity: .5; cursor: wait; }
 }
 
 .analysis div { padding: .15rem 0; border-bottom: 1px solid #f0f0f0; }
+.analysis .phonetic { background: #fff7e8; margin: 0 -.4rem; padding: .2rem .4rem; border-radius: 4px; border-bottom-color: #f0e0b8; }
+.analysis .phonetic .meta { color: #8a5a00; }
 
 .tools {
   display: grid;

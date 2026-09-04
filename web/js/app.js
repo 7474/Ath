@@ -11,6 +11,7 @@
     ["ja", "baronh", "星たちよ"],
     ["ja", "baronh", "分かりますか"],
     ["ja", "baronh", "ありがとう"],
+    ["ja", "baronh", "私はジントです"],
     ["baronh", "ja", "F'a usere."],
     ["baronh", "ja", "F'a bale."],
     ["baronh", "en", "Facle sa?"],
@@ -68,7 +69,8 @@
     bits.push(result.source_lang + " → " + result.target_lang + " / " + result.engine);
     $("reading").textContent = bits.join(" · ");
     $("analysis").innerHTML = (result.analysis || []).map(function (row) {
-      return "<div>" + escapeHtml(row.source) + " → " + escapeHtml(row.target) +
+      var phonetic = /発音転記/.test(row.note || "");
+      return "<div" + (phonetic ? " class='phonetic'" : "") + ">" + escapeHtml(row.source) + " → " + escapeHtml(row.target) +
         (row.note ? " <span class='meta'>(" + escapeHtml(row.note) + ")</span>" : "") + "</div>";
     }).join("");
     if (result.notes && result.notes.length) {
@@ -99,7 +101,7 @@
       model: model,
       temperature: 0.2,
       messages: [
-        { role: "system", content: "あなたはアーヴ語 (Baronh) の翻訳者です。与えた下訳と辞書を優先し、知らない語は造語せず残してください。訳文だけを返します。" },
+        { role: "system", content: "あなたはアーヴ語 (Baronh) の翻訳者です。与えた下訳と辞書を優先します。普通名詞など辞書にない語は造語せず残してください。辞書にない固有名詞は発音転記して構いません。訳文だけを返します。" },
         { role: "user", content: "方向: " + local.source_lang + " → " + ($("target-lang").value) + "\n原文:\n" + $("source-text").value + "\n下訳:\n" + local.text }
       ]
     };
