@@ -7,6 +7,7 @@
   var TTS_MODEL_KEY = "ath-translate.openai-tts-model";
   var AGENT_URL_KEY = "ath-translate.agent-url";
   var OVERLAY_KEY = "ath-translate.overlay";
+  var VECTOR_SEARCH_KEY = "ath-translate.local-vector";
   var EXAMPLES = [
     ["ja", "baronh", "私は移民します"],
     ["ja", "baronh", "私はアーヴです"],
@@ -28,11 +29,12 @@
 
   function setStatus(text) { $("status").textContent = text || ""; }
 
-  function dataUrls() {
+  function dataUrls(name) {
+    name = name || "lexicon.json";
     return [
-      "data/lexicon.json",
-      "/data/lexicon.json",
-      "../data/lexicon.json"
+      "data/" + name,
+      "/data/" + name,
+      "../data/" + name
     ];
   }
 
@@ -43,12 +45,49 @@
     });
   }
 
-  function firstJson(urls) {
+  function loadBuffer(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error(res.status + " " + url);
+      return res.arrayBuffer();
+    });
+  }
+
+  function firstOf(urls, loader) {
     var chain = Promise.reject(new Error("no url"));
     urls.forEach(function (url) {
-      chain = chain.catch(function () { return loadJson(url); });
+      chain = chain.catch(function () { return loader(url); });
     });
     return chain;
+  }
+
+  function firstJson(urls) {
+    return firstOf(urls, loadJson);
+  }
+
+  function firstBuffer(urls) {
+    return firstOf(urls, loadBuffer);
+  }
+
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  var FETCH_RETRIES = 3;
+  var RETRYABLE_STATUS = { 408: 1, 429: 1, 500: 1, 502: 1, 503: 1, 504: 1 };
+
+  function fetchWithRetry(url, init, attempt) {
+    attempt = attempt || 0;
+    return fetch(url, init).then(function (res) {
+      if (res.ok || !RETRYABLE_STATUS[res.status] || attempt >= FETCH_RETRIES - 1) return res;
+      return delay(400 * Math.pow(2, attempt)).then(function () {
+        return fetchWithRetry(url, init, attempt + 1);
+      });
+    }, function (err) {
+      if (attempt >= FETCH_RETRIES - 1) throw err;
+      return delay(400 * Math.pow(2, attempt)).then(function () {
+        return fetchWithRetry(url, init, attempt + 1);
+      });
+    });
   }
 
   function refreshCount() {
@@ -134,8 +173,37 @@
     return raw;
   }
 
+  function agentHealthUrl() {
+    return agentEndpoint().replace(/\/api\/translate$/i, "/api/health");
+  }
+
+  function setAgentOptionVisible(visible) {
+    var sel = $("engine");
+    if (!sel) return;
+    var opt = sel.querySelector('option[value="agent"]');
+    if (!opt) return;
+    opt.hidden = !visible;
+    opt.disabled = !visible;
+    if (!visible && sel.value === "agent") {
+      sel.value = "local";
+      syncLocalVectorOption();
+    }
+  }
+
+  function probeAgentConfigured() {
+    return fetch(agentHealthUrl()).then(function (res) {
+      if (!res.ok) return false;
+      return res.json().then(function (body) {
+        return !!(body && body.ok && body.model);
+      }, function () { return false; });
+    }).catch(function () { return false; }).then(function (ok) {
+      setAgentOptionVisible(ok);
+      return ok;
+    });
+  }
+
   function agentTranslate() {
-    return fetch(agentEndpoint(), {
+    return fetchWithRetry(agentEndpoint(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -163,7 +231,15 @@
   function localTranslate() {
     var src = $("source-lang").value;
     var tgt = $("target-lang").value;
-    return BaronhEngine.translate($("source-text").value, lexicon, src, tgt);
+    return BaronhEngine.translate($("source-text").value, lexicon, src, tgt, {
+      vectorSearch: !!($("local-vector-search") && $("local-vector-search").checked)
+    });
+  }
+
+  function syncLocalVectorOption() {
+    var wrap = $("local-vector-wrap");
+    if (!wrap) return;
+    wrap.hidden = $("engine").value !== "local";
   }
 
   function openaiTranslate() {
@@ -173,102 +249,29 @@
       throw new Error("API キーが未設定です。設定から保存してください。");
     }
     var model = localStorage.getItem(MODEL_KEY) || $("chat-model").value || "gpt-4o-mini";
-    var local = localTranslate();
-    var targetLang = $("target-lang").value;
-    var messages = [
-      { role: "system", content: BaronhEngine.systemPrompt(targetLang) },
-      { role: "user", content: BaronhEngine.buildUserPrompt($("source-text").value, lexicon, local, targetLang) }
-    ];
-    function chat(useTools) {
-      var body = { model: model, temperature: 0.2, messages: messages };
-      if (useTools) {
-        body.tools = BaronhEngine.CHAT_TOOLS;
-        body.tool_choice = "auto";
-      }
-      return fetch(apiUrl("chat/completions"), {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + (key || "no-key"),
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-      }).then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
-          return data;
-        });
-      });
-    }
-    function loop(useTools, round) {
-      if (round > 6) return Promise.resolve(local.text);
-      return chat(useTools).then(function (data) {
-        var message = (((data.choices || [])[0]) || {}).message || {};
-        var calls = message.tool_calls || [];
-        if (!calls.length) return BaronhEngine.cleanModelText(String(message.content || "").trim()) || local.text;
-        messages.push(message);
-        calls.forEach(function (call) {
-          var fn = call.function || {};
-          var args = {};
-          try { args = JSON.parse(fn.arguments || "{}"); } catch (err) { args = {}; }
-          messages.push({
-            role: "tool",
-            tool_call_id: call.id || fn.name,
-            content: BaronhEngine.dispatchTool(fn.name, args, lexicon)
+    return BaronhEngine.translateAgent($("source-text").value, lexicon, {
+      sourceLang: $("source-lang").value,
+      targetLang: $("target-lang").value,
+      chatOnce: function (payload) {
+        payload.model = payload.model || model;
+        return fetchWithRetry(apiUrl("chat/completions"), {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + (key || "no-key"),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
+            return data;
           });
         });
-        return loop(useTools, round + 1);
-      });
-    }
-    return loop(true, 1).catch(function (err) {
-      if (/tool/i.test(err.message || "") || /400/.test(err.message || "")) {
-        messages = messages.slice(0, 2);
-        return loop(false, 1);
       }
-      throw err;
-    }).then(function (text) {
-      text = BaronhEngine.cleanModelText(text) || local.text;
-      var notes = ["OpenAI 互換 API（" + base + "）。辞書は全文スキャンして関連語だけ渡し、生成後に語形を検証します。"];
-      if (targetLang === "baronh") {
-        var invented = BaronhEngine.inventedBaronhForms(text, lexicon, local);
-        if (invented.length && text !== local.text) {
-          notes.push("辞書にない語形 " + invented.join(", ") + " を検出したので再生成します。");
-          messages = messages.concat([
-            { role: "assistant", content: text },
-            { role: "user", content: "次の語は辞書の語形でも発音転記でもありません: " + invented.join(", ") + "。造語せず書き直してください。普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。" }
-          ]);
-          return loop(true, 1).catch(function () { return text; }).then(function (rewritten) {
-            rewritten = BaronhEngine.cleanModelText(rewritten) || text;
-            var again = BaronhEngine.inventedBaronhForms(rewritten, lexicon, local);
-            if (again.length <= invented.length) {
-              text = rewritten;
-              invented = again;
-            }
-            return finishOpenAi(text, local, notes, invented, targetLang, base);
-          });
-        }
-        return finishOpenAi(text, local, notes, invented, targetLang, base);
-      }
-      return finishOpenAi(text, local, notes, [], targetLang, base);
+    }).then(function (result) {
+      result.notes = (result.notes || []).concat(["OpenAI 互換 API（" + base + "）。"]);
+      return result;
     });
-  }
-
-  function finishOpenAi(text, local, notes, invented, targetLang, base) {
-    if (invented && invented.length) {
-      notes.push("辞書にない語形: " + invented.join(", ") + "。");
-      var draftClean = BaronhEngine.inventedBaronhForms(local.text, lexicon, local);
-      if (draftClean.length === 0 && invented.length >= 2) {
-        notes.push("生成文の未登録語が多いため下訳を使いました。");
-        text = local.text;
-      }
-    }
-    local.text = text;
-    local.engine = "openai";
-    local.notes = (local.notes || []).concat(notes);
-    if (targetLang === "baronh") {
-      local.ath_keys = BaronhEngine.toAthKeys(text);
-      local.reading_ja = BaronhEngine.readingJa(text);
-    }
-    return local;
   }
 
   function runTranslate() {
@@ -335,20 +338,31 @@
     var q = $("lookup-q").value.trim();
     if (!q) return;
     var hits = lexicon.lookup(q, "auto");
+    var blocks = [];
     if (!hits.length) {
-      $("lookup-out").textContent = "見つかりません";
-      return;
+      blocks.push("完全一致なし");
+    } else {
+      blocks.push(hits.map(function (e) {
+        var lines = [e.lemma + "  [" + e.pos + "]  " + e.gloss_ja + " / " + e.gloss_en];
+        if (e.pos === "noun" || e.pos === "pronoun") {
+          var forms = BaronhEngine.decline(e);
+          lines.push(BaronhEngine.CASES.map(function (c) {
+            return BaronhEngine.CASE_JA[c] + " " + forms[c];
+          }).join("  "));
+        }
+        return lines.join("\n");
+      }).join("\n\n"));
     }
-    $("lookup-out").textContent = hits.map(function (e) {
-      var lines = [e.lemma + "  [" + e.pos + "]  " + e.gloss_ja + " / " + e.gloss_en];
-      if (e.pos === "noun" || e.pos === "pronoun") {
-        var forms = BaronhEngine.decline(e);
-        lines.push(BaronhEngine.CASES.map(function (c) {
-          return BaronhEngine.CASE_JA[c] + " " + forms[c];
-        }).join("  "));
+    if (window.BaronhVectorDB) {
+      var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
+      if (vec.length) {
+        blocks.push("ベクトル検索:\n" + vec.map(function (hit) {
+          return hit.entry.lemma + "  [" + hit.entry.pos + "]  " + hit.entry.gloss_ja +
+            "  (" + hit.score.toFixed(3) + ")";
+        }).join("\n"));
       }
-      return lines.join("\n");
-    }).join("\n\n");
+    }
+    $("lookup-out").textContent = blocks.join("\n\n");
   }
 
   function doConj() {
@@ -395,6 +409,12 @@
   });
   $("source-lang").addEventListener("change", syncAthScript);
   $("target-lang").addEventListener("change", syncAthScript);
+  $("engine").addEventListener("change", syncLocalVectorOption);
+  if ($("local-vector-search")) {
+    $("local-vector-search").addEventListener("change", function () {
+      localStorage.setItem(VECTOR_SEARCH_KEY, $("local-vector-search").checked ? "1" : "0");
+    });
+  }
   $("source-text").addEventListener("input", syncAthScript);
   $("lookup-btn").addEventListener("click", doLookup);
   $("lookup-q").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLookup(); });
@@ -409,6 +429,7 @@
     localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
     if ($("agent-url")) localStorage.setItem(AGENT_URL_KEY, $("agent-url").value.trim());
     setStatus("設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）");
+    probeAgentConfigured();
   });
   $("clear-key").addEventListener("click", function () {
     localStorage.removeItem(KEY);
@@ -449,8 +470,13 @@
   $("api-base").value = localStorage.getItem(BASE_KEY) || "https://api.openai.com/v1";
   $("tts-model").value = localStorage.getItem(TTS_MODEL_KEY) || "gpt-4o-mini-tts";
   if ($("agent-url")) $("agent-url").value = localStorage.getItem(AGENT_URL_KEY) || "/api/translate";
+  if ($("local-vector-search")) {
+    $("local-vector-search").checked = localStorage.getItem(VECTOR_SEARCH_KEY) === "1";
+  }
+  syncLocalVectorOption();
+  setAgentOptionVisible(false);
 
-  firstJson(dataUrls()).then(function (doc) {
+  firstJson(dataUrls("lexicon.json")).then(function (doc) {
     lexicon = new BaronhEngine.Lexicon(doc.entries || []);
     return firstJson(["/data/user_lexicon.json", "../data/user_lexicon.json"]).then(function (overlay) {
       lexicon.mergeDocument(overlay);
@@ -458,9 +484,30 @@
   }).then(function () {
     applyOverlay();
     refreshCount();
+    if (!window.BaronhVectorDB || !lexicon) return;
+    return Promise.all([
+      firstJson(dataUrls("vectors.json")),
+      firstBuffer(dataUrls("vectors.bin"))
+    ]).then(function (pair) {
+      var meta = pair[0];
+      var matrix = new Float32Array(pair[1]);
+      BaronhVectorDB.setPrebuilt({
+        dim: meta.dim,
+        count: meta.count,
+        hash: meta.hash,
+        keys: meta.keys,
+        documents: meta.documents,
+        matrix: matrix
+      });
+      BaronhVectorDB.getIndex(lexicon);
+    });
+  }).then(function () {
+    return probeAgentConfigured();
+  }).then(function () {
     syncAthScript();
     runTranslate();
   }).catch(function (err) {
-    setStatus("辞書を読めませんでした: " + err.message + "。python -m baronh serve で起動してください。");
+    setStatus("辞書またはベクトル索引を読めませんでした: " + err.message +
+      "。python -m baronh export-web のあと python -m baronh serve で起動してください。");
   });
 })();
