@@ -93,6 +93,16 @@ class CliSmokeTest(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("アーヴ", completed.stdout)
 
+    def test_lookup_latin1_oe_finds_wikipedia_oelig(self):
+        completed = self._run("lookup", "boerh")
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("bœrh", completed.stdout)
+        self.assertIn("子爵", completed.stdout)
+        completed = self._run("lookup", "boe")
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("boe", completed.stdout)
+        self.assertIn("思う", completed.stdout)
+
     def test_decline_cli(self):
         completed = self._run("decline", "lamh")
         self.assertEqual(completed.returncode, 0, completed.stderr)
@@ -119,6 +129,46 @@ class CliSmokeTest(unittest.TestCase):
             data = json.loads(path.read_text(encoding="utf-8"))
             self.assertGreater(len(data["entries"]), 40)
             self.assertEqual(data["entries"][0]["lemma"], "fe")
+
+    def test_ingested_dadh_uses_wikipedia_oelig(self):
+        path = ROOT / "data" / "ingested.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        lemmas = {entry["lemma"] for entry in data["entries"]}
+        self.assertIn("bœrh", lemmas)
+        self.assertNotIn("boerh", lemmas)
+        self.assertIn("lœdame", lemmas)
+        self.assertNotIn("loedame", lemmas)
+        self.assertIn("luzœe", lemmas)
+        self.assertNotIn("luzoee", lemmas)
+        self.assertIn("boe", lemmas)
+        self.assertIn("roe", lemmas)
+        self.assertIn("ramgoe", lemmas)
+        self.assertIn("rüé spénec", lemmas)
+        self.assertNotIn("rüé spe'nec", lemmas)
+        for entry in data["entries"]:
+            if "dadh-baronr" not in (entry.get("tags") or []):
+                continue
+            lemma = entry["lemma"]
+            for token in lemma.split():
+                body = token[:-2] if token.endswith("oe") and len(token) >= 2 else token
+                self.assertNotIn("oe", body, lemma)
+
+    def test_lexicon_letters_are_ath_glyphs(self):
+        from baronh.lexicon import load_lexicon
+        from baronh.phonology import to_ath_keys
+        import generate_aarth_font as aarth
+
+        font_cps = set(aarth.ALPHABET_CODEPOINTS) | set(aarth.DIGIT_CODEPOINTS)
+        allowed = font_cps | {ord(" "), ord("-")}
+        lex = load_lexicon()
+        lemmas = {entry.lemma for entry in lex.entries}
+        self.assertIn("ïcu", lemmas)
+        self.assertNotIn("ïku", lemmas)
+        self.assertIn("ise", lemmas)
+        for entry in lex.entries:
+            keys = to_ath_keys(entry.lemma)
+            leftover = [ch for ch in keys if ord(ch) not in allowed]
+            self.assertEqual(leftover, [], entry.lemma)
 
 
 class OpenAIPromptTest(unittest.TestCase):

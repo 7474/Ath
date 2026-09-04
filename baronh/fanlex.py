@@ -8,6 +8,7 @@ from html.parser import HTMLParser
 from typing import Any
 
 from baronh.lexicon import Entry
+from baronh.phonology import fold_fan_romanization
 
 MULE_JISYO_URL = "http://mule.s59.xrea.com/seikai/jisyo/"
 DADH_ONDIC_URL = "http://dadh-baronr.s5.xrea.com/etc/ondic.html"
@@ -105,10 +106,10 @@ def _clean_lemma(raw: str) -> list[str]:
     for part in parts:
         lemma = part.strip().strip("。．")
         if lemma.startswith("-") and len(lemma) > 1:
-            out.append(lemma)
+            out.append(fold_fan_romanization(lemma))
             continue
         if LEMMA_RE.match(lemma):
-            out.append(lemma.casefold())
+            out.append(fold_fan_romanization(lemma.casefold()))
     return out
 
 
@@ -222,7 +223,7 @@ def entries_from_dadh_pairs(pairs: list[tuple[str, str]], *, source: str) -> lis
             paradigm: dict[str, str] = {}
             gen = GEN_RE.search(gloss)
             if pos == "noun" and gen:
-                paradigm = {"nom": lemma, "gen": gen.group(1).casefold()}
+                paradigm = {"nom": lemma, "gen": fold_fan_romanization(gen.group(1).casefold())}
             tags = ["dadh-baronr", "ingested"]
             if reconstructed:
                 tags.append("reconstructed")

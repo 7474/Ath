@@ -24,6 +24,7 @@ from baronh.fanlex import (
 )
 from baronh.lexicon import Entry, Lexicon
 from baronh.paths import INGESTED_PATH
+from baronh.phonology import fold_fan_romanization
 
 WIKI_API = "https://{lang}.wikipedia.org/w/api.php"
 USER_AGENT = "Ath-Baronh-Translator/0.1 (https://github.com/7474/Ath; educational fan tool)"
@@ -130,6 +131,7 @@ def entries_from_pairs(pairs: list[tuple[str, str]], *, source: str) -> list[Ent
         ja = ja.strip().strip(".,;:「」『』")
         if not lemma or not ja or lemma in seen:
             continue
+        lemma = fold_fan_romanization(lemma)
         if not re.fullmatch(r"[A-Za-zÉéÏïÜüŸÿŒœ][A-Za-zÉéÏïÜüŸÿŒœ''-]*", lemma):
             continue
         if len(ja) > 24:

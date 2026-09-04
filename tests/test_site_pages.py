@@ -96,6 +96,18 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("https://7474.github.io/Ath/", readme)
         self.assertNotIn("公開デモ（GitHub Pages）", readme)
 
+    def test_readme_documents_mapping_caveats(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("転写とグリフの留意点", readme)
+        self.assertIn("fold_fan_romanization", readme)
+        self.assertIn("to_ath_keys", readme)
+        self.assertIn("bœrh", readme)
+        self.assertIn("語末の `oe`", readme)
+        architecture = (ROOT / "baronh" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        self.assertIn("アース転写とグリフ", architecture)
+        demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("4×7 ラベル順", demo)
+
     def test_serve_hosts_whole_site(self):
         server = (ROOT / "baronh" / "server.py").read_text(encoding="utf-8")
         self.assertIn("directory=str(ROOT_DIR)", server)

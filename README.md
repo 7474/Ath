@@ -81,6 +81,41 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 
 数字 0–9 は赤井孝美の設計に基づく TRON ラスタを既定で取り込みます。`--image Ath_alphabet.png` のように字母画像だけを渡すと、字母 28 字のみになります。
 
+### 転写とグリフの留意点
+
+フォント cmap（`generate_aarth_font.py` の `ALPHABET_CODEPOINTS`）は [Ath (alphabet).png](https://commons.wikimedia.org/wiki/File:Ath_(alphabet).png) の **4×7 ラベル順**に割り当てます。`to_ath_keys` も同じ順です。Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」は、資料によって **au と o**、**p と eu** の音価対応が揺れると注記しています。本リポジトリはラベル付き Commons 画像の順を正とし、辞書のラテン転写もそのラベル（`a i u é o e c` …）に揃えます。画像の字形を別のラテン字へ載せ替えることはしません。
+
+層は次の二つです。混同しないでください。
+
+| 層 | 中身 | 例 |
+|---|---|---|
+| Wikipedia 転写（辞書見出し） | 字母 1 字をラテン 1 字、ただし `ai` `au` `eu` は 2 字 | `bœrh`, `greuc`, `sairh` |
+| Aarth キー（フォント入力） | 上の 2 字を Nine Lives の `A` `I` `E` へ | `bœrh`, `grEc`, `sArh` |
+
+辞書・訳文は転写のまま持ち、表示時だけ `to_ath_keys`（Python / `web/js/engine.js`）が二重字をキーへ落とします。見出しに素の `A` `I` `E` は出しません。
+
+ファン資料の代用綴りは **取り込み時**（`fold_fan_romanization`）に Wikipedia 転写へ畳みます。lookup も同じ畳みを通す（Python と `foldFanRomanization`）ので、`boerh` で `bœrh` を引けます。
+
+| 資料 | 代用 | 正規 | 備考 |
+|---|---|---|---|
+| Dadh Baronr（Latin-1 / euc-jp） | 語中の `oe` | `œ` | Latin-1 に œ が無い。`boerh` → `bœrh` |
+| 同上 | 語末の `oe` | そのまま | o 語幹 + 不定詞 `-e`（`boe` 思う、`ramgoe` さまよう）。`œ` ではない |
+| アーヴ語掻き集め | `&#339;` | `œ` | HTML 実体。パーサが既に œ にする |
+| 同上 | `e'` | `é` | `spe'nec` → `spénec`。読み仮名も「スペーヌ」 |
+| シード / 固有名詞転記 | `k j v w q x` | `c gh bh u c cs` | アースに無いラテン字。`ïku` → `ïcu` |
+
+畳まないもの:
+
+- 主題の `F'a`（`e'` ではなく `'a`）
+- 接辞のハイフン（`-ad-`）。字母ではない
+- 数字 0–9。フォントにはあるが辞書見出しには出ない（数字用グリフ）
+
+字母 28 字はいずれも現行辞書に現れます。回帰は次です。
+
+- `tests/test_baronh_ingest_cli.py` の `test_lexicon_letters_are_ath_glyphs`（見出しを `to_ath_keys` したあと、字母 cmap と空白・ハイフンだけ）
+- 同ファイルの `test_ingested_dadh_uses_wikipedia_oelig`（`boerh` ではなく `bœrh`）
+- `tests/test_baronh_fanlex.py`（語中 `oe`、語末 `oe`、`e'`、`k`）
+
 ---
 
 ### CSS / HTML usage
@@ -360,7 +395,7 @@ python3 -m baronh serve
 python3 -m baronh export-web --out web/data
 ```
 
-`ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。
+`ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。見出しのラテン転写の畳み（`oe`→`œ`、`e'`→`é`、`k`→`c` など）は [転写とグリフの留意点](#転写とグリフの留意点) を参照してください。
 
 ### スペシャルサンクス
 
