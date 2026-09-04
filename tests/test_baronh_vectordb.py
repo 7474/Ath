@@ -39,6 +39,19 @@ class VectorIndexTest(unittest.TestCase):
         self.assertNotIn("光源弾倉", glosses)
         self.assertIn("sairiac", lemmas)
 
+    def test_notes_are_vector_reference_hits(self):
+        exact = self.lex.lookup("ラクファカール")
+        self.assertTrue(any(entry.lemma.startswith("lacmhacar") for entry in exact))
+        self.assertFalse(any(entry.lemma == "murrautec" for entry in exact))
+        hits = self.index.search("ラクファカール", limit=8)
+        lemmas = [hit.entry.lemma for hit in hits]
+        self.assertTrue(any(lemma.startswith("lacmhacar") for lemma in lemmas))
+        self.assertIn("murrautec", lemmas)
+        home = next(hit for hit in hits if hit.entry.lemma == "murrautec")
+        self.assertEqual(home.entry.gloss_ja.split("/")[0].strip(), "故郷")
+        self.assertIn("ラクファカール", home.entry.notes)
+        self.assertIn("ラクファカール", home.document)
+
     def test_see_finds_mire(self):
         hits = self.index.search("見る", limit=8)
         lemmas = [hit.entry.lemma for hit in hits]

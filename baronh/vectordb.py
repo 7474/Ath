@@ -1,7 +1,8 @@
 """アーヴ語辞書の簡易ベクトル索引。
 
 外部のベクトル DB は使わず、numpy のハッシュ n-gram 埋め込みと余弦類似度だけにする。
-語釈・見出し・類義語ブリッジを同じ文書に載せ、生成 AI が search_lexicon で引けるようにする。
+語釈・見出し・類義語ブリッジに加え、gloss から分けた補足 (notes) も同じ文書に載せる。
+厳密 lookup のキーにはしないが、限られた語彙で寄せるときの参考ヒットにする。
 """
 
 from __future__ import annotations
@@ -94,11 +95,21 @@ def _bridge_terms(entry: Entry) -> list[str]:
     aliases.update(_split_ja_aliases(entry.gloss_en or ""))
     aliases.add(entry.lemma)
     aliases.add(entry.gloss_ja)
+    if entry.notes:
+        aliases.add(entry.notes)
+        aliases.update(_split_ja_aliases(entry.notes))
     terms: list[str] = []
     for query, keys in PARAPHRASE_KEYS.items():
         if any(key in aliases for key in keys):
             terms.append(query)
     return terms
+
+
+def _note_snippet(text: str, *, limit: int = 80) -> str:
+    note = re.sub(r"\s+", " ", text or "").strip()
+    if len(note) > limit:
+        return note[: limit - 1] + "…"
+    return note
 
 
 def entry_document(entry: Entry) -> str:
@@ -108,6 +119,7 @@ def entry_document(entry: Entry) -> str:
         entry.gloss_ja,
         entry.gloss_en or "",
         " ".join(_split_ja_aliases(entry.gloss_ja)),
+        entry.notes or "",
         " ".join(_bridge_terms(entry)),
     ]
     return " ".join(part for part in parts if part)
@@ -126,6 +138,8 @@ def format_entry_line(entry: Entry, *, score: float | None = None) -> str:
             conjugate(entry, mood="imperative", aspect="indefinite"),
         ]
         line += " 活用:" + "/".join(forms)
+    if entry.notes:
+        line += f" notes:{_note_snippet(entry.notes)}"
     if score is not None:
         line += f" score={score:.3f}"
     return line
@@ -258,6 +272,7 @@ def hit_to_dict(hit: VectorHit) -> dict[str, object]:
         "pos": hit.entry.pos,
         "gloss_ja": hit.entry.gloss_ja,
         "gloss_en": hit.entry.gloss_en,
+        "notes": hit.entry.notes or "",
         "score": round(hit.score, 3),
         "line": format_entry_line(hit.entry, score=hit.score),
     }

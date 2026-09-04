@@ -259,6 +259,19 @@ def _normalize_key(text: str) -> str:
     return "".join(text.casefold().split())
 
 
+def _merge_ja_gloss(left: str, right: str) -> str:
+    parts: list[str] = []
+    seen: set[str] = set()
+    for raw in (left, right):
+        for part in re.split(r"\s*/\s*", raw or ""):
+            part = part.strip()
+            key = _normalize_key(part)
+            if part and key not in seen:
+                seen.add(key)
+                parts.append(part)
+    return " / ".join(parts)
+
+
 class Lexicon:
     def __init__(self, entries: Iterable[Entry]):
         self.entries: list[Entry] = []
@@ -296,9 +309,11 @@ class Lexicon:
                 self._by_gloss_en.setdefault(_normalize_key(part), []).append(entry)
 
     def _enrich(self, existing: Entry, incoming: Entry) -> None:
-        if incoming.gloss_ja and incoming.gloss_ja not in existing.gloss_ja:
-            existing.gloss_ja = f"{existing.gloss_ja} / {incoming.gloss_ja}"
-            self._index_glosses(existing)
+        if incoming.gloss_ja:
+            merged = _merge_ja_gloss(existing.gloss_ja, incoming.gloss_ja)
+            if merged != existing.gloss_ja:
+                existing.gloss_ja = merged
+                self._index_glosses(existing)
         if incoming.reading_ja and not existing.reading_ja:
             existing.reading_ja = incoming.reading_ja
         if incoming.stem and not existing.stem:
@@ -647,14 +662,29 @@ def _split_ja_aliases(gloss: str) -> list[str]:
     if "(" in text:
         aliases.append(text.split("(", 1)[0])
         inner = text[text.find("(") + 1 : text.rfind(")")]
-        if inner:
+        if inner and not inner.startswith("特に"):
             aliases.append(inner)
-    for sep in ("/", "・", "。", "、"):
+    for sep in ("/", "・", "。", "、", ";", "；"):
         expanded: list[str] = []
         for alias in aliases:
             expanded.extend(part.strip() for part in alias.split(sep) if part.strip())
         aliases = expanded
-    return aliases
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for alias in aliases:
+        alias = alias.strip(" .。;；")
+        if not alias:
+            continue
+        if alias.startswith("特に") or re.match(r"^\(?特に", alias):
+            continue
+        if re.match(r"^(pl\.|rüé|gen\.|nom\.|acc\.)", alias, re.I):
+            continue
+        key = _normalize_key(alias)
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(alias)
+    return cleaned
 
 
 def load_lexicon(paths: Iterable[Path] | None = None) -> Lexicon:

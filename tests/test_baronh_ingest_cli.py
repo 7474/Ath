@@ -153,6 +153,20 @@ class CliSmokeTest(unittest.TestCase):
                 body = token[:-2] if token.endswith("oe") and len(token) >= 2 else token
                 self.assertNotIn("oe", body, lemma)
 
+    def test_hometown_gloss_excludes_capital_supplement(self):
+        from baronh.lexicon import load_lexicon
+
+        lex = load_lexicon()
+        home = lex.lookup("故郷")
+        self.assertTrue(any(entry.lemma == "murrautec" for entry in home), [e.lemma for e in home])
+        for entry in home:
+            if entry.lemma == "murrautec":
+                self.assertEqual(entry.gloss_ja.split("/")[0].strip(), "故郷")
+                self.assertNotIn("ラクファカール", entry.gloss_ja)
+        capital = lex.lookup("ラクファカール")
+        self.assertTrue(any(entry.lemma.startswith("lacmhacar") for entry in capital))
+        self.assertFalse(any(entry.lemma == "murrautec" for entry in capital))
+
     def test_lexicon_letters_are_ath_glyphs(self):
         from baronh.lexicon import load_lexicon
         from baronh.phonology import to_ath_keys
