@@ -12,12 +12,11 @@ from baronh.phonology import (
     PHONETIC_SUMMARY,
     is_latin_name,
     looks_like_proper_noun,
-    latin_to_baronh,
     reading_ja,
     split_honorific,
     to_ath_keys,
     transcribe_baronh_to_kana,
-    transcribe_proper_to_baronh,
+    transcribe_proper_noun,
     normalize_baronh,
 )
 
@@ -289,12 +288,13 @@ def _lookup_ja(lexicon: Lexicon, word: str) -> list[Entry]:
     return []
 
 
-def _phonetic_noun_entry(source: str, lemma: str) -> Entry:
+def _phonetic_noun_entry(source: str, lemma: str, declension: str = "") -> Entry:
     return Entry(
         lemma=lemma,
         pos="noun",
         gloss_ja=source,
         gloss_en=source,
+        declension=declension,
         tags=["phonetic", "proper"],
         notes=PHONETIC_NOTE,
         source="phonetic",
@@ -305,10 +305,10 @@ def _try_phonetic_noun(tok: str, nxt: str) -> Entry | None:
     if not looks_like_proper_noun(tok, nxt=nxt, copula=nxt in JA_COPULA):
         return None
     core, _hon = split_honorific(tok)
-    lemma = transcribe_proper_to_baronh(core)
+    lemma, declension = transcribe_proper_noun(core)
     if not lemma:
         return None
-    return _phonetic_noun_entry(tok, lemma)
+    return _phonetic_noun_entry(tok, lemma, declension)
 
 
 def _apply_case(entry: Entry, case: str) -> str:
@@ -532,8 +532,8 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
             entries = lexicon.lookup(low[:-1], lang="en")
         if not entries:
             if is_latin_name(tok, require_capital=True):
-                lemma = latin_to_baronh(tok)
-                phonetic = _phonetic_noun_entry(tok, lemma)
+                lemma, declension = transcribe_proper_noun(tok)
+                phonetic = _phonetic_noun_entry(tok, lemma, declension)
                 phonetic_pairs.append(f"{tok}→{lemma}")
                 pending = phonetic
                 pending_src = tok

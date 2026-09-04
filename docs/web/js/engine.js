@@ -36,9 +36,9 @@
   var KANA_BARONH = [
     ["キャ", "cia"], ["キュ", "ciu"], ["キョ", "cio"],
     ["ギャ", "gia"], ["ギュ", "giu"], ["ギョ", "gio"],
-    ["シャ", "sha"], ["シュ", "shu"], ["ショ", "sho"],
-    ["ジャ", "ja"], ["ジュ", "ju"], ["ジョ", "jo"],
-    ["チャ", "tia"], ["チュ", "tiu"], ["チョ", "tio"],
+    ["シャ", "sia"], ["シュ", "siu"], ["ショ", "sio"], ["シェ", "sie"],
+    ["ジャ", "gha"], ["ジュ", "ghu"], ["ジョ", "gho"], ["ジェ", "ghe"],
+    ["チャ", "tia"], ["チュ", "tiu"], ["チョ", "tio"], ["チェ", "tie"],
     ["ニャ", "nia"], ["ニュ", "niu"], ["ニョ", "nio"],
     ["ヒャ", "hia"], ["ヒュ", "hiu"], ["ヒョ", "hio"],
     ["ビャ", "bia"], ["ビュ", "biu"], ["ビョ", "bio"],
@@ -46,10 +46,10 @@
     ["ミャ", "mia"], ["ミュ", "miu"], ["ミョ", "mio"],
     ["リャ", "ria"], ["リュ", "riu"], ["リョ", "rio"],
     ["ファ", "fa"], ["フィ", "fi"], ["フェ", "fe"], ["フォ", "fo"], ["フュ", "fiu"],
-    ["ヴァ", "va"], ["ヴィ", "vi"], ["ヴェ", "ve"], ["ヴォ", "vo"], ["ヴュ", "viu"],
+    ["ヴァ", "bha"], ["ヴィ", "bhi"], ["ヴェ", "bhe"], ["ヴォ", "bho"], ["ヴュ", "bhiu"],
     ["ティ", "ti"], ["テュ", "tiu"], ["トゥ", "tu"],
     ["ディ", "di"], ["デュ", "diu"], ["ドゥ", "du"],
-    ["ウィ", "wi"], ["ウェ", "we"], ["ウォ", "wo"],
+    ["ウィ", "ui"], ["ウェ", "ue"], ["ウォ", "uo"],
     ["ア", "a"], ["イ", "i"], ["ウ", "u"], ["エ", "e"], ["オ", "o"],
     ["カ", "ca"], ["キ", "ci"], ["ク", "cu"], ["ケ", "ce"], ["コ", "co"],
     ["サ", "sa"], ["シ", "si"], ["ス", "su"], ["セ", "se"], ["ソ", "so"],
@@ -59,13 +59,13 @@
     ["マ", "ma"], ["ミ", "mi"], ["ム", "mu"], ["メ", "me"], ["モ", "mo"],
     ["ヤ", "ia"], ["ユ", "iu"], ["ヨ", "io"],
     ["ラ", "ra"], ["リ", "ri"], ["ル", "ru"], ["レ", "re"], ["ロ", "ro"],
-    ["ワ", "wa"], ["ヲ", "wo"], ["ン", "n"],
+    ["ワ", "ua"], ["ヲ", "uo"], ["ン", "n"],
     ["ガ", "ga"], ["ギ", "gi"], ["グ", "gu"], ["ゲ", "ge"], ["ゴ", "go"],
-    ["ザ", "za"], ["ジ", "ji"], ["ズ", "zu"], ["ゼ", "ze"], ["ゾ", "zo"],
+    ["ザ", "za"], ["ジ", "ghi"], ["ズ", "zu"], ["ゼ", "ze"], ["ゾ", "zo"],
     ["ダ", "da"], ["ヂ", "di"], ["ヅ", "du"], ["デ", "de"], ["ド", "do"],
     ["バ", "ba"], ["ビ", "bi"], ["ブ", "bu"], ["ベ", "be"], ["ボ", "bo"],
     ["パ", "pa"], ["ピ", "pi"], ["プ", "pu"], ["ペ", "pe"], ["ポ", "po"],
-    ["ヴ", "vu"]
+    ["ヴ", "bhu"]
   ].sort(function (a, b) { return b[0].length - a[0].length; });
 
   function hiraToKata(text) {
@@ -141,7 +141,30 @@
       pieces.push(roman);
       i += matched[0].length;
     }
-    return pieces.join("").replace(/\s+/g, " ").trim();
+    return foldToAthSpelling(pieces.join("").replace(/\s+/g, " ").trim());
+  }
+
+  function foldToAthSpelling(text) {
+    return String(text || "").replace(/./g, function (ch) {
+      var low = ch.toLowerCase();
+      if (low === "j") return "gh";
+      if (low === "v") return "bh";
+      if (low === "w") return "u";
+      if (low === "k" || low === "q") return "c";
+      if (low === "x") return "cs";
+      return ch;
+    });
+  }
+
+  function baronhProperNoun(stem) {
+    stem = foldToAthSpelling(String(stem || "").trim());
+    if (!stem) return { lemma: "", declension: "" };
+    var last = stem.charAt(stem.length - 1).toLowerCase();
+    if (last === "c") return { lemma: stem, declension: "3" };
+    if (last === "h") return { lemma: stem, declension: "2" };
+    if (last === "n") return { lemma: stem, declension: "1n" };
+    if ("aiueoïüÿéœy".indexOf(last) >= 0) return { lemma: stem + "c", declension: "3" };
+    return { lemma: stem + "h", declension: "2" };
   }
 
   function latinToBaronh(text) {
@@ -150,35 +173,45 @@
     var i = 0;
     while (i < src.length) {
       var pair = src.slice(i, i + 2).toLowerCase();
-      if (pair === "th" || pair === "sh" || pair === "ch" || pair === "ph") { out += pair; i += 2; continue; }
-      if (pair === "wh") { out += "w"; i += 2; continue; }
+      if (pair === "th" || pair === "ch" || pair === "ph") { out += pair; i += 2; continue; }
+      if (pair === "sh") { out += "ch"; i += 2; continue; }
+      if (pair === "wh") { out += "u"; i += 2; continue; }
       var ch = src.charAt(i);
       var low = ch.toLowerCase();
-      if (low === "k" || low === "q") out += "c";
+      if (low === "j") out += "gh";
+      else if (low === "v") out += "bh";
+      else if (low === "w") out += "u";
+      else if (low === "k" || low === "q") out += "c";
       else if (low === "x") out += "cs";
       else if (/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(ch)) out += low;
       else if ("'-".indexOf(ch) >= 0) out += ch;
       i++;
     }
-    return out;
+    return foldToAthSpelling(out);
+  }
+
+  function transcribeProperNoun(text) {
+    var core = splitHonorific(String(text || "").trim()).core.replace(/[.,!?;:]+$/g, "");
+    if (!core) return { lemma: "", declension: "" };
+    var stem = (/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(core) && !/[\u3040-\u30ff\u4e00-\u9fff]/.test(core))
+      ? latinToBaronh(core)
+      : kanaToBaronh(core);
+    return baronhProperNoun(stem);
   }
 
   function transcribeProperToBaronh(text) {
-    var core = splitHonorific(String(text || "").trim()).core.replace(/[.,!?;:]+$/g, "");
-    if (!core) return "";
-    if (/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(core) && !/[\u3040-\u30ff\u4e00-\u9fff]/.test(core)) return latinToBaronh(core);
-    return kanaToBaronh(core);
+    return transcribeProperNoun(text).lemma;
   }
 
-  function phoneticNounEntry(source, lemma) {
-    return { lemma: lemma, pos: "noun", gloss_ja: source, gloss_en: source, tags: ["phonetic", "proper"], notes: PHONETIC_NOTE, source: "phonetic", declension: "", paradigm: {} };
+  function phoneticNounEntry(source, lemma, declension) {
+    return { lemma: lemma, pos: "noun", gloss_ja: source, gloss_en: source, tags: ["phonetic", "proper"], notes: PHONETIC_NOTE, source: "phonetic", declension: declension || "", paradigm: {} };
   }
 
   function tryPhoneticNoun(tok, nxt) {
     if (!looksLikeProperNoun(tok, nxt, !!JA_COPULA[nxt])) return null;
-    var lemma = transcribeProperToBaronh(splitHonorific(tok).core);
-    if (!lemma) return null;
-    return phoneticNounEntry(tok, lemma);
+    var transcribed = transcribeProperNoun(splitHonorific(tok).core);
+    if (!transcribed.lemma) return null;
+    return phoneticNounEntry(tok, transcribed.lemma, transcribed.declension);
   }
 
   function isPhonetic(entry) {
@@ -340,7 +373,7 @@
         i += 2; continue;
       }
       if (VOWEL_KANA[low]) { pieces.push(VOWEL_KANA[low]); i++; continue; }
-      if (low === "c" && i === src.length - 1) { i++; continue; }
+      if (low === "c" && (!n2 || /[\s.,!?;:]/.test(n2))) { i++; continue; }
       pieces.push({ c: "ク", s: "ス", t: "ト", n: "ン", r: "ル", l: "ル", m: "ム", b: "ブ", g: "グ", d: "ド", z: "ズ", h: "フ", p: "プ", f: "フ" }[low] || ch);
       i++;
     }
@@ -953,9 +986,9 @@
       if (!entries.length && low.endsWith("s")) entries = lexicon.lookup(low.slice(0, -1), "en");
       if (!entries.length) {
         if (isLatinName(tok, true)) {
-          var lemma = latinToBaronh(tok);
-          phoneticPairs.push(tok + "→" + lemma);
-          pending = phoneticNounEntry(tok, lemma);
+          var transcribed = transcribeProperNoun(tok);
+          phoneticPairs.push(tok + "→" + transcribed.lemma);
+          pending = phoneticNounEntry(tok, transcribed.lemma, transcribed.declension);
           pendingSrc = tok;
           continue;
         }
@@ -1071,8 +1104,8 @@
     throw new Error("no local route for " + src + "->" + tgt);
   }
 
-  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは辞書の近い見出しに寄せてよい。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞は発音転記して構いません。ただし辞書に近い見出しがあるなら転記より辞書を優先します。必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。訳文だけを出力してください。";
-  var FEW_SHOT_TO_BARONH = "例（ja/en → baronh）:\n- 私は移民します → F'a usere.\n- 私はアーヴです → F'a bale.\n- 分かりますか → face sa?\n- ありがとう → zom.\n- ジントはアーヴです → jinto a bale.";
+  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは辞書の近い見出しに寄せてよい。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞はアーヴ語の正書法で発音転記して構いません（ジ行は gh、カ行は c、主格は -c/-h/-n。j/k/w/v は使わない）。ただし辞書に近い見出しがあるなら転記より辞書を優先します。必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。訳文だけを出力してください。";
+  var FEW_SHOT_TO_BARONH = "例（ja/en → baronh）:\n- 私は移民します → F'a usere.\n- 私はアーヴです → F'a bale.\n- 分かりますか → face sa?\n- ありがとう → zom.\n- ジントはアーヴです → ghintoc a bale.";
   var FEW_SHOT_FROM_BARONH = "例（baronh → ja/en）:\n- F'a usere. → 私は移民する / I immigrate.\n- F'a bale. → 私はアーヴだ / I am Abh.\n- face sa? → 分かりますか / Do you understand?\n- zom. → ありがとう / Thanks.";
   var CLOSED_BARONH = { a: 1, "éü": 1, sa: 1, te: 1, le: 1, lo: 1, "f'a": 1, "d'a": 1, "s'a": 1 };
 
@@ -1081,7 +1114,7 @@
     verbs: "動詞は語幹+態+語尾。直説法: 不定 -e, 完了 -le, 進行 -lér, 未然 -to。仮定法: -éme -lar -lérm -dar。命令 -é。態は -as- -ar- -ad-。",
     pronouns: "fe 私, de あなた, se 彼/彼女, farh 私たち, darh あなたたち, cnac 彼ら, so これ, re それ, ai あれ。fe の格: fe/fal/far/feri/feré/fasar/fale。主題 F'a。",
     syntax: "語順は SOV または SVO。修飾語は被修飾語の後ろ。後置詞: a は, éü よ, sa か, te と。AはBだ は主題+具格。疑問は sa。",
-    phonology: "c は /k/。Ath キー: ai→A, au→I, eu→E。辞書にない固有名詞は発音転記。読み上げはローマ字を仮名に落として日本語 TTS に渡す。"
+    phonology: "c は /k/。Ath キー: ai→A, au→I, eu→E。辞書にない固有名詞はアーヴ語正書法で発音転記する（ジ行は gh、カ行は ca/ci/cu/ce/co、主格は -c/-h/-n。j/k/w/v は使わない）。読み上げはローマ字を仮名に落として日本語 TTS に渡す。"
   };
 
   var CHAT_TOOLS = [
@@ -1211,12 +1244,32 @@
       "\n\n訳文だけを出力してください。解説は不要です。足りない語は lookup_lexicon / grammar_note で引いてください。";
   }
 
+  function phoneticDeclinedForms(lemma) {
+    lemma = String(lemma || "").replace(/[.,!?;:']/g, "");
+    if (!lemma || !/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(lemma)) return [];
+    var last = lemma.charAt(lemma.length - 1).toLowerCase();
+    var kind = last === "c" ? "3" : last === "h" ? "2" : last === "n" ? "1n" : "";
+    var forms = [lemma.toLowerCase()];
+    var declined = decline({ lemma: lemma, pos: "noun", gloss_ja: lemma, declension: kind, paradigm: {} });
+    CASES.forEach(function (c) { forms.push(String(declined[c] || "").toLowerCase()); });
+    return forms;
+  }
+
   function inventedBaronhForms(text, lexicon, local) {
     var index = new FormIndex(lexicon);
     var allowed = {};
     (local && local.analysis ? local.analysis : []).forEach(function (item) {
       if (/発音転記/.test(item.note || "")) {
-        tokenizeBaronh(item.target).forEach(function (tok) { allowed[String(tok).toLowerCase()] = 1; });
+        tokenizeBaronh(item.target).forEach(function (tok) {
+          phoneticDeclinedForms(tok).forEach(function (form) { allowed[form] = 1; });
+        });
+      }
+    });
+    ((local && local.notes) || []).forEach(function (note) {
+      var re = /→([A-Za-zÉéÏïÜüŸÿŒœ']+)/g;
+      var m;
+      while ((m = re.exec(String(note))) ) {
+        phoneticDeclinedForms(m[1]).forEach(function (form) { allowed[form] = 1; });
       }
     });
     var invented = [];

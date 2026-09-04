@@ -119,7 +119,7 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertIn("abh", lemmas)
         self.assertNotIn("saïc ramh ghinter", lemmas)
         self.assertNotIn("bate", lemmas)
-        self.assertEqual(local.text, "jinto a bale.")
+        self.assertEqual(local.text, "ghintoc a bale.")
         gaps = describe_gaps(local, self.lex)
         self.assertNotIn("サイ・ジント", gaps)
         self.assertIn("発音転記", gaps)
@@ -165,7 +165,9 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertEqual(invented_baronh_forms("F'a bale.", self.lex, local=local), [])
         self.assertIn("xyzzy", invented_baronh_forms("F'a xyzzy.", self.lex, local=local))
         phonetic = translate("私はジントです", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertEqual(invented_baronh_forms("F'a jinto.", self.lex, local=phonetic), [])
+        self.assertEqual(invented_baronh_forms(phonetic.text, self.lex, local=phonetic), [])
+        self.assertEqual(invented_baronh_forms("F'a ghintoc.", self.lex, local=phonetic), [])
+        self.assertIn("jinto", invented_baronh_forms("F'a jinto.", self.lex, local=phonetic))
 
     def test_clean_model_text(self):
         self.assertEqual(clean_model_text("```\nF'a bale.\n```"), "F'a bale.")

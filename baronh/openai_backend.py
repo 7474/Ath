@@ -15,7 +15,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from baronh.grammar import FormIndex, conjugate, decline
-from baronh.lexicon import Lexicon
+from baronh.lexicon import Entry, Lexicon
 from baronh.phonology import reading_ja, to_ath_keys
 from baronh.translate import (
     JA_PARTICLES,
@@ -37,7 +37,7 @@ GRAMMAR_BRIEF = """
 下訳は規則ベースで、抜けや誤りがあります。辞書と文法で直してください。
 原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは、辞書の近い見出しに寄せてよい。
 普通名詞など辞書にない語は造語せず、原文の語を残します。
-辞書にない固有名詞は発音転記して構いません。ただし辞書に近い見出しがあるなら転記より辞書を優先します。
+辞書にない固有名詞はアーヴ語の正書法で発音転記して構いません（ジ行は gh、カ行は c、主格は -c/-h/-n。j/k/w/v は使わない）。ただし辞書に近い見出しがあるなら転記より辞書を優先します。
 必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。
 訳文だけを出力し、解説や引用符は付けないでください。
 
@@ -61,7 +61,7 @@ FEW_SHOT_TO_BARONH = """
 - 私はアーヴです → F'a bale.
 - 分かりますか → face sa?
 - ありがとう → zom.
-- ジントはアーヴです → jinto a bale.
+- ジントはアーヴです → ghintoc a bale.
 """
 
 FEW_SHOT_FROM_BARONH = """
@@ -102,8 +102,10 @@ GRAMMAR_TOPICS: dict[str, str] = {
         "疑問は sa を文末に置く。"
     ),
     "phonology": (
-        "c は /k/。ch/sh は摩擦音。Ath キー: ai→A, au→I, eu→E。"
-        "辞書にない固有名詞は発音転記（カタカナ カ行は ca/ci/cu/ce/co）。"
+        "c は /k/。ch は摩擦音。Ath キー: ai→A, au→I, eu→E。"
+        "辞書にない固有名詞はアーヴ語正書法で発音転記する。"
+        "カ行は ca/ci/cu/ce/co。ジ行は gh（g+h=[ʒ]）。ヴは bh。アースに無い j/k/w/v は使わない。"
+        "名詞の主格は -c / -h / -n で終わる。"
         "読み上げはローマ字を仮名に落として日本語 TTS に渡す。"
     ),
 }
@@ -348,6 +350,19 @@ def build_user_prompt(
     )
 
 
+def _phonetic_declined_forms(lemma: str) -> set[str]:
+    lemma = lemma.strip(".,!?;:'")
+    if not lemma or not re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", lemma):
+        return set()
+    last = lemma[-1].lower()
+    kind = "3" if last == "c" else "2" if last == "h" else "1n" if last == "n" else ""
+    entry = Entry(lemma=lemma, pos="noun", gloss_ja=lemma, declension=kind)
+    forms = {lemma.casefold()}
+    for form in decline(entry).values():
+        forms.add(form.casefold())
+    return forms
+
+
 def phonetic_allowed_forms(local: TranslationResult | None) -> set[str]:
     allowed: set[str] = set()
     if local is None:
@@ -356,6 +371,10 @@ def phonetic_allowed_forms(local: TranslationResult | None) -> set[str]:
         if "発音転記" in (item.note or ""):
             for token in _tokenize_baronh(item.target):
                 allowed.add(token.casefold())
+                allowed.update(_phonetic_declined_forms(token))
+    for note in local.notes or []:
+        for lemma in re.findall(r"→([A-Za-zÉéÏïÜüŸÿŒœ']+)", note):
+            allowed.update(_phonetic_declined_forms(lemma))
     return allowed
 
 

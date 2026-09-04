@@ -75,15 +75,19 @@ class TranslateJaBaronhTest(unittest.TestCase):
 
     def test_unknown_proper_noun_phonetic(self):
         out = translate("私はジントです", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertEqual(out.text, "F'a jinto.")
+        self.assertEqual(out.text, "F'a ghintole.")
         self.assertTrue(any("発音転記" in (item.note or "") for item in out.analysis))
         self.assertTrue(any("発音から転記" in note for note in out.notes))
-        self.assertIn("ジント→jinto", " ".join(out.notes))
+        self.assertIn("ジント→ghintoc", " ".join(out.notes))
+        self.assertNotRegex(out.text, r"[jkwvJKWV]")
+        self.assertIn("ジント", out.reading_ja)
 
     def test_unknown_proper_noun_topic(self):
         out = translate("ジントはアーヴです", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertEqual(out.text, "jinto a bale.")
+        self.assertEqual(out.text, "ghintoc a bale.")
         self.assertNotIn("ジント", out.text)
+        self.assertNotIn("jinto", out.text.lower())
+        self.assertIn("ジント", out.reading_ja)
 
     def test_dictionary_name_not_phonetic(self):
         out = translate("私はアーヴです", self.lex, source_lang="ja", target_lang="baronh")
@@ -92,9 +96,10 @@ class TranslateJaBaronhTest(unittest.TestCase):
 
     def test_english_capitalized_name(self):
         out = translate("Jinto is Abh", self.lex, source_lang="en", target_lang="baronh")
-        self.assertIn("jinto", out.text.lower())
+        self.assertIn("ghintoc", out.text.lower())
         self.assertIn("bale", out.text)
         self.assertTrue(any("発音から転記" in note for note in out.notes))
+        self.assertNotIn("jinto", out.text.lower())
 
     def test_baronh_unknown_name_to_kana(self):
         out = translate("Jinto a bale.", self.lex, source_lang="baronh", target_lang="ja")
@@ -127,7 +132,7 @@ class TranslateWithIngestedLexiconTest(unittest.TestCase):
 
     def test_unknown_proper_noun_with_fan_lexicon(self):
         out = translate("私はジントです", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertEqual(out.text, "F'a jinto.")
+        self.assertEqual(out.text, "F'a ghintole.")
         self.assertTrue(any("発音から転記" in note for note in out.notes))
 
 
@@ -143,10 +148,13 @@ class PhonologyTest(unittest.TestCase):
         self.assertIn("ア", reading)
 
     def test_kana_to_baronh_jinto(self):
-        from baronh.phonology import kana_to_baronh
+        from baronh.phonology import kana_to_baronh, transcribe_proper_to_baronh
 
-        self.assertEqual(kana_to_baronh("ジント"), "jinto")
+        self.assertEqual(kana_to_baronh("ジント"), "ghinto")
+        self.assertEqual(transcribe_proper_to_baronh("ジント"), "ghintoc")
         self.assertEqual(kana_to_baronh("トウキョウ"), "tocio")
+        self.assertEqual(kana_to_baronh("ヴァンス"), "bhansu")
+        self.assertEqual(reading_ja("ghintoc a bale."), "ジント ア バレ。")
 
 
 if __name__ == "__main__":

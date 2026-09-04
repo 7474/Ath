@@ -158,11 +158,12 @@ def reading_ja(text: str, *, drop_silent_final: bool = True) -> str:
                 pieces.append(_cv(low, nxt))
                 i += 2
                 continue
-            # 語末の黙字
-            if drop_silent_final and i + 1 == length and low in {"c"}:
+            # 語末の黙字（空白・句読点の直前も語末）
+            at_word_end = (not nxt) or nxt in " \t\n.,!?;:"
+            if drop_silent_final and at_word_end and low in {"c"}:
                 i += 1
                 continue
-            if drop_silent_final and i + 1 == length and low == "r" and pieces:
+            if drop_silent_final and at_word_end and low == "r" and pieces:
                 i += 1
                 continue
             pieces.append({
@@ -201,13 +202,15 @@ PHONETIC_SUMMARY = (
     "辞書にない固有名詞は発音から転記しています。辞書の見出しではありません。"
 )
 
-# 仮名モーラ → アーヴ語ローマ字（c=/k/, ch/sh は摩擦音なので チは ti）。
+# 仮名モーラ → アーヴ語ローマ字。アースに無い j/k/w/v は使わない。
+# ジ行は gh（g+h → [ʒ]）、ヴは bh（b+h → [v]）、ワ行は u の渡り。
+# カ行は c=/k/。拗音は cia 型（シャは sia。ヘボンの sha/ja にしない）。
 _KANA_BARONH: tuple[tuple[str, str], ...] = (
     ("キャ", "cia"), ("キュ", "ciu"), ("キョ", "cio"),
     ("ギャ", "gia"), ("ギュ", "giu"), ("ギョ", "gio"),
-    ("シャ", "sha"), ("シュ", "shu"), ("ショ", "sho"),
-    ("ジャ", "ja"), ("ジュ", "ju"), ("ジョ", "jo"),
-    ("チャ", "tia"), ("チュ", "tiu"), ("チョ", "tio"),
+    ("シャ", "sia"), ("シュ", "siu"), ("ショ", "sio"), ("シェ", "sie"),
+    ("ジャ", "gha"), ("ジュ", "ghu"), ("ジョ", "gho"), ("ジェ", "ghe"),
+    ("チャ", "tia"), ("チュ", "tiu"), ("チョ", "tio"), ("チェ", "tie"),
     ("ニャ", "nia"), ("ニュ", "niu"), ("ニョ", "nio"),
     ("ヒャ", "hia"), ("ヒュ", "hiu"), ("ヒョ", "hio"),
     ("ビャ", "bia"), ("ビュ", "biu"), ("ビョ", "bio"),
@@ -215,10 +218,10 @@ _KANA_BARONH: tuple[tuple[str, str], ...] = (
     ("ミャ", "mia"), ("ミュ", "miu"), ("ミョ", "mio"),
     ("リャ", "ria"), ("リュ", "riu"), ("リョ", "rio"),
     ("ファ", "fa"), ("フィ", "fi"), ("フェ", "fe"), ("フォ", "fo"), ("フュ", "fiu"),
-    ("ヴァ", "va"), ("ヴィ", "vi"), ("ヴェ", "ve"), ("ヴォ", "vo"), ("ヴュ", "viu"),
+    ("ヴァ", "bha"), ("ヴィ", "bhi"), ("ヴェ", "bhe"), ("ヴォ", "bho"), ("ヴュ", "bhiu"),
     ("ティ", "ti"), ("テュ", "tiu"), ("トゥ", "tu"),
     ("ディ", "di"), ("デュ", "diu"), ("ドゥ", "du"),
-    ("ウィ", "wi"), ("ウェ", "we"), ("ウォ", "wo"),
+    ("ウィ", "ui"), ("ウェ", "ue"), ("ウォ", "uo"),
     ("ア", "a"), ("イ", "i"), ("ウ", "u"), ("エ", "e"), ("オ", "o"),
     ("カ", "ca"), ("キ", "ci"), ("ク", "cu"), ("ケ", "ce"), ("コ", "co"),
     ("サ", "sa"), ("シ", "si"), ("ス", "su"), ("セ", "se"), ("ソ", "so"),
@@ -228,13 +231,13 @@ _KANA_BARONH: tuple[tuple[str, str], ...] = (
     ("マ", "ma"), ("ミ", "mi"), ("ム", "mu"), ("メ", "me"), ("モ", "mo"),
     ("ヤ", "ia"), ("ユ", "iu"), ("ヨ", "io"),
     ("ラ", "ra"), ("リ", "ri"), ("ル", "ru"), ("レ", "re"), ("ロ", "ro"),
-    ("ワ", "wa"), ("ヲ", "wo"), ("ン", "n"),
+    ("ワ", "ua"), ("ヲ", "uo"), ("ン", "n"),
     ("ガ", "ga"), ("ギ", "gi"), ("グ", "gu"), ("ゲ", "ge"), ("ゴ", "go"),
-    ("ザ", "za"), ("ジ", "ji"), ("ズ", "zu"), ("ゼ", "ze"), ("ゾ", "zo"),
+    ("ザ", "za"), ("ジ", "ghi"), ("ズ", "zu"), ("ゼ", "ze"), ("ゾ", "zo"),
     ("ダ", "da"), ("ヂ", "di"), ("ヅ", "du"), ("デ", "de"), ("ド", "do"),
     ("バ", "ba"), ("ビ", "bi"), ("ブ", "bu"), ("ベ", "be"), ("ボ", "bo"),
     ("パ", "pa"), ("ピ", "pi"), ("プ", "pu"), ("ペ", "pe"), ("ポ", "po"),
-    ("ヴ", "vu"),
+    ("ヴ", "bhu"),
 )
 
 _KANA_BARONH_SORTED = tuple(sorted(_KANA_BARONH, key=lambda item: len(item[0]), reverse=True))
@@ -348,44 +351,107 @@ def kana_to_baronh(text: str) -> str:
     out = "".join(pieces)
     while "  " in out:
         out = out.replace("  ", " ")
-    return out.strip()
+    return fold_to_ath_spelling(out.strip())
+
+
+def fold_to_ath_spelling(text: str) -> str:
+    """アースに無いラテン字を、対応するアーヴ語綴りへ畳む。"""
+    out: list[str] = []
+    for ch in text:
+        low = ch.lower()
+        if low == "j":
+            out.append("gh")
+        elif low == "v":
+            out.append("bh")
+        elif low == "w":
+            out.append("u")
+        elif low in {"k", "q"}:
+            out.append("c")
+        elif low == "x":
+            out.append("cs")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+_PROPER_VOWELS = set("aiueoïüÿéœy")
+
+
+def baronh_proper_noun(stem: str) -> tuple[str, str]:
+    """固有名詞の語幹を正規アーヴ語の主格（-c / -h / -n）と型に整える。"""
+    stem = fold_to_ath_spelling((stem or "").strip())
+    if not stem:
+        return "", ""
+    last = stem[-1].lower()
+    if last == "c":
+        return stem, "3"
+    if last == "h":
+        return stem, "2"
+    if last == "n":
+        return stem, "1n"
+    if last in _PROPER_VOWELS:
+        return stem + "c", "3"
+    return stem + "h", "2"
 
 
 def latin_to_baronh(text: str) -> str:
-    """ラテン文字の固有名詞をアーヴ語綴りに寄せる（k→c など）。"""
+    """ラテン文字の固有名詞をアーヴ語綴りに寄せる（k→c、j→gh など）。"""
     src = unicodedata.normalize("NFC", text.strip().strip(".,!?;:"))
     out: list[str] = []
     i = 0
-    lower = src
-    while i < len(lower):
-        pair = lower[i : i + 2]
-        if pair.lower() in {"th", "sh", "ch", "ph", "wh"}:
-            out.append(pair.lower() if pair.lower() != "wh" else "w")
+    while i < len(src):
+        pair = src[i : i + 2]
+        low_pair = pair.lower()
+        if low_pair in {"th", "ch", "ph"}:
+            out.append(low_pair)
             i += 2
             continue
-        ch = lower[i]
-        mapped = {"k": "c", "K": "c", "q": "c", "Q": "c", "x": "cs", "X": "cs"}.get(ch)
+        if low_pair == "sh":
+            out.append("ch")
+            i += 2
+            continue
+        if low_pair == "wh":
+            out.append("u")
+            i += 2
+            continue
+        ch = src[i]
+        mapped = {
+            "j": "gh", "J": "gh",
+            "v": "bh", "V": "bh",
+            "w": "u", "W": "u",
+            "k": "c", "K": "c",
+            "q": "c", "Q": "c",
+            "x": "cs", "X": "cs",
+        }.get(ch)
         if mapped:
             out.append(mapped)
         elif ch.isalpha() or ch in "'’-":
             out.append(ch.lower() if ch.isalpha() else ch)
         i += 1
-    return "".join(out)
+    return fold_to_ath_spelling("".join(out))
 
 
-def transcribe_proper_to_baronh(text: str) -> str:
+def transcribe_proper_noun(text: str) -> tuple[str, str]:
+    """固有名詞をアーヴ語の主格見出しと変化型にする。"""
     core, _hon = split_honorific(text.strip())
     core = core.strip(".,!?;:")
     if not core:
-        return ""
+        return "", ""
     if re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", core) and not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", core):
-        return latin_to_baronh(core)
-    return kana_to_baronh(core)
+        stem = latin_to_baronh(core)
+    else:
+        stem = kana_to_baronh(core)
+    return baronh_proper_noun(stem)
+
+
+def transcribe_proper_to_baronh(text: str) -> str:
+    lemma, _kind = transcribe_proper_noun(text)
+    return lemma
 
 
 def transcribe_baronh_to_kana(text: str) -> str:
     """未登録のアーヴ語固有名詞を仮名読みにする。"""
-    return reading_ja(text, drop_silent_final=False)
+    return reading_ja(text, drop_silent_final=True)
 
 
 def speakable_text(text: str, lang: str) -> str:
