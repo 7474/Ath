@@ -213,15 +213,6 @@
         engine: "agent"
       })
     }).then(function (res) {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: $("source-text").value,
-        source_lang: $("source-lang").value,
-        target_lang: $("target-lang").value,
-        engine: "agent"
-      })
-    }).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok) {
           var msg = (data && data.error) || res.statusText;
