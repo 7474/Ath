@@ -8,6 +8,8 @@
 
 公開デモ（GitHub Pages）: **https://7474.github.io/Ath/**
 
+アーヴ語翻訳（辞書・文法・音声）: 同じ Pages の [`web/`](web/index.html)、またはローカルで `python3 -m baronh serve`。
+
 GitHub Pages はプロジェクトのショーケース用です。他サイトからフォントを URL 指定する場合は [jsDelivr](#jsdelivr) を使ってください。
 
 ## 出典・ライセンス
@@ -257,4 +259,81 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
         │
         ├──▶ aarth.ttf
         └──▶ aarth.woff2  (via fontTools woff2 compress)
+```
+
+---
+
+## アーヴ語翻訳（CLI / Web）
+
+アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、シード語彙は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）の文法解説に現れる語と、広く知られた公開語に限っています。Dadh Baronr など権利表示のある二次辞書は同梱しません。自分で取り込んだ分は `data/user_lexicon.json` にだけ足せます。
+
+構成は次のとおりです。生成 AI は使わなくても動きます。
+
+```
+入力（ja / en / baronh）
+        │
+        ▼
+  辞書 lookup + 格変化 / 動詞活用   ← data/lexicon.json
+        │
+        ├──▶ 規則ベースの訳（既定）
+        └──▶ 任意: OpenAI API（同じ辞書・文法をプロンプトに渡す）
+        │
+        ▼
+  読み仮名 → Web Speech / espeak-ng / OpenAI TTS
+        │
+        ├── python -m baronh …     CLI
+        └── web/                   ブラウザ（クライアントサイド）
+```
+
+### CLI
+
+追加の pip 依存はありません。リポジトリ根で次を実行します。
+
+```bash
+# 翻訳
+python3 -m baronh translate "私は移民します" --from ja --to baronh
+python3 -m baronh translate "F'a usere." --from baronh --to ja --show-analysis
+
+# 辞書・変化
+python3 -m baronh lookup アーヴ
+python3 -m baronh decline abh
+python3 -m baronh conjugate sac --all
+
+# サイト / ファイルから辞書を取り込む
+python3 -m baronh ingest wikipedia
+python3 -m baronh ingest data/examples/sample.csv
+python3 -m baronh ingest https://ja.wikipedia.org/wiki/アーヴ語
+
+# 読みと音声（espeak-ng があれば WAV、無ければ読み仮名）
+python3 -m baronh reading "F'a usere." --ath
+python3 -m baronh speak "F'a usere." --out /tmp/baronh.wav
+
+# 任意: OpenAI API（OPENAI_API_KEY または --api-key）
+python3 -m baronh translate "I am Abh." --from en --to baronh --engine openai
+python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
+
+# Web UI（既定 http://127.0.0.1:8765/）
+python3 -m baronh serve
+```
+
+`ingest` は Wikipedia（MediaWiki API）、任意 HTML の表、CSV/TSV/JSON を読めます。古いファンサイトは euc-jp のことがあるので、その場合もデコードを試します。取り込んだ語はシードに上乗せされ、`data/user_lexicon.json`（gitignore 済み）へ書きます。
+
+### Web
+
+`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。OpenAI を使うときだけ `api.openai.com` にアクセスし、API キーは `localStorage` のみです。
+
+ルートで `python3 -m http.server 8000` した場合の URL は `http://127.0.0.1:8000/web/` です。
+
+### 取り込みファイル形式
+
+CSV の列は `lemma,gloss_ja,gloss_en,pos,declension,stem` です。`pos` は `noun` / `verb` / `pronoun` / `postposition` など。名詞の `declension` は Wikipedia の第1–4型に対応する `1` `2` `3` `4` です。
+
+JSON は次の形です。
+
+```json
+{
+  "entries": [
+    {"lemma": "socoth", "gloss_ja": "学校", "gloss_en": "school", "pos": "noun", "declension": "2", "stem": "socot"}
+  ]
+}
 ```

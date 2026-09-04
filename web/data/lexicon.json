@@ -1,0 +1,1316 @@
+{
+  "meta": {
+    "version": 1,
+    "language": "baronh",
+    "license": "CC BY-SA 4.0 for Wikipedia-derived entries; fan compilation otherwise",
+    "sources": [
+      {
+        "name": "Wikipedia アーヴ語",
+        "url": "https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E",
+        "license": "CC BY-SA 4.0"
+      }
+    ],
+    "notes": "公式の公開辞書は存在しない。シードは Wikipedia の文法解説に現れる語と、広く知られた公開語彙に限る。Dadh Baronr など権利表示のある二次辞書は同梱しない。",
+    "entry_count": 96
+  },
+  "entries": [
+    {
+      "lemma": "fe",
+      "pos": "pronoun",
+      "gloss_ja": "私",
+      "gloss_en": "I",
+      "reading_ja": "フェ",
+      "paradigm": {
+        "nom": "fe",
+        "acc": "fal",
+        "gen": "far",
+        "dat": "feri",
+        "all": "feré",
+        "abl": "fasar",
+        "ins": "fale"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "de",
+      "pos": "pronoun",
+      "gloss_ja": "あなた",
+      "gloss_en": "you",
+      "reading_ja": "デ",
+      "paradigm": {
+        "nom": "de",
+        "acc": "dal",
+        "gen": "dar",
+        "dat": "deri",
+        "all": "deré",
+        "abl": "dasar",
+        "ins": "dale"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "se",
+      "pos": "pronoun",
+      "gloss_ja": "彼/彼女",
+      "gloss_en": "he/she",
+      "reading_ja": "セ",
+      "paradigm": {
+        "nom": "se",
+        "acc": "sal",
+        "gen": "sar",
+        "dat": "seri",
+        "all": "seré",
+        "abl": "sasar",
+        "ins": "sale"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "farh",
+      "pos": "pronoun",
+      "gloss_ja": "私たち",
+      "gloss_en": "we",
+      "reading_ja": "ファール",
+      "paradigm": {
+        "nom": "farh",
+        "acc": "fare",
+        "gen": "farer",
+        "dat": "fari",
+        "all": "faré",
+        "abl": "farhar",
+        "ins": "farle"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "darh",
+      "pos": "pronoun",
+      "gloss_ja": "あなたたち",
+      "gloss_en": "you (pl.)",
+      "reading_ja": "ダール",
+      "paradigm": {
+        "nom": "darh",
+        "acc": "dare",
+        "gen": "darer",
+        "dat": "dari",
+        "all": "daré",
+        "abl": "darhar",
+        "ins": "darle"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cnac",
+      "pos": "pronoun",
+      "gloss_ja": "彼ら",
+      "gloss_en": "they",
+      "reading_ja": "クナ",
+      "paradigm": {
+        "nom": "cnac",
+        "acc": "cnal",
+        "gen": "cnar",
+        "dat": "cnari",
+        "all": "cnaré",
+        "abl": "cnasar",
+        "ins": "cnal"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "so",
+      "pos": "pronoun",
+      "gloss_ja": "これ",
+      "gloss_en": "this",
+      "reading_ja": "ソ",
+      "paradigm": {
+        "nom": "so",
+        "acc": "sol",
+        "gen": "sor",
+        "dat": "sori",
+        "all": "soré",
+        "abl": "sosar",
+        "ins": "sole"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "re",
+      "pos": "pronoun",
+      "gloss_ja": "それ",
+      "gloss_en": "that",
+      "reading_ja": "レ",
+      "paradigm": {
+        "nom": "re",
+        "acc": "rol",
+        "gen": "ror",
+        "dat": "rori",
+        "all": "roré",
+        "abl": "rosar",
+        "ins": "role"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ai",
+      "pos": "pronoun",
+      "gloss_ja": "あれ",
+      "gloss_en": "that (distal)",
+      "reading_ja": "アイ",
+      "paradigm": {
+        "nom": "ai",
+        "acc": "al",
+        "gen": "ar",
+        "dat": "ari",
+        "all": "aré",
+        "abl": "asar",
+        "ins": "ale"
+      },
+      "tags": [
+        "wikipedia",
+        "pronoun"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "abh",
+      "pos": "noun",
+      "gloss_ja": "アーヴ",
+      "gloss_en": "Abh",
+      "declension": "1",
+      "stem": "ab",
+      "reading_ja": "アーヴ",
+      "paradigm": {
+        "nom": "abh",
+        "acc": "abe",
+        "gen": "bar",
+        "dat": "bari",
+        "all": "baré",
+        "abl": "abhar",
+        "ins": "bale"
+      },
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ath",
+      "pos": "noun",
+      "gloss_ja": "アース（文字）",
+      "gloss_en": "Ath (letter)",
+      "declension": "1",
+      "stem": "at",
+      "reading_ja": "アース",
+      "paradigm": {
+        "nom": "ath",
+        "acc": "ate",
+        "gen": "tar",
+        "dat": "tari",
+        "all": "taré",
+        "abl": "athar",
+        "ins": "tale"
+      },
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "azz",
+      "pos": "noun",
+      "gloss_ja": "敵",
+      "gloss_en": "enemy",
+      "declension": "1",
+      "stem": "az",
+      "reading_ja": "アズ",
+      "paradigm": {
+        "nom": "azz",
+        "acc": "aze",
+        "gen": "zar",
+        "dat": "zari",
+        "all": "zaré",
+        "abl": "azzar",
+        "ins": "zale"
+      },
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lorann",
+      "pos": "noun",
+      "gloss_ja": "父",
+      "gloss_en": "father",
+      "declension": "1n",
+      "stem": "loran",
+      "reading_ja": "ロラン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sarann",
+      "pos": "noun",
+      "gloss_ja": "母",
+      "gloss_en": "mother",
+      "declension": "1n",
+      "stem": "saran",
+      "reading_ja": "サラン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "aronn",
+      "pos": "noun",
+      "gloss_ja": "あそん",
+      "gloss_en": "ason",
+      "declension": "1n",
+      "stem": "aron",
+      "reading_ja": "アロン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lamh",
+      "pos": "noun",
+      "gloss_ja": "真珠",
+      "gloss_en": "pearl",
+      "declension": "2",
+      "stem": "lam",
+      "reading_ja": "ラーフ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "éboth",
+      "pos": "noun",
+      "gloss_ja": "微笑",
+      "gloss_en": "smile",
+      "declension": "2",
+      "stem": "ébot",
+      "reading_ja": "エボス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ïomh",
+      "pos": "noun",
+      "gloss_ja": "恋人",
+      "gloss_en": "lover",
+      "declension": "2",
+      "stem": "ïom",
+      "reading_ja": "イオム",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "laimh",
+      "pos": "noun",
+      "gloss_ja": "国民",
+      "gloss_en": "people / nation",
+      "declension": "2",
+      "stem": "laim",
+      "reading_ja": "ライム",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "saurh",
+      "pos": "noun",
+      "gloss_ja": "家族",
+      "gloss_en": "family",
+      "declension": "2",
+      "stem": "saur",
+      "reading_ja": "サウル",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sath",
+      "pos": "noun",
+      "gloss_ja": "方",
+      "gloss_en": "direction",
+      "declension": "2",
+      "stem": "sat",
+      "reading_ja": "サス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "duc",
+      "pos": "noun",
+      "gloss_ja": "紅玉",
+      "gloss_en": "ruby",
+      "declension": "3",
+      "stem": "du",
+      "reading_ja": "デュー",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "greuc",
+      "pos": "noun",
+      "gloss_ja": "星",
+      "gloss_en": "star",
+      "declension": "3",
+      "stem": "greu",
+      "reading_ja": "グレウ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "goc",
+      "pos": "noun",
+      "gloss_ja": "時空",
+      "gloss_en": "spacetime",
+      "declension": "3",
+      "stem": "go",
+      "reading_ja": "ゴー",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "nuïc",
+      "pos": "noun",
+      "gloss_ja": "耳",
+      "gloss_en": "ear",
+      "declension": "3",
+      "stem": "nuï",
+      "reading_ja": "ヌイ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "dreuc",
+      "pos": "noun",
+      "gloss_ja": "伯爵",
+      "gloss_en": "count",
+      "declension": "3",
+      "stem": "dreu",
+      "reading_ja": "ドリュー",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "bœrh",
+      "pos": "noun",
+      "gloss_ja": "子爵",
+      "gloss_en": "viscount",
+      "declension": "2",
+      "stem": "bœr",
+      "reading_ja": "ベール",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "nimh",
+      "pos": "noun",
+      "gloss_ja": "男爵",
+      "gloss_en": "baron",
+      "declension": "2",
+      "stem": "nim",
+      "reading_ja": "ニム",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "saidiac",
+      "pos": "noun",
+      "gloss_ja": "操舵士",
+      "gloss_en": "helmsman",
+      "declension": "4",
+      "stem": "said",
+      "reading_ja": "サイディア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "izomiac",
+      "pos": "noun",
+      "gloss_ja": "挑戦者",
+      "gloss_en": "challenger",
+      "declension": "4",
+      "stem": "izom",
+      "reading_ja": "イゾミア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "rinusiac",
+      "pos": "noun",
+      "gloss_ja": "記事",
+      "gloss_en": "article",
+      "declension": "4",
+      "stem": "rinus",
+      "reading_ja": "リヌシア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "useriac",
+      "pos": "noun",
+      "gloss_ja": "移民",
+      "gloss_en": "immigrant",
+      "declension": "4",
+      "stem": "user",
+      "reading_ja": "ウセリア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cilugiac",
+      "pos": "noun",
+      "gloss_ja": "皇太子/皇太女",
+      "gloss_en": "crown prince/princess",
+      "declension": "4",
+      "stem": "cilug",
+      "reading_ja": "シルギア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "belységac",
+      "pos": "noun",
+      "gloss_ja": "管制官",
+      "gloss_en": "controller",
+      "declension": "4g",
+      "stem": "belysé",
+      "reading_ja": "ベリュセガ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "gereulach",
+      "pos": "noun",
+      "gloss_ja": "星たち",
+      "gloss_en": "stars",
+      "declension": "2",
+      "stem": "gereulac",
+      "reading_ja": "ゲレウラ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "gosucelach",
+      "pos": "noun",
+      "gloss_ja": "家臣団",
+      "gloss_en": "retinue",
+      "declension": "2",
+      "stem": "gosucelac",
+      "reading_ja": "ゴスセラ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cairhoth",
+      "pos": "noun",
+      "gloss_ja": "入学",
+      "gloss_en": "entering school",
+      "declension": "2",
+      "stem": "cairhot",
+      "reading_ja": "カイルホス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "dozzoth",
+      "pos": "noun",
+      "gloss_ja": "望み",
+      "gloss_en": "wish",
+      "declension": "2",
+      "stem": "dozzot",
+      "reading_ja": "ドゾス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cimecoth",
+      "pos": "noun",
+      "gloss_ja": "秘密",
+      "gloss_en": "secret",
+      "declension": "2",
+      "stem": "cimecot",
+      "reading_ja": "シメコス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sacoth",
+      "pos": "noun",
+      "gloss_ja": "買い物",
+      "gloss_en": "shopping",
+      "declension": "2",
+      "stem": "sacot",
+      "reading_ja": "サコス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ménragh",
+      "pos": "noun",
+      "gloss_ja": "平面宇宙航行機能",
+      "gloss_en": "plane-space navigation",
+      "declension": "2",
+      "stem": "ménrag",
+      "reading_ja": "メンラグ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "baronh",
+      "pos": "noun",
+      "gloss_ja": "アーヴ語",
+      "gloss_en": "Baronh",
+      "declension": "2",
+      "stem": "baron",
+      "reading_ja": "バロン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lonh",
+      "pos": "noun",
+      "gloss_ja": "閣下",
+      "gloss_en": "excellency",
+      "declension": "2",
+      "stem": "lon",
+      "reading_ja": "ロン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "fïac",
+      "pos": "noun",
+      "gloss_ja": "皇子/皇女",
+      "gloss_en": "imperial child",
+      "declension": "3",
+      "stem": "fïa",
+      "reading_ja": "フィア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "frymec",
+      "pos": "noun",
+      "gloss_ja": "娘",
+      "gloss_en": "daughter",
+      "declension": "3",
+      "stem": "fryme",
+      "reading_ja": "フリュメ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lartnéc",
+      "pos": "noun",
+      "gloss_ja": "公子",
+      "gloss_en": "prince",
+      "declension": "3",
+      "stem": "lartné",
+      "reading_ja": "ラルトネ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "laburec",
+      "pos": "noun",
+      "gloss_ja": "艦",
+      "gloss_en": "warship",
+      "declension": "3",
+      "stem": "labure",
+      "reading_ja": "ラブーレ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lonid",
+      "pos": "noun",
+      "gloss_ja": "門",
+      "gloss_en": "gate",
+      "stem": "lonid",
+      "reading_ja": "ロニド",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "gaftonosh",
+      "pos": "noun",
+      "gloss_ja": "紋章",
+      "gloss_en": "crest",
+      "declension": "2",
+      "stem": "gaftonos",
+      "reading_ja": "ガフトノーシュ",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "frybarec",
+      "pos": "noun",
+      "gloss_ja": "帝国",
+      "gloss_en": "empire",
+      "declension": "3",
+      "stem": "frybare",
+      "reading_ja": "フリューバレ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lébh",
+      "pos": "noun",
+      "gloss_ja": "レーフ（帝国国民）",
+      "gloss_en": "imperial citizen",
+      "declension": "2",
+      "stem": "léb",
+      "reading_ja": "レーフ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ablïarsec",
+      "pos": "noun",
+      "gloss_ja": "アブリアル",
+      "gloss_en": "Ablïarsec",
+      "declension": "3",
+      "stem": "ablïarse",
+      "reading_ja": "アブリアル",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lacmhacarh",
+      "pos": "noun",
+      "gloss_ja": "ラクファカール",
+      "gloss_en": "Lacmhacarh",
+      "declension": "2",
+      "stem": "lacmhacar",
+      "reading_ja": "ラクファカール",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "gatharsec",
+      "pos": "noun",
+      "gloss_ja": "ガサルス",
+      "gloss_en": "Gatharsec",
+      "declension": "3",
+      "stem": "gatharse",
+      "reading_ja": "ガサルス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sarrych",
+      "pos": "noun",
+      "gloss_ja": "サリューシュ",
+      "gloss_en": "Sarrych",
+      "declension": "2",
+      "stem": "sarryc",
+      "reading_ja": "サリューシュ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "spaurh",
+      "pos": "noun",
+      "gloss_ja": "スポール",
+      "gloss_en": "Spaurh",
+      "declension": "2",
+      "stem": "spaur",
+      "reading_ja": "スポール",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lamhirh",
+      "pos": "noun",
+      "gloss_ja": "ラーフィール",
+      "gloss_en": "Lamhirh",
+      "declension": "2",
+      "stem": "lamhir",
+      "reading_ja": "ラーフィール",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "parhynh",
+      "pos": "noun",
+      "gloss_ja": "パリューニュ",
+      "gloss_en": "Parhynh",
+      "declension": "2",
+      "stem": "parhyn",
+      "reading_ja": "パリューニュ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "haïdec",
+      "pos": "noun",
+      "gloss_ja": "ハイド",
+      "gloss_en": "Haïdec",
+      "declension": "3",
+      "stem": "haïde",
+      "reading_ja": "ハイド",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "aith",
+      "pos": "noun",
+      "gloss_ja": "邦国",
+      "gloss_en": "kingdom",
+      "declension": "2",
+      "stem": "ait",
+      "reading_ja": "アイス",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "alïca",
+      "pos": "noun",
+      "gloss_ja": "頭環",
+      "gloss_en": "circlet",
+      "stem": "alïca",
+      "reading_ja": "アリーカ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ane",
+      "pos": "verb",
+      "gloss_ja": "である",
+      "gloss_en": "be",
+      "stem": "an",
+      "reading_ja": "アネ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "user",
+      "pos": "verb",
+      "gloss_ja": "移民する/移る",
+      "gloss_en": "immigrate / move",
+      "stem": "user",
+      "reading_ja": "ウセル",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sac",
+      "pos": "verb",
+      "gloss_ja": "書く",
+      "gloss_en": "write",
+      "stem": "sac",
+      "reading_ja": "サク",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "fac",
+      "pos": "verb",
+      "gloss_ja": "分かる",
+      "gloss_en": "understand",
+      "stem": "fac",
+      "reading_ja": "ファク",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "dor",
+      "pos": "verb",
+      "gloss_ja": "乗る",
+      "gloss_en": "board / ride",
+      "stem": "dor",
+      "reading_ja": "ドル",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "gob",
+      "pos": "verb",
+      "gloss_ja": "呼ぶ",
+      "gloss_en": "call",
+      "stem": "gob",
+      "reading_ja": "ゴブ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cilug",
+      "pos": "verb",
+      "gloss_ja": "皇位を継承する",
+      "gloss_en": "succeed to the throne",
+      "stem": "cilug",
+      "reading_ja": "シルグ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "belysé",
+      "pos": "verb",
+      "gloss_ja": "管制する",
+      "gloss_en": "control",
+      "stem": "belysé",
+      "reading_ja": "ベリュセ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cair",
+      "pos": "verb",
+      "gloss_ja": "入る",
+      "gloss_en": "enter",
+      "stem": "cair",
+      "reading_ja": "カイル",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "doz",
+      "pos": "verb",
+      "gloss_ja": "望む",
+      "gloss_en": "wish",
+      "stem": "doz",
+      "reading_ja": "ドズ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "cime",
+      "pos": "verb",
+      "gloss_ja": "秘密にする",
+      "gloss_en": "keep secret",
+      "stem": "cime",
+      "reading_ja": "シメ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sa",
+      "pos": "verb",
+      "gloss_ja": "買う",
+      "gloss_en": "buy",
+      "stem": "sa",
+      "reading_ja": "サ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lom",
+      "pos": "verb",
+      "gloss_ja": "幸せである",
+      "gloss_en": "be happy",
+      "stem": "lom",
+      "reading_ja": "ロム",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "samad",
+      "pos": "verb",
+      "gloss_ja": "構う",
+      "gloss_en": "mind",
+      "stem": "samad",
+      "reading_ja": "サマド",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sot",
+      "pos": "verb",
+      "gloss_ja": "同席する",
+      "gloss_en": "sit together",
+      "stem": "sot",
+      "reading_ja": "ソト",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "zain",
+      "pos": "verb",
+      "gloss_ja": "だよね",
+      "gloss_en": "right?",
+      "stem": "zain",
+      "reading_ja": "ザイン",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ïku",
+      "pos": "verb",
+      "gloss_ja": "行く",
+      "gloss_en": "go",
+      "stem": "ïku",
+      "reading_ja": "イク",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lar",
+      "pos": "verb",
+      "gloss_ja": "来る",
+      "gloss_en": "come",
+      "stem": "lar",
+      "reading_ja": "ラル",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "mire",
+      "pos": "verb",
+      "gloss_ja": "見る",
+      "gloss_en": "see",
+      "stem": "mire",
+      "reading_ja": "ミレ",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "banas",
+      "pos": "verb",
+      "gloss_ja": "話す",
+      "gloss_en": "speak",
+      "stem": "banas",
+      "reading_ja": "バナス",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "om",
+      "pos": "verb",
+      "gloss_ja": "思う",
+      "gloss_en": "think",
+      "stem": "om",
+      "reading_ja": "オム",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "as",
+      "pos": "verb",
+      "gloss_ja": "する",
+      "gloss_en": "do",
+      "stem": "as",
+      "reading_ja": "アス",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ar",
+      "pos": "verb",
+      "gloss_ja": "ある/いる",
+      "gloss_en": "exist",
+      "stem": "ar",
+      "reading_ja": "アル",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "a",
+      "pos": "postposition",
+      "gloss_ja": "は",
+      "gloss_en": "topic",
+      "reading_ja": "ア",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "éü",
+      "pos": "postposition",
+      "gloss_ja": "よ",
+      "gloss_en": "vocative",
+      "reading_ja": "エウ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sa",
+      "pos": "postposition",
+      "gloss_ja": "か",
+      "gloss_en": "question",
+      "reading_ja": "サ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "te",
+      "pos": "postposition",
+      "gloss_ja": "と（引用）",
+      "gloss_en": "quotative",
+      "reading_ja": "テ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "le",
+      "pos": "postposition",
+      "gloss_ja": "と（並列）",
+      "gloss_en": "and",
+      "reading_ja": "レ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "lo",
+      "pos": "postposition",
+      "gloss_ja": "と（並列）",
+      "gloss_en": "and",
+      "reading_ja": "ロ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "réfaiseni",
+      "pos": "adverb",
+      "gloss_ja": "一緒",
+      "gloss_en": "together",
+      "reading_ja": "レファイセニ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "sote",
+      "pos": "adverb",
+      "gloss_ja": "ここに",
+      "gloss_en": "here",
+      "reading_ja": "ソテ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "amata",
+      "pos": "adjective",
+      "gloss_ja": "多い",
+      "gloss_en": "many",
+      "reading_ja": "アマタ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "arata",
+      "pos": "adjective",
+      "gloss_ja": "新しい",
+      "gloss_en": "new",
+      "reading_ja": "アラタ",
+      "tags": [
+        "wikipedia"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "dara",
+      "pos": "interjection",
+      "gloss_ja": "はい",
+      "gloss_en": "yes",
+      "reading_ja": "ダラ",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "ada",
+      "pos": "interjection",
+      "gloss_ja": "いいえ",
+      "gloss_en": "no",
+      "reading_ja": "アダ",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    }
+  ]
+}

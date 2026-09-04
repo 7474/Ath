@@ -4,3 +4,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+data/user_lexicon.json
+*.mp3
+speech.wav
+speech.mp3
