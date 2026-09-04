@@ -121,7 +121,8 @@ class DigitGridDetectionTest(unittest.TestCase):
 
     def test_write_source_templates_emits_reading_and_blank(self):
         dest = Path(tempfile.mkdtemp(prefix="aarth-both-"))
-        filled, blank = aarth.write_source_templates(dest, alphabet_image=SOURCE_PNG)
+        paths = aarth.write_source_templates(dest, alphabet_image=SOURCE_PNG)
+        filled, blank = paths[0], paths[1]
         self.assertEqual(filled.name, "ath_source_template.png")
         self.assertEqual(blank.name, "ath_blank_template.png")
         self.assertTrue(filled.is_file())
@@ -131,9 +132,30 @@ class DigitGridDetectionTest(unittest.TestCase):
         f_alpha, f_digits = aarth.find_alphabet_and_digit_boxes(filled_bin)
         b_alpha, b_digits = aarth.find_alphabet_and_digit_boxes(blank_bin)
         self.assertEqual(len(f_alpha), 28)
-        self.assertEqual(f_digits, [])
+        self.assertEqual(f_digits, [], msg="empty numeral cells must not be detected")
         self.assertEqual(b_alpha, [])
         self.assertEqual(b_digits, [])
+        self.assertGreaterEqual(len(paths), 3)
+        self.assertEqual(paths[2].name, "ath_source_filled.png")
+        self.assertTrue(paths[2].is_file())
+
+    def test_filled_template_detects_ten_digits(self):
+        dest = Path(tempfile.mkdtemp(prefix="aarth-filled-")) / "ath_source_filled.png"
+        aarth.write_source_template(
+            dest, alphabet_image=SOURCE_PNG, fill_digits=True,
+        )
+        binary = aarth.load_and_binarize(dest)
+        alphabet, digits = aarth.find_alphabet_and_digit_boxes(binary)
+        self.assertEqual(len(alphabet), 28)
+        self.assertEqual(len(digits), 10)
+        # Numeral 1 is a horizontal bar — shorter than letter bodies.
+        one = digits[1]
+        self.assertGreater(one[2], one[3] * 2)
+
+    def test_horizontal_bar_survives_letter_size_filter(self):
+        boxes = [(0, 0, 20, 25), (30, 10, 18, 2)]
+        kept = aarth._letter_sized_boxes(boxes)
+        self.assertEqual(kept, boxes)
 
 
 class DigitsInFontTest(unittest.TestCase):
@@ -174,6 +196,48 @@ class DigitsInFontTest(unittest.TestCase):
             self.assertIn(codepoint, cmap)
             self.assertEqual(cmap[codepoint], name)
         self.assertEqual(len(cmap), 38)
+
+    def test_filled_template_font_has_digits_and_license(self):
+        work = Path(tempfile.mkdtemp(prefix="aarth-filled-font-"))
+        sheet = work / "filled.png"
+        aarth.write_source_template(
+            sheet, alphabet_image=SOURCE_PNG, fill_digits=True,
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "generate_aarth_font.py"),
+                "--image",
+                str(sheet),
+                "--output-dir",
+                str(work),
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            raise AssertionError(
+                "font generation from filled template failed:\n"
+                f"{completed.stdout}\n{completed.stderr}"
+            )
+        from fontTools.ttLib import TTFont
+
+        font = TTFont(work / "aarth.ttf")
+        cmap = font.getBestCmap()
+        self.assertEqual(len(cmap), 38)
+        for codepoint in aarth.DIGIT_CODEPOINTS:
+            self.assertIn(codepoint, cmap)
+        names = {
+            rec.toUnicode()
+            for rec in font["name"].names
+            if rec.toUnicode()
+        }
+        joined = " ".join(names)
+        self.assertIn("Morioka", joined)
+        self.assertIn("Akai", joined)
+        self.assertIn("CC BY-SA 3.0", joined)
 
 
 if __name__ == "__main__":

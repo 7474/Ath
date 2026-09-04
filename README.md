@@ -2,7 +2,7 @@
 
 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) の字形を抽出し、Web フォント（`aarth.ttf` / `aarth.woff2`）にしたものです。
 
-字母に加え、同じラスタ入力（または別画像）から **数字 0–9** もグリフ化できます。数字の公式ラスタがリポジトリに無い場合は、下の [入力テンプレート](#入力テンプレート) に描いて `--image` または `--digits-image` で渡してください。数字だけ足すなら読み取り用、全グリフを描くなら未記入シートを使います。
+字母（森岡浩之）に加え、数字 0–9（赤井孝美）もグリフ化します。既定の入力は `templates/ath_source_filled.png` です。自前のラスタを使う場合は [入力テンプレート](#入力テンプレート) を `--image` または `--digits-image` で渡してください。
 
 ## デモ
 
@@ -12,11 +12,14 @@ GitHub Pages はプロジェクトのショーケース用です。他サイト�
 
 ## 出典・ライセンス
 
-字形の出典は、日本語版 Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」に添付されているパブリックドメイン画像 [Ath (alphabet).png](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E#/media/%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB:Ath_(alphabet).png/2) です。著作権者により [パブリックドメイン](https://commons.wikimedia.org/wiki/File:Ath_(alphabet).png) として公開されています。
+[Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) によれば、アースの**字母は原作者の森岡浩之**、**数字は原作イラストの赤井孝美**が設計しました。アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字体系であり、本フォントはその設定に基づく**二次創作**です。
 
-アーヴ語およびアースは、森岡浩之『星界シリーズ』に登場する架空言語・文字体系です（字母の設計は原作者の森岡浩之）。本フォントはその設定に基づく**二次創作**です。二次創作であることを前提に、自由に使っていただいて構いません。
+| 区分 | 設計 | ラスタ出典 | ラスタのライセンス |
+|---|---|---|---|
+| 字母 28 字 | 森岡浩之 | [Ath (alphabet).png](https://commons.wikimedia.org/wiki/File:Ath_(alphabet).png) | パブリックドメイン |
+| 数字 0–9 | 赤井孝美 | [TRON 9-9830](https://commons.wikimedia.org/wiki/File:TRON_9-9830.gif)–[9-9839](https://commons.wikimedia.org/wiki/File:TRON_9-9839.gif)（`templates/digits/`） | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 
-関連情報は [Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) を参照してください。
+数字ラスタが CC BY-SA 3.0 のため、それを含む結合成果物（記入済みテンプレートと本ウェブフォント）も **CC BY-SA 3.0** です。再利用・改変時は出典表示（設計者・ラスタ出典・ライセンス）と同一ライセンスでの共有が必要です。詳細は [LICENSE.md](LICENSE.md) を参照してください。
 
 ---
 
@@ -65,7 +68,7 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 | 8 | U+0038 | `8` |
 | 9 | U+0039 | `9` |
 
-数字 0–9 は、入力ラスタに数字セルがあるときだけフォントに入ります。デフォルトの Wikipedia 字母画像だけを使うと、字母 28 字のみになります。
+数字 0–9 は赤井孝美の設計に基づく TRON ラスタを既定で取り込みます。`--image Ath_alphabet.png` のように字母画像だけを渡すと、字母 28 字のみになります。
 
 ---
 
@@ -147,7 +150,7 @@ python3 generate_aarth_font.py
 
 スクリプトは次を行います。
 
-1. ローカルに画像がなければ Wikimedia Commons から `Ath_(alphabet).png` を取得する（`--image <path>` でも指定可）。
+1. 既定では `templates/ath_source_filled.png` を読む（`--image <path>` でも指定可。無ければ Wikimedia Commons の字母画像）。
 2. 画像を二値化し、28 個の字母領域を検出する。同じシートまたは `--digits-image` に数字 0–9 があれば続けて検出する。
 3. 成分ごとにシルエットを整え、`potrace` でベクター化する（bitmap → SVG cubic Bézier）。
 4. CFF ベースの OpenType フォントを組み立て、WOFF2 に圧縮する。
@@ -183,12 +186,14 @@ au  ÿ   eu  g   z   d   b
 7   8   9
 ```
 
-同じ配置のシートを 2 種類同梱しています。
+同じ配置のシートを同梱しています。
 
 | ファイル | 用途 |
 |---|---|
-| `templates/ath_source_template.png` | **読み取り用。** 字母 28 字は Wikipedia 出典を埋め込み、数字セルだけ空欄 |
+| `templates/ath_source_filled.png` | **読み取り用（既定）。** 字母（森岡浩之）＋数字（赤井孝美 / CC BY-SA 3.0） |
+| `templates/ath_source_template.png` | **読み取り用。** 字母だけ埋め込み、数字セルは空欄 |
 | `templates/ath_blank_template.png` | **未記入。** 字母・数字とも空欄。全グリフを手描きするとき |
+| `templates/digits/` | 数字 0–9 の CC BY-SA 3.0 ラスタ（TRON 9-9830–9-9839） |
 
 再生成:
 
@@ -196,7 +201,11 @@ au  ÿ   eu  g   z   d   b
 python3 generate_aarth_font.py --write-template templates/
 ```
 
-読み取り用:
+読み取り用（字母＋数字）:
+
+![Aarth filled source template](templates/ath_source_filled.png)
+
+読み取り用（数字空欄）:
 
 ![Aarth source template](templates/ath_source_template.png)
 
@@ -206,11 +215,14 @@ python3 generate_aarth_font.py --write-template templates/
 
 使い方:
 
-1. 数字だけ足すなら読み取り用をコピーし、空の数字セルに黒インクで 0–9 を描く。全字形を描くなら未記入シートを使う。
+1. 既定の生成は記入済みシートを使います。数字だけ描き直すなら空欄シートをコピーし、空の数字セルに黒インクで 0–9 を描く。全字形を描くなら未記入シートを使う。
 2. 白地・黒字形のまま PNG で保存する（ガイドやラベルは薄いグレーのまま残してよい）。
 3. フォントを生成する。
 
 ```bash
+# 既定（字母＋数字の記入済みテンプレート）
+python3 generate_aarth_font.py
+
 # 字母＋数字が 1 枚に入っている場合
 python3 generate_aarth_font.py --image path/to/filled_template.png
 
@@ -218,7 +230,7 @@ python3 generate_aarth_font.py --image path/to/filled_template.png
 python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/digits.png
 ```
 
-数字だけを描く場合も、上の 5–6 行目と同じ **7+3**（または横一列の 10 セル）にしてください。アースの数字字形は原作イラストの赤井孝美氏による設計です。リポジトリにはパブリックドメインの数字ラスタが無いため、数字セルは空欄のままです。全グリフを自前で描く場合は未記入テンプレートを使ってください。
+数字だけを描く場合も、上の 5–6 行目と同じ **7+3**（または横一列の 10 セル）にしてください。アースの数字字形は原作イラストの赤井孝美氏による設計です。ラスタは CC BY-SA 3.0 です。全グリフを自前で描く場合は未記入テンプレートを使ってください。
 
 ---
 
@@ -226,7 +238,7 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 
 | Option | Default | Description |
 |---|---|---|
-| `--image` | Wikimedia URL | Local path or HTTP URL of the alphabet (or combined) PNG |
+| `--image` | filled template if present | Local path or HTTP URL of the alphabet (or combined) PNG |
 | `--digits-image` | off | Optional PNG of numerals 0–9 (`7+3` or one row of 10) |
 | `--write-template` | off | Write reading + blank templates to a PNG path or directory, then exit |
 | `--output-dir` | `.` | Directory to write output files |
