@@ -12,7 +12,7 @@
 | パス | 内容 |
 |---|---|
 | [`/`](index.html) | アーヴ語とアースの概要 |
-| [`/ath/`](ath/index.html) | アースの字形デモ（帝国国歌の組版、Translate で読み下し） |
+| [`/ath/`](ath/index.html) | アースの字形デモ（帝国国歌のアース組版） |
 | [`/web/`](web/index.html) | アーヴ語の翻訳ツール（辞書・文法・音声） |
 
 ローカルでは `python3 -m baronh serve`（既定 http://127.0.0.1:8765/）か、リポジトリ根で `python3 -m http.server 8000` です。他サイトからフォントを URL 指定する場合は [jsDelivr](#jsdelivr) を使ってください。GitHub Pages はサイト本体であり、フォント配信の CDN ではありません。

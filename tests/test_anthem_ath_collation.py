@@ -163,7 +163,9 @@ class AnthemAthCollationTest(unittest.TestCase):
     def test_html_uses_ath_keys_from_romanization(self):
         html = ATH_PAGE.read_text(encoding="utf-8")
         for roman in anthem_roman_lines():
-            keys = ath_keys_line(roman).rstrip(",.")
+            keys = " ".join(
+                ath_keys_line(roman).replace("'", "").replace(",", "").replace(".", "").split()
+            )
             self.assertIn(keys, html, msg=roman)
 
     def test_manuscript_words_match_aarth_render(self):
