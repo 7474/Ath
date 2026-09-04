@@ -58,16 +58,6 @@
   text-underline-offset: .2em;
 }
 
-.site-nav button.linkish {
-  font: 600 .9rem/1.2 system-ui, sans-serif;
-  color: #1a1a1a;
-  text-decoration: none;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
-}
-
 #translate-button {
   flex-shrink: 0;
   font: 600 .95rem/1.2 system-ui, sans-serif;
