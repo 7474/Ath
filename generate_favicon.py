@@ -3,7 +3,8 @@
 
 The source is a detailed 3D emblem. Direct 16×16 downscale loses the
 yin-yang and the red/blue gems, so small sizes crop toward the center
-and slightly enlarge those gems before resampling.
+and slightly enlarge those gems before resampling. Transparency is
+applied only outside the outer silhouette; interior whites stay opaque.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import io
 import struct
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -24,9 +26,39 @@ PNG_SIZES = (16, 32, 48, 180, 192, 512)
 ICO_SIZES = (16, 32, 48)
 
 
-def _circle_geometry(rgb: np.ndarray) -> tuple[float, float, float]:
-    white = (rgb[:, :, 0] > 245) & (rgb[:, :, 1] > 245) & (rgb[:, :, 2] > 245)
-    ys, xs = np.where(~white)
+def _exterior_mask(rgb: np.ndarray) -> np.ndarray:
+    """True only for the canvas background, flood-filled from the corners.
+
+    Interior whites (yin-yang, metallic highlights) stay part of the emblem.
+    """
+    rgb_u8 = np.clip(rgb, 0, 255).astype(np.uint8)
+    lum = rgb_u8.mean(axis=2)
+    chroma = rgb_u8.max(axis=2) - rgb_u8.min(axis=2)
+    candidate = (lum >= 236) & (chroma <= 32)
+    height, width = candidate.shape
+    fill = np.zeros((height, width), np.uint8)
+    fill[candidate] = 255
+    for x, y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+        if fill[y, x] == 255:
+            cv2.floodFill(fill, None, (x, y), 64)
+    exterior = fill == 64
+    emblem = np.where(exterior, 0, 255).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    emblem = cv2.morphologyEx(emblem, cv2.MORPH_CLOSE, kernel)
+    return emblem == 0
+
+
+def _feathered_alpha(exterior: np.ndarray, feather: float = 1.4) -> np.ndarray:
+    """Opaque inside the silhouette; transparent only outside it."""
+    inside = np.where(exterior, 0, 255).astype(np.uint8)
+    outside = np.where(exterior, 255, 0).astype(np.uint8)
+    dist_in = cv2.distanceTransform(inside, cv2.DIST_L2, 3)
+    dist_out = cv2.distanceTransform(outside, cv2.DIST_L2, 3)
+    return np.clip(0.5 + (dist_in - dist_out) / (2.0 * feather), 0.0, 1.0).astype(np.float32)
+
+
+def _silhouette_bounds(emblem: np.ndarray) -> tuple[float, float, float]:
+    ys, xs = np.where(emblem)
     if xs.size == 0:
         raise ValueError("favicon source has no non-white emblem")
     cx = (float(xs.min()) + float(xs.max())) / 2.0
@@ -57,16 +89,12 @@ def _gem_masks(rgba: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def load_emblem(path: Path) -> Image.Image:
-    """Return a square RGBA emblem with transparent corners outside the circle."""
+    """Return a square RGBA emblem; transparency is only outside the silhouette."""
     rgb = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32)
     h, w = rgb.shape[:2]
-    cx, cy, radius = _circle_geometry(rgb)
-    yy, xx = np.ogrid[:h, :w]
-    dist = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    feather = 1.4
-    alpha = np.clip((radius + feather - dist) / (2.0 * feather), 0, 1)
-    white = (rgb[:, :, 0] > 245) & (rgb[:, :, 1] > 245) & (rgb[:, :, 2] > 245)
-    alpha[white] = 0
+    exterior = _exterior_mask(rgb)
+    alpha = _feathered_alpha(exterior)
+    cx, cy, radius = _silhouette_bounds(~exterior)
 
     rgba = np.zeros((h, w, 4), dtype=np.float32)
     rgba[..., :3] = rgb

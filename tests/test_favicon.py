@@ -47,6 +47,30 @@ class FaviconFilesTest(unittest.TestCase):
             cx, cy = im.size[0] // 2, im.size[1] // 2
             self.assertEqual(im.getpixel((cx, cy))[3], 255)
 
+    def test_yin_yang_white_stays_opaque(self):
+        emblem = load_emblem(SOURCE)
+        arr = __import__("numpy").asarray(emblem)
+        height, width = arr.shape[:2]
+        lobe = arr[int(height * 0.52) : int(height * 0.78), int(width * 0.22) : int(width * 0.48)]
+        bright = (lobe[:, :, 0] > 180) & (lobe[:, :, 1] > 180) & (lobe[:, :, 2] > 180)
+        self.assertGreater(int(bright.sum()), 80)
+        self.assertTrue((lobe[bright, 3] >= 250).all())
+
+    def test_no_transparent_holes_inside_silhouette(self):
+        import cv2
+        import numpy as np
+
+        emblem = load_emblem(SOURCE)
+        alpha = np.asarray(emblem)[:, :, 3]
+        height, width = alpha.shape
+        fill = np.zeros((height, width), np.uint8)
+        fill[alpha < 16] = 255
+        for x, y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+            if fill[y, x] == 255:
+                cv2.floodFill(fill, None, (x, y), 64)
+        holes = (alpha < 16) & (fill != 64)
+        self.assertEqual(int(holes.sum()), 0)
+
     def test_apple_touch_icon_is_opaque(self):
         with Image.open(ROOT / "icons" / "apple-touch-icon.png") as im:
             alpha = im.getchannel("A")
