@@ -83,6 +83,7 @@ class TranslationResult:
     analysis: list[TokenGloss] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     unknown: list[str] = field(default_factory=list)
+    substitutions: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -96,6 +97,7 @@ class TranslationResult:
             "analysis": [item.__dict__ for item in self.analysis],
             "notes": self.notes,
             "unknown": self.unknown,
+            "substitutions": self.substitutions,
         }
 
 

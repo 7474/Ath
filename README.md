@@ -290,7 +290,7 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
 
 アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、文法の骨格は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）に依り、語彙は下記ファンサイトを走査して拡充しています。辞書にない固有名詞は日本語ローマ字ではなくアーヴ語の正書法へ発音転記し、訳にその旨を示します。追加の個人辞書は `data/user_lexicon.json` に足せます。
 
-構成は次のとおりです。生成 AI は使わなくても動きます。
+構成は次のとおりです。生成 AI は使わなくても動きます。未登録の普通名詞は、サーバエージェントが辞書の類義語へ寄せます。
 
 ```
 入力（ja / en / baronh）
@@ -299,29 +299,25 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
   辞書 lookup + 格変化 / 動詞活用   ← data/lexicon.json
         │
         ├──▶ 規則ベースの訳（既定）
-        └──▶ 任意: OpenAI 互換 API
-               辞書を全件スキャンして関連語だけ渡す
-               （ベクトルは使わない。ヴ/ブ・長音・1文字のラテン誤字は拾う）
-               下訳・例示・文法要点 → 生成 → 辞書語形の検証
-               造語なら一度書き直しを求め、なお悪いときは下訳に戻す
+        ├──▶ サーバエージェント（推奨の生成経路）
+        │      類義語で辞書見出しへ寄せてから、必要ならモデルを複数往復
+        │      POST /api/translate （python -m baronh serve / Cloud Run）
+        └──▶ 任意: ブラウザから OpenAI 互換 API を直接呼ぶ実験経路
         │
         ▼
   読み仮名 → Web Speech / espeak-ng / OpenAI TTS
-        │
-        ├── python -m baronh …     CLI
-        └── web/                   ブラウザ（クライアントサイド）
 ```
 
-生成 AI 経路の詳細（ベクトル RAG を使わない理由、残すファジーと捨てるファジー、翻訳と TTS が別呼び出しであること、造語を通さない検証）は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) に記録する。
+生成経路の詳細とクラウドの載せ方は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) を参照する。
 
 要点だけ示す。
 
+- 他言語 → アーヴ語では、辞書に無い普通名詞を造語せず、語釈にある類義語で意味が通るように寄せる（例: 「光」→ `sairiac`「輝くもの」）。固有名詞は発音転記のまま。
 - 原文は常にモデルへ渡す。生成 AI の誤字耐性（原文を読む力）は残す。
 - 検索は辞書の全件スキャンと点数付けである。埋め込みは使わない。
-- 残す照合: ヴ/ブ・長音・ひらがなカタカナの畳み込み、ラテン綴りの 1 文字差。
-- 捨てる照合: 日本語の部分一致、日本語同士の 1 文字差、下訳トークンへのタイポ照合。
-- 未登録の普通名詞は造語しない。固有名詞だけアーヴ語正書法で発音転記する。辞書に近い表記ゆれは転記より見出しを優先する。
-- 生成したアーヴ語は辞書語形と照合し、造語なら再生成、なお悪ければ下訳に戻す。
+- 残す照合: ヴ/ブ・長音・ひらがなカタカナの畳み込み、ラテン綴りの 1 文字差、短い類義語への寄せ。
+- 捨てる照合: 日本語の部分一致、複合語への吸い込み、日本語同士の 1 文字差。
+- 生成したアーヴ語は辞書語形と照合し、造語なら再生成、なお悪ければ類義語付き下訳に戻す。
 - 音声合成は `{base}/audio/speech` で、入力は仮名読みである。
 
 ### CLI
@@ -348,13 +344,16 @@ python3 -m baronh ingest https://ja.wikipedia.org/wiki/アーヴ語
 python3 -m baronh reading "F'a usere." --ath
 python3 -m baronh speak "F'a usere." --out /tmp/baronh.wav
 
-# 任意: OpenAI 互換 API（OPENAI_API_KEY / OPENAI_BASE_URL または --api-key / --api-base）
+# 任意: サーバエージェント（類義語寄せ。キーが無ければ局所置換のみ）
+python3 -m baronh translate "星たちの光を見ます" --from ja --to baronh --engine agent
+
+# 任意: OpenAI 互換 API を CLI から直接（実験）
 python3 -m baronh translate "I am Abh." --from en --to baronh --engine openai
 python3 -m baronh translate "私はアーヴです" --engine openai \
   --api-base http://127.0.0.1:1234/v1 --api-key local --model llama3
 python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
 
-# Web UI（既定 http://127.0.0.1:8765/ が概要、翻訳は /web/）
+# Web UI（既定 http://127.0.0.1:8765/ が概要、翻訳は /web/、エージェントは POST /api/translate）
 python3 -m baronh serve
 ```
 
@@ -369,7 +368,9 @@ python3 -m baronh serve
 
 ### Web
 
-`web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語の渡し方・ファジー照合の範囲・生成後の検証は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) を参照してください。音声合成は翻訳とは別の `/v1/audio/speech` です。
+`web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・規則翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。
+
+サーバエージェントを使うときは、同じプロセスの `/api/translate`（`python -m baronh serve`）か、Cloud Run などに載せた URL を設定します。GitHub Pages だけではエージェントは動きません。ブラウザから OpenAI 互換 API を直接呼ぶ経路は実験用です。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
 
 サイト全体を見るときは `python3 -m baronh serve`（概要 `/`、アース `/ath/`、翻訳 `/web/`）か、ルートで `python3 -m http.server 8000` です。
 

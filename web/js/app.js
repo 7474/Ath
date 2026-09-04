@@ -5,6 +5,7 @@
   var MODEL_KEY = "ath-translate.openai-model";
   var BASE_KEY = "ath-translate.openai-base";
   var TTS_MODEL_KEY = "ath-translate.openai-tts-model";
+  var AGENT_URL_KEY = "ath-translate.agent-url";
   var OVERLAY_KEY = "ath-translate.overlay";
   var EXAMPLES = [
     ["ja", "baronh", "私は移民します"],
@@ -14,6 +15,7 @@
     ["ja", "baronh", "分かりますか"],
     ["ja", "baronh", "ありがとう"],
     ["ja", "baronh", "私はジントです"],
+    ["ja", "baronh", "星たちの光を見ます"],
     ["baronh", "ja", "F'a usere."],
     ["baronh", "ja", "F'a bale."],
     ["baronh", "en", "Facle sa?"],
@@ -98,6 +100,13 @@
     } else {
       setStatus("");
     }
+    if (result.substitutions && result.substitutions.length) {
+      var extra = result.substitutions.map(function (item) {
+        return "<div class='meta'>" + escapeHtml(item.from) + " → " + escapeHtml(item.lemma) +
+          " <span class='meta'>（類義語 " + escapeHtml(item.gloss || item.via || "") + "）</span></div>";
+      }).join("");
+      $("analysis").innerHTML += extra;
+    }
   }
 
   function escapeHtml(s) {
@@ -115,6 +124,40 @@
 
   function apiUrl(path) {
     return apiBase() + "/" + String(path || "").replace(/^\//, "");
+  }
+
+  function agentEndpoint() {
+    var raw = (localStorage.getItem(AGENT_URL_KEY) || ($("agent-url") && $("agent-url").value) || "/api/translate").trim();
+    if (!raw) raw = "/api/translate";
+    raw = raw.replace(/\/+$/, "");
+    if (!/\/api\/translate$/i.test(raw)) raw += "/api/translate";
+    return raw;
+  }
+
+  function agentTranslate() {
+    return fetch(agentEndpoint(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: $("source-text").value,
+        source_lang: $("source-lang").value,
+        target_lang: $("target-lang").value,
+        engine: "agent"
+      })
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok) {
+          var msg = (data && data.error) || res.statusText;
+          if (res.status === 404) {
+            msg = "エージェント API がありません。python -m baronh serve を使うか、設定に Cloud Run の URL を入れてください。";
+          }
+          throw new Error(msg);
+        }
+        return data;
+      }, function () {
+        throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+      });
+    });
   }
 
   function localTranslate() {
@@ -232,9 +275,12 @@
     if (!lexicon) return;
     $("translate-btn").disabled = true;
     setStatus("翻訳中…");
-    var work = $("engine").value === "openai"
-      ? openaiTranslate()
-      : Promise.resolve(localTranslate());
+    var engine = $("engine").value;
+    var work = engine === "agent"
+      ? agentTranslate()
+      : engine === "openai"
+        ? openaiTranslate()
+        : Promise.resolve(localTranslate());
     work.then(renderResult).catch(function (err) {
       setStatus(err.message || String(err));
     }).then(function () {
@@ -361,17 +407,20 @@
     localStorage.setItem(MODEL_KEY, $("chat-model").value.trim() || "gpt-4o-mini");
     localStorage.setItem(BASE_KEY, $("api-base").value.trim() || "https://api.openai.com/v1");
     localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
-    setStatus("API 設定をこのブラウザに保存しました（送信先: " + apiBase() + "）");
+    if ($("agent-url")) localStorage.setItem(AGENT_URL_KEY, $("agent-url").value.trim());
+    setStatus("設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）");
   });
   $("clear-key").addEventListener("click", function () {
     localStorage.removeItem(KEY);
     localStorage.removeItem(BASE_KEY);
     localStorage.removeItem(MODEL_KEY);
     localStorage.removeItem(TTS_MODEL_KEY);
+    localStorage.removeItem(AGENT_URL_KEY);
     $("api-key").value = "";
     $("api-base").value = "https://api.openai.com/v1";
     $("chat-model").value = "gpt-4o-mini";
     $("tts-model").value = "gpt-4o-mini-tts";
+    if ($("agent-url")) $("agent-url").value = "/api/translate";
     setStatus("API 設定を消去しました");
   });
   $("import-file").addEventListener("change", function (ev) {
@@ -399,6 +448,7 @@
   $("chat-model").value = localStorage.getItem(MODEL_KEY) || "gpt-4o-mini";
   $("api-base").value = localStorage.getItem(BASE_KEY) || "https://api.openai.com/v1";
   $("tts-model").value = localStorage.getItem(TTS_MODEL_KEY) || "gpt-4o-mini-tts";
+  if ($("agent-url")) $("agent-url").value = localStorage.getItem(AGENT_URL_KEY) || "/api/translate";
 
   firstJson(dataUrls()).then(function (doc) {
     lexicon = new BaronhEngine.Lexicon(doc.entries || []);

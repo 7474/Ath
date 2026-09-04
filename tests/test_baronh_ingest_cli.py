@@ -57,10 +57,23 @@ class CliSmokeTest(unittest.TestCase):
             check=False,
         )
 
-    def test_translate_cli(self):
-        completed = self._run("translate", "私は移民します", "--from", "ja", "--to", "baronh")
+    def test_translate_agent_cli(self):
+        completed = self._run(
+            "translate",
+            "星たちの光を見ます",
+            "--from",
+            "ja",
+            "--to",
+            "baronh",
+            "--engine",
+            "agent",
+            "--json",
+        )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("usere", completed.stdout)
+        data = json.loads(completed.stdout)
+        self.assertEqual(data["engine"], "agent")
+        self.assertTrue(any(item["from"] == "光" for item in data["substitutions"]))
+        self.assertIn("sairiac", data["text"])
 
     def test_lookup_cli(self):
         completed = self._run("lookup", "abh")

@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
 
 from baronh import __version__
 from baronh.grammar import FormIndex, all_verb_forms, analyze_form, conjugate, decline
 from baronh.ingest import ingest_auto, merge_into_lexicon, write_lexicon, write_lexicon_document
 from baronh.lexicon import CASE_JA, Lexicon, load_lexicon, write_seed_lexicon
-from baronh.paths import DATA_DIR, ROOT_DIR, USER_LEXICON_PATH, WEB_DIR
+from baronh.paths import USER_LEXICON_PATH, WEB_DIR
 from baronh.phonology import reading_ja, to_ath_keys
 from baronh.translate import translate
 from baronh.tts import synthesize_local
@@ -35,7 +34,19 @@ def cmd_translate(args: argparse.Namespace) -> int:
     lexicon = _lexicon(args)
     text = args.text if args.text is not None else sys.stdin.read()
     engine = args.engine
-    if engine in {"openai", "auto"} and (args.api_key or engine == "openai"):
+    if engine == "agent":
+        from baronh.agent import translate_agent
+
+        result = translate_agent(
+            text,
+            lexicon,
+            source_lang=args.source,
+            target_lang=args.target,
+            api_key=args.api_key,
+            api_base=getattr(args, "api_base", None),
+            model=args.model,
+        )
+    elif engine in {"openai", "auto"} and (args.api_key or engine == "openai"):
         from baronh.openai_backend import translate_openai
 
         result = translate_openai(
@@ -237,44 +248,12 @@ def cmd_reading(args: argparse.Namespace) -> int:
     return 0
 
 
-class _TranslatorHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT_DIR), **kwargs)
-
-    def log_message(self, fmt: str, *log_args) -> None:
-        sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % log_args))
-
-    def translate_path(self, path: str) -> str:
-        parsed = urlparse(path)
-        rel = unquote(parsed.path)
-        if rel.startswith("/data/"):
-            web_target = (WEB_DIR / rel.lstrip("/")).resolve()
-            if str(web_target).startswith(str(WEB_DIR.resolve())) and web_target.is_file():
-                return str(web_target)
-            target = (DATA_DIR / rel[len("/data/") :]).resolve()
-            if str(target).startswith(str(DATA_DIR.resolve())) and target.is_file():
-                return str(target)
-        if rel.startswith("/font/"):
-            name = rel[len("/font/") :]
-            target = (ROOT_DIR / name).resolve()
-            if str(target).startswith(str(ROOT_DIR.resolve())) and target.is_file():
-                return str(target)
-        mapped = super().translate_path(path)
-        return mapped
-
-
 def cmd_serve(args: argparse.Namespace) -> int:
-    WEB_DIR.mkdir(parents=True, exist_ok=True)
-    lexicon = load_lexicon()
-    write_lexicon(lexicon, WEB_DIR / "data" / "lexicon.json")
-    server = ThreadingHTTPServer((args.host, args.port), _TranslatorHandler)
-    url = f"http://{args.host}:{args.port}/"
-    print(f"アーヴ語とアース: {url}", file=sys.stderr)
-    print(f"翻訳: {url}web/", file=sys.stderr)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nstopped", file=sys.stderr)
+    from baronh.server import serve
+
+    host = args.host
+    port = args.port if args.port is not None else int(os.environ.get("PORT", "8765"))
+    serve(host, port)
     return 0
 
 
@@ -293,7 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("text", nargs="?", help="原文。省略時は標準入力")
     p.add_argument("--from", dest="source", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--to", dest="target", default="auto", choices=["auto", "baronh", "ja", "en"])
-    p.add_argument("--engine", default="local", choices=["local", "openai", "auto"])
+    p.add_argument("--engine", default="local", choices=["local", "openai", "agent", "auto"])
     p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
     p.add_argument("--api-base", default=None, help="OpenAI 互換ベース URL（例: https://api.openai.com/v1）")
     p.add_argument("--model", default="gpt-4o-mini")
@@ -346,9 +325,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_ingest)
 
-    p = sub.add_parser("serve", help="概要・アース・翻訳のサイトを起動する")
-    p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8765)
+    p = sub.add_parser("serve", help="概要・アース・翻訳のサイトとエージェント API を起動する")
+    p.add_argument("--host", default="0.0.0.0" if os.environ.get("PORT") else "127.0.0.1")
+    p.add_argument("--port", type=int, default=None, help="既定 8765。PORT 環境変数があればそれを使う（Cloud Run）")
     p.set_defaults(func=cmd_serve)
 
     p = sub.add_parser("export-web", help="Web 用 lexicon.json を書き出す", parents=[shared])

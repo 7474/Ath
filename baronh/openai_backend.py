@@ -450,7 +450,7 @@ def _chat_once(
     return data
 
 
-def _run_tool_loop(
+def run_chat_tool_loop(
     *,
     url: str,
     api_key: str,
@@ -459,8 +459,14 @@ def _run_tool_loop(
     lexicon: Lexicon,
     use_tools: bool,
     max_rounds: int = 6,
+    tools: list[dict[str, Any]] | None = None,
+    dispatch: Any = None,
+    chat_once: Any = None,
 ) -> tuple[str, int]:
+    """Chat Completions のツール往復。エージェント側から tools / dispatch を差し替えられる。"""
     rounds = 0
+    dispatch_fn = dispatch or dispatch_tool
+    chat_fn = chat_once or (lambda payload: _chat_once(url, api_key, payload))
     for _ in range(max_rounds):
         rounds += 1
         payload: dict[str, Any] = {
@@ -469,9 +475,9 @@ def _run_tool_loop(
             "messages": messages,
         }
         if use_tools:
-            payload["tools"] = CHAT_TOOLS
+            payload["tools"] = tools if tools is not None else CHAT_TOOLS
             payload["tool_choice"] = "auto"
-        data = _chat_once(url, api_key, payload)
+        data = chat_fn(payload)
         message = (data.get("choices") or [{}])[0].get("message") or {}
         tool_calls = message.get("tool_calls") or []
         if not tool_calls:
@@ -484,7 +490,7 @@ def _run_tool_loop(
                 args = json.loads(fn.get("arguments") or "{}")
             except json.JSONDecodeError:
                 args = {}
-            result = dispatch_tool(name, args if isinstance(args, dict) else {}, lexicon)
+            result = dispatch_fn(name, args if isinstance(args, dict) else {}, lexicon)
             messages.append(
                 {
                     "role": "tool",
@@ -493,6 +499,27 @@ def _run_tool_loop(
                 }
             )
     return "", rounds
+
+
+def _run_tool_loop(
+    *,
+    url: str,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, Any]],
+    lexicon: Lexicon,
+    use_tools: bool,
+    max_rounds: int = 6,
+) -> tuple[str, int]:
+    return run_chat_tool_loop(
+        url=url,
+        api_key=api_key,
+        model=model,
+        messages=messages,
+        lexicon=lexicon,
+        use_tools=use_tools,
+        max_rounds=max_rounds,
+    )
 
 
 def translate_openai(

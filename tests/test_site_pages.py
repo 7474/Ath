@@ -47,6 +47,12 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
 
+    def test_translator_mentions_server_agent(self):
+        web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("サーバエージェント", web)
+        self.assertIn("id=\"agent-url\"", web)
+        self.assertIn("/api/translate", web)
+
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("../ath/", web)
@@ -70,10 +76,13 @@ class SiteStructureTest(unittest.TestCase):
         self.assertNotIn("公開デモ（GitHub Pages）", readme)
 
     def test_serve_hosts_whole_site(self):
+        server = (ROOT / "baronh" / "server.py").read_text(encoding="utf-8")
+        self.assertIn("directory=str(ROOT_DIR)", server)
+        self.assertNotIn("directory=str(WEB_DIR)", server)
+        self.assertIn("アーヴ語とアース:", server)
+        self.assertIn("/api/translate", server)
         cli = (ROOT / "baronh" / "cli.py").read_text(encoding="utf-8")
-        self.assertIn("directory=str(ROOT_DIR)", cli)
-        self.assertNotIn("directory=str(WEB_DIR)", cli)
-        self.assertIn("アーヴ語とアース:", cli)
+        self.assertIn("from baronh.server import serve", cli)
 
     def test_pages_workflow_copies_site_files(self):
         workflow = (ROOT / ".github" / "workflows" / "build-font.yml").read_text(
