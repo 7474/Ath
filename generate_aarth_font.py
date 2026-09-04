@@ -109,6 +109,16 @@ GLYPH_LAYOUT = [
 SOURCE_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/2/23/Ath_%28alphabet%29.png"
 )
+REPO_ROOT = Path(__file__).resolve().parent
+DIGIT_RASTER_DIR = REPO_ROOT / "templates" / "digits"
+FILLED_TEMPLATE = REPO_ROOT / "templates" / "ath_source_filled.png"
+DIGIT_BITMAP_SCALE = 6
+FONT_LICENSE = (
+    "CC BY-SA 3.0. Ath letters designed by Hiroyuki Morioka; "
+    "numerals designed by Takami Akai. Digit rasters: "
+    "Wikimedia Commons TRON 9-9830–9-9839."
+)
+FONT_LICENSE_URL = "https://creativecommons.org/licenses/by-sa/3.0/"
 
 EM = 1000          # units per em
 ASCENDER = 800
@@ -276,12 +286,20 @@ def _letter_sized_boxes(boxes: list) -> list:
 
     Wikipedia source letters are ~25px with ~8px labels. A high-res fill-in
     template has much taller bodies, so the cutoff scales with the tallest box.
+    Ath numeral 1 is a wide horizontal bar, so a short-but-wide stroke is kept.
     """
     if not boxes:
         return []
     max_h = max(b[3] for b in boxes)
     threshold = max(18, int(max_h * 0.40))
-    return [b for b in boxes if b[3] >= threshold]
+    kept = []
+    for box in boxes:
+        _x, _y, w, h = box
+        if h >= threshold:
+            kept.append(box)
+        elif w >= 3 * max(h, 1):
+            kept.append(box)
+    return kept
 
 
 def _is_grid_content_row(row: list) -> bool:
@@ -686,7 +704,18 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         charStringsDict=charStrings,
         privateDict={"defaultWidthX": 0, "nominalWidthX": 0},
     )
-    fb.setupNameTable({"familyName": "Aarth", "styleName": "Regular"})
+    fb.setupNameTable({
+        "familyName": "Aarth",
+        "styleName": "Regular",
+        "copyright": FONT_LICENSE,
+        "designer": "Hiroyuki Morioka (letters), Takami Akai (numerals)",
+        "licenseDescription": FONT_LICENSE,
+        "licenseInfoURL": FONT_LICENSE_URL,
+        "description": (
+            "Fan-made Ath webfont. Letters: Hiroyuki Morioka. "
+            "Numerals: Takami Akai."
+        ),
+    })
     fb.setupHorizontalHeader(ascent=ASCENDER, descent=DESCENDER)
     fb.setupHead(unitsPerEm=EM)
     fb.setupOS2(
@@ -769,6 +798,39 @@ def _draw_corner_ticks(draw, box_xy, tick: int = 14) -> None:
     draw.line((x1 - tick, y1, x1, y1), fill=GUIDE_OUTLINE, width=2)
 
 
+def default_digit_raster_dir() -> Path:
+    return DIGIT_RASTER_DIR
+
+
+def load_tron_digit_rasters(digits_dir: Path | None = None) -> list[np.ndarray] | None:
+    """Load the 10 CC BY-SA TRON numeral GIFs as RGB ink-on-white arrays."""
+    digits_dir = Path(digits_dir) if digits_dir else default_digit_raster_dir()
+    paths = [digits_dir / f"TRON_9-983{i}.gif" for i in range(DIGIT_COUNT)]
+    if not all(p.is_file() for p in paths):
+        return None
+    rasters = []
+    for path in paths:
+        with Image.open(path) as im:
+            gray = np.array(im.convert("L"))
+        rgb = np.full((*gray.shape, 3), 255, dtype=np.uint8)
+        rgb[gray < 128] = 0
+        rasters.append(rgb)
+    return rasters
+
+
+def _paste_bitmap_in_cell(
+    canvas, glyph_rgb: np.ndarray, cell_xy, scale: int = DIGIT_BITMAP_SCALE,
+) -> None:
+    """Paste a small bitmap (Ath numerals) with integer nearest-neighbor scale."""
+    glyph = Image.fromarray(glyph_rgb)
+    new_size = (max(1, glyph.width * scale), max(1, glyph.height * scale))
+    glyph = glyph.resize(new_size, Image.Resampling.NEAREST)
+    cx, cy = cell_xy
+    px = cx + (CELL_W - new_size[0]) // 2
+    py = cy + (GLYPH_AREA_H - new_size[1]) // 2
+    canvas.paste(glyph, (px, py))
+
+
 def _paste_glyph_in_cell(canvas, src_rgb: np.ndarray, box, cell_xy, padding: int = 6):
     """Paste a cropped source glyph, scaled to fit the cell's glyph area."""
     x, y, w, h = box
@@ -798,13 +860,18 @@ def write_source_template(
     dest: Path,
     alphabet_image: Path | None = None,
     blank: bool = False,
+    fill_digits: bool = False,
+    digits_dir: Path | None = None,
 ) -> Path:
     """
     Write a labeled raster template: 4×7 alphabet cells + 0–9 numeral cells.
 
     Reading sheet (``blank=False``): when ``alphabet_image`` is given, detected
     Ath letters are copied into the alphabet cells so the sheet can be used as
-    ``--image`` immediately; numeral cells stay empty.
+    ``--image`` immediately. Numeral cells stay empty unless ``fill_digits``.
+
+    Filled sheet (``fill_digits=True``): TRON 9-9830–9-9839 (CC BY-SA 3.0;
+    numerals designed by Takami Akai) are pasted into the 0–9 cells.
 
     Blank sheet (``blank=True``): every cell is empty (corner ticks only) so
     all 38 glyphs can be drawn from scratch.
@@ -828,11 +895,21 @@ def write_source_template(
     small_font = _try_font(_TEMPLATE_SANS, 13)
     caption_font = jp_font if _TEMPLATE_JP.is_file() else note_font
 
+    digit_rasters = load_tron_digit_rasters(digits_dir) if fill_digits and not blank else None
+
     if blank:
         draw.text((MARGIN_X, 28), "Aarth blank template", font=title_font, fill=TITLE_FILL)
         draw.text(
             (MARGIN_X, 64),
             "全グリフ未記入  字母 4×7 ＋ 数字 0–9   /   Draw every glyph. Labels stay below.",
+            font=caption_font,
+            fill=NOTE_FILL,
+        )
+    elif fill_digits:
+        draw.text((MARGIN_X, 28), "Aarth source template", font=title_font, fill=TITLE_FILL)
+        draw.text(
+            (MARGIN_X, 64),
+            "読み取り用  字母（森岡浩之）＋数字（赤井孝美）   /   Letters + CC BY-SA numerals.",
             font=caption_font,
             fill=NOTE_FILL,
         )
@@ -858,23 +935,34 @@ def write_source_template(
         alphabet_boxes, _digits = find_alphabet_and_digit_boxes(binary)
 
     slot = 0
+    digit_i = 0
     for r, row_labels in enumerate(GLYPH_LAYOUT):
         for c, label in enumerate(row_labels):
             cx = MARGIN_X + c * (CELL_W + GAP_X)
             cy = MARGIN_TOP + r * (CELL_H + GAP_Y)
             is_digit = r >= ALPHABET_ROWS
             box_xy = (cx, cy, cx + CELL_W, cy + GLYPH_AREA_H)
-            empty = blank or is_digit
+            has_digit = (
+                is_digit
+                and digit_rasters is not None
+                and digit_i < len(digit_rasters)
+            )
+            empty = blank or (is_digit and not has_digit)
             if empty:
                 # Corner ticks only — a closed grey box would survive Otsu as a
                 # fake "glyph" when the cell has no ink yet.
                 _draw_corner_ticks(draw, box_xy)
+            elif has_digit:
+                _draw_corner_ticks(draw, box_xy)
+                _paste_bitmap_in_cell(canvas, digit_rasters[digit_i], (cx, cy))
             else:
                 draw.rounded_rectangle(
                     box_xy, radius=10, fill=GUIDE_FILL, outline=GUIDE_OUTLINE, width=1,
                 )
                 if slot < len(alphabet_boxes) and src_bgr is not None:
                     _paste_glyph_in_cell(canvas, src_bgr, alphabet_boxes[slot], (cx, cy))
+            if is_digit:
+                digit_i += 1
             slot += 1
             _centered_text(
                 draw,
@@ -889,9 +977,22 @@ def write_source_template(
         "python3 generate_aarth_font.py --image this.png"
     )
     draw.text((MARGIN_X, height - 44), footer, font=small_font, fill=NOTE_FILL)
+    if fill_digits:
+        draw.text(
+            (MARGIN_X, height - 26),
+            "Letters: Hiroyuki Morioka. Numerals: Takami Akai. "
+            "Digit rasters: CC BY-SA 3.0. See LICENSE.md.",
+            font=small_font,
+            fill=NOTE_FILL,
+        )
 
     canvas.save(str(dest), "PNG")
-    kind = "blank template" if blank else "source template"
+    if blank:
+        kind = "blank template"
+    elif fill_digits:
+        kind = "filled source template"
+    else:
+        kind = "source template"
     print(f"[output] {kind} → {dest}")
     return dest
 
@@ -899,25 +1000,37 @@ def write_source_template(
 def write_source_templates(
     dest: Path,
     alphabet_image: Path | None = None,
-) -> tuple[Path, Path]:
-    """Write the reading sheet and the all-empty blank sheet.
+    digits_dir: Path | None = None,
+) -> tuple[Path, ...]:
+    """Write the reading sheet, blank sheet, and filled sheet when digits exist.
 
     ``dest`` may be a directory (canonical filenames) or a ``.png`` path for
     the reading sheet; the blank sheet is always ``ath_blank_template.png``
-    next to it.
+    next to it. When TRON numeral GIFs are present, also write
+    ``ath_source_filled.png``.
     """
     dest = Path(dest)
     image_suffixes = {".png", ".jpg", ".jpeg", ".webp"}
     if dest.suffix.lower() in image_suffixes:
-        filled = dest
+        reading = dest
         blank = dest.with_name("ath_blank_template.png")
+        filled = dest.with_name("ath_source_filled.png")
     else:
         dest.mkdir(parents=True, exist_ok=True)
-        filled = dest / "ath_source_template.png"
+        reading = dest / "ath_source_template.png"
         blank = dest / "ath_blank_template.png"
-    write_source_template(filled, alphabet_image=alphabet_image, blank=False)
+        filled = dest / "ath_source_filled.png"
+    write_source_template(reading, alphabet_image=alphabet_image, blank=False)
     write_source_template(blank, alphabet_image=None, blank=True)
-    return filled, blank
+    if load_tron_digit_rasters(digits_dir):
+        write_source_template(
+            filled,
+            alphabet_image=alphabet_image,
+            fill_digits=True,
+            digits_dir=digits_dir,
+        )
+        return reading, blank, filled
+    return reading, blank
 
 
 def _acquire_image(spec: str | None, output_dir: Path, fallback_name: str) -> Path:
@@ -965,7 +1078,7 @@ def main():
         description="Generate Aarth webfont from Ath raster images (alphabet ± digits)",
     )
     parser.add_argument("--image", default=None,
-                        help="Path to PNG image or URL (default: download from Wikimedia)")
+                        help="Path to PNG image or URL (default: filled template, else Wikimedia)")
     parser.add_argument(
         "--digits-image", default=None,
         help="Optional raster of Ath numerals 0–9 (7+3 or 10-wide grid; see --write-template)",
@@ -991,7 +1104,11 @@ def main():
         return
 
     # --- 1. Acquire image ---
-    image_path = _acquire_image(args.image, output_dir, "Ath_alphabet.png")
+    if args.image is None and FILLED_TEMPLATE.is_file():
+        image_path = FILLED_TEMPLATE
+        print(f"[info] using {image_path}")
+    else:
+        image_path = _acquire_image(args.image, output_dir, "Ath_alphabet.png")
 
     # --- 2. Pre-process ---
     print("[process] binarizing image …")

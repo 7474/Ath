@@ -6,6 +6,8 @@ on:
     paths:
       - 'generate_aarth_font.py'
       - 'Ath_alphabet.png'
+      - 'templates/**'
+      - 'LICENSE.md'
       - 'index.html'
       - 'aarth.css'
       - 'requirements.txt'
@@ -33,7 +35,7 @@ jobs:
       - name: Generate font
         run: |
           python3 generate_aarth_font.py \
-            --image Ath_alphabet.png \
+            --image templates/ath_source_filled.png \
             --output-dir docs \
             --debug
 
