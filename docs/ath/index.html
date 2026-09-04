@@ -64,7 +64,6 @@
 
     /* Specimens stay in Aarth after Translate so glyphs stay visible. */
     body.translated .aarth,
-    body.translated .aarth-hero,
     body.translated .alpha-cell .glyph,
     body.translated .size-scale p,
     body.translated .aarth-para,
@@ -124,16 +123,6 @@
       max-width: 100%;
       min-width: 0;
       overflow-x: auto;
-    }
-
-    /* Large heading */
-    .aarth-hero {
-      font-family: 'Aarth', serif;
-      font-size: 5rem;
-      line-height: 1.2;
-      letter-spacing: .08em;
-      color: #1a1a1a;
-      overflow-wrap: anywhere;
     }
 
     /* Alphabet table */
@@ -400,11 +389,48 @@
   <main class="page-content">
   <h1>Ath (Aarth) — glyph demo</h1>
 
-  <!-- Hero -->
-  <section>
-    <h2>Hero text</h2>
+  <!-- Humankind Empire of Abh: official name + imperial anthem in Ath keys -->
+  <section id="frybarec">
+    <h2>Humankind Empire of Abh</h2>
     <div class="demo-block">
-      <p class="aarth-hero">aarth</p>
+      <p class="ath-keys empire-official" lang="ath">frybarec gloer gor bari</p>
+      <p class="ath-keys empire-short" lang="ath">bar frybarec</p>
+      <div class="ath-keys anthem" lang="ath">
+        <div class="stanza">
+          <p>fa rume catmé gerElacr</p>
+          <p>ullote izomél</p>
+          <p>lanote dige césati</p>
+          <p>lüamse nahAnlace</p>
+          <p>fa bale scuréle frybarer</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü</p>
+          <p>sicé léssote dar scurér alsAma</p>
+          <p>farer léssoth</p>
+          <p>ra sotle botnasa dari éïrace lona</p>
+        </div>
+        <div class="stanza">
+          <p>fa flare rycmal gerElacr</p>
+          <p>sIsnée surepuce</p>
+          <p>issae dade lo fade</p>
+          <p>froce tymbAdel gol</p>
+          <p>fa bale carsarh gerElacr</p>
+        </div>
+        <div class="stanza">
+          <p>gerElach éü</p>
+          <p>sicé dozzote dar carsarr factina</p>
+          <p>farer dozzoth</p>
+          <p>ra sotle nilora rÿal dar üAponéra</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü gerElach éü</p>
+          <p>farh a lomi zacsantto loréïl</p>
+        </div>
+      </div>
+      <p class="source-note">
+        典拠:
+        <a href="https://www.chikyukotobamura.org/muse/wr_fiction_5.html">地球ことば村「アース（文字）」</a>
+      </p>
     </div>
   </section>
 
@@ -533,51 +559,6 @@
       <p style="font-size:2.5rem">abcdefghilmnoprs 0123456789</p>
       <p style="font-size:1.5rem">abcdefghilmnoprs 0123456789</p>
       <p style="font-size:1rem">abcdefghilmnoprs 0123456789</p>
-    </div>
-  </section>
-
-  <!-- Humankind Empire of Abh: official name + imperial anthem in Ath keys -->
-  <section id="frybarec">
-    <h2>Humankind Empire of Abh</h2>
-    <div class="demo-block">
-      <p class="ath-keys empire-official" lang="ath">frybarec gloer gor bari</p>
-      <p class="ath-keys empire-short" lang="ath">bar frybarec</p>
-      <div class="ath-keys anthem" lang="ath">
-        <div class="stanza">
-          <p>fa rume catmé gerElacr</p>
-          <p>ullote izomél</p>
-          <p>lanote dige césati</p>
-          <p>lüamse nahAnlace</p>
-          <p>fa bale scuréle frybarer</p>
-        </div>
-        <div class="stanza">
-          <p>frybarec éü</p>
-          <p>sicé léssote dar scurér alsAma</p>
-          <p>farer léssoth</p>
-          <p>ra sotle botnasa dari éïrace lona</p>
-        </div>
-        <div class="stanza">
-          <p>fa flare rycmal gerElacr</p>
-          <p>sIsnée surepuce</p>
-          <p>issae dade lo fade</p>
-          <p>froce tymbAdel gol</p>
-          <p>fa bale carsarh gerElacr</p>
-        </div>
-        <div class="stanza">
-          <p>gerElach éü</p>
-          <p>sicé dozzote dar carsarr factina</p>
-          <p>farer dozzoth</p>
-          <p>ra sotle nilora rÿal dar üAponéra</p>
-        </div>
-        <div class="stanza">
-          <p>frybarec éü gerElach éü</p>
-          <p>farh a lomi zacsantto loréïl</p>
-        </div>
-      </div>
-      <p class="source-note">
-        典拠:
-        <a href="https://www.chikyukotobamura.org/muse/wr_fiction_5.html">地球ことば村「アース（文字）」</a>
-      </p>
     </div>
   </section>
 
