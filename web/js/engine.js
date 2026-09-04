@@ -1250,12 +1250,15 @@
     ]).join("\n");
   }
 
-  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、ベクトル検索した辞書だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon（ベクトル検索）や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n訳文だけを出力し、解説や引用符は付けないでください。";
+  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、ベクトル検索した辞書だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon（ベクトル検索）や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。\n訳文だけを出力し、解説や引用符は付けないでください。";
 
-  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）";
+  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）\n- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?";
 
   var LOOKUP_QUERY_LIMIT = 24;
-  var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、訳文だけを出力してください。";
+  var HINT_TOKEN_MAX = 20;
+  var HINT_LINE_LIMIT = 40;
+  var COVERAGE_ATTEMPTS = 2;
+  var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。訳文だけを出力してください。";
 
   var AGENT_TOOLS = [
     { type: "function", function: { name: "search_lexicon", description: "アーヴ語辞書のベクトル検索。足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" }, description: "原文の語・言い換えをすべて入れる" }, limit: { type: "integer" } }, required: ["queries"] } } },
@@ -1266,6 +1269,145 @@
     { type: "function", function: { name: "validate_baronh", description: "生成したアーヴ語のうち辞書語形でも発音転記でもない語を列挙する。訳文が書けてから1回だけ。", parameters: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } } }
   ];
   var CHAT_TOOLS = AGENT_TOOLS;
+
+  function splitSourceUnits(text) {
+    var raw = String(text || "").trim();
+    if (!raw) return [];
+    var units = [];
+    raw.split(/\n{2,}/).forEach(function (para) {
+      para = para.trim();
+      if (!para) return;
+      var pieces = para.match(/[\s\S]+?(?:[。！？!?]+|$)/g) || [para];
+      pieces.forEach(function (piece) {
+        piece = String(piece || "").trim();
+        if (!piece) return;
+        if (piece.indexOf("\n") >= 0 && !/[。！？!?]/.test(piece)) {
+          piece.split(/\n/).forEach(function (line) {
+            line = line.trim();
+            if (line) units.push(line);
+          });
+          return;
+        }
+        if (!/[。！？]/.test(piece) && /[.!?]/.test(piece) && piece.indexOf(" ") >= 0) {
+          var en = piece.match(/.+?(?:[.!?]+(?:\s+|$)|$)/g) || [piece];
+          en.forEach(function (part) {
+            part = String(part || "").trim();
+            if (part) units.push(part);
+          });
+          return;
+        }
+        units.push(piece);
+      });
+    });
+    return units.length ? units : [raw];
+  }
+
+  function formatNumberedSource(text) {
+    var units = Array.isArray(text) ? text : splitSourceUnits(text);
+    if (!units.length) return typeof text === "string" ? text : "";
+    if (units.length === 1) return units[0];
+    return units.map(function (unit, i) { return "[" + (i + 1) + "] " + unit; }).join("\n");
+  }
+
+  function toolAnswerNow(sourceText) {
+    var numbered = sourceText ? formatNumberedSource(sourceText) : "";
+    if (numbered) return TOOL_ANSWER_NOW + "\n\n原文:\n" + numbered;
+    return TOOL_ANSWER_NOW;
+  }
+
+  function maxOutputTokens(text) {
+    var n = Math.max(1024, String(text || "").length * 8);
+    return n > 8192 ? 8192 : n;
+  }
+
+  function parseNumberedMap(text) {
+    var mapping = {};
+    String(text || "").split(/\n/).forEach(function (line) {
+      var m = String(line || "").trim().match(/^\[(\d+)\]\s*(.*)$/);
+      if (m) mapping[parseInt(m[1], 10)] = m[2].trim();
+    });
+    if (Object.keys(mapping).length) return mapping;
+    var re = /\[(\d+)\]\s*([^\[\]]+)/g;
+    var m;
+    while ((m = re.exec(String(text || "")))) {
+      mapping[parseInt(m[1], 10)] = String(m[2] || "").trim();
+    }
+    return mapping;
+  }
+
+  function stripUnitNumbers(text) {
+    var lines = String(text || "").split(/\n/).map(function (line) {
+      return line.replace(/^\[\d+\]\s*/, "");
+    });
+    return lines.join("\n").replace(/\[\d+\]\s*/g, "").trim();
+  }
+
+  function joinNumberedUnits(mapping, count) {
+    var parts = [];
+    var i;
+    for (i = 1; i <= count; i++) {
+      if (mapping[i]) parts.push(mapping[i]);
+    }
+    return parts.join("\n");
+  }
+
+  function missingUnitIndices(mapping, count) {
+    var missing = [];
+    var i;
+    for (i = 1; i <= count; i++) {
+      if (!String(mapping[i] || "").trim()) missing.push(i);
+    }
+    return missing;
+  }
+
+  function coverageIncomplete(sourceText, translated) {
+    var units = splitSourceUnits(sourceText);
+    if (units.length <= 1) return false;
+    var mapping = parseNumberedMap(translated);
+    if (Object.keys(mapping).length) return missingUnitIndices(mapping, units.length).length > 0;
+    return splitSourceUnits(translated).length < units.length;
+  }
+
+  function coverageNudge(sourceText, translated) {
+    var units = splitSourceUnits(sourceText);
+    var mapping = parseNumberedMap(translated);
+    var missing = Object.keys(mapping).length
+      ? missingUnitIndices(mapping, units.length)
+      : units.map(function (_, i) { return i + 1; });
+    var listed = missing.map(function (i) { return "[" + i + "] " + units[i - 1]; }).join("\n");
+    return "訳が原文より短い、または番号が欠けています。要約せず、次の未訳単位を同じ番号で訳してください。既訳は繰り返さなくてよいです。訳文だけを出力してください。\n\n" + listed;
+  }
+
+  function mergeTranslation(sourceText, previous, extra) {
+    var units = splitSourceUnits(sourceText);
+    var count = units.length;
+    var extraMap = parseNumberedMap(extra);
+    var prevMap = parseNumberedMap(previous);
+    if (Object.keys(extraMap).length && !missingUnitIndices(extraMap, count).length) {
+      return joinNumberedUnits(extraMap, count);
+    }
+    var merged = {};
+    Object.keys(prevMap).forEach(function (key) { merged[key] = prevMap[key]; });
+    Object.keys(extraMap).forEach(function (key) {
+      if (String(extraMap[key] || "").trim()) merged[key] = extraMap[key];
+    });
+    if (Object.keys(merged).length) {
+      return Object.keys(merged).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); })
+        .filter(function (key) { return parseInt(key, 10) >= 1 && parseInt(key, 10) <= count; })
+        .map(function (key) { return "[" + key + "] " + merged[key]; })
+        .join("\n");
+    }
+    return extra || previous;
+  }
+
+  function finalizeTranslation(sourceText, translated) {
+    var units = splitSourceUnits(sourceText);
+    var mapping = parseNumberedMap(translated);
+    if (Object.keys(mapping).length && units.length > 1) {
+      return joinNumberedUnits(mapping, units.length) || stripUnitNumbers(translated);
+    }
+    return Object.keys(mapping).length ? stripUnitNumbers(translated) : String(translated || "");
+  }
 
   function formatEntry(entry) {
     var line = "- " + entry.lemma + " [" + entry.pos + "] ja:" + entry.gloss_ja + " en:" + (entry.gloss_en || "");
@@ -1422,6 +1564,7 @@
     var lines = [];
     var seen = {};
     sourceTokens(text, lexicon, sourceLang).forEach(function (tok) {
+      if (lines.length >= HINT_LINE_LIMIT) return;
       var word = String(tok).replace(/[.,!?;:。？！]/g, "");
       if (!word || seen[word] || JA_PARTICLES[word] || "、。！？!?:.".indexOf(word) >= 0) return;
       seen[word] = 1;
@@ -1441,6 +1584,7 @@
         lines.push("- " + word + ": 固有名詞の可能性。transcribe_name で発音転記");
         return;
       }
+      if (word.length > HINT_TOKEN_MAX) return;
       lines.push("- " + word + ": 未登録。search_lexicon / find_synonyms で辞書内の言い換えを探す");
     });
     return lines.length ? lines.join("\n") : "(ヒントなし。search_lexicon で引いてください)";
@@ -1552,7 +1696,14 @@
 
   function buildAgentUserPrompt(text, lexicon, sourceLang, targetLang) {
     var vdb = global.BaronhVectorDB;
-    var queries = [text].concat(sourceTokens(text, lexicon, sourceLang));
+    var units = splitSourceUnits(text);
+    var numbered = formatNumberedSource(units);
+    var tokenQueries = sourceTokens(text, lexicon, sourceLang).map(function (tok) {
+      return String(tok).replace(/[.,!?;:。？！]/g, "");
+    }).filter(function (tok) {
+      return tok && !JA_PARTICLES[tok] && tok.length <= HINT_TOKEN_MAX;
+    });
+    var queries = units.concat(tokenQueries);
     var retrieved = "(ヒットなし。search_lexicon で追加検索してください)";
     if (vdb) {
       var hits = vdb.getIndex(lexicon).searchMany(queries, 16);
@@ -1561,11 +1712,14 @@
       }
     }
     var hints = dictionaryHints(text, lexicon, sourceLang);
+    var coverage = units.length > 1
+      ? "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
+      : "訳文だけを出力してください。";
     return "翻訳方向: " + sourceLang + " → " + targetLang +
-      "\n原文:\n" + text +
+      "\n原文（番号順に省略せず全文を訳す。要約禁止）:\n" + numbered +
       "\n\n辞書ヒント（文ではない。訳は自分で組む）:\n" + hints +
       "\n\nベクトル検索した関連辞書（全文ではない）:\n" + retrieved +
-      "\n\n訳文だけを出力してください。規則ベースの下訳はありません。" +
+      "\n\n" + coverage + "規則ベースの下訳はありません。" +
       "足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries にまとめて1回で引く。" +
       "1語ずつの連続呼び出しは禁止。固有名詞は transcribe_name の names にまとめる。" +
       "文法はシステムプロンプトにある。validate_baronh は訳文が書けてから1回だけ。";
@@ -1802,24 +1956,29 @@
     };
   }
 
-  function runChatToolLoop(chatOnce, messages, lexicon, trace, useTools, maxRounds) {
+  function runChatToolLoop(chatOnce, messages, lexicon, trace, useTools, maxRounds, sourceText, maxTokens) {
     maxRounds = maxRounds || 3;
+    var lastContent = "";
     function step(round, sawTools, allowTools) {
-      if (round > maxRounds) return Promise.resolve("");
+      if (round > maxRounds) return Promise.resolve(lastContent || "");
       var payload = { temperature: 0.2, messages: messages };
+      if (maxTokens) payload.max_tokens = maxTokens;
       if (allowTools) {
         payload.tools = AGENT_TOOLS;
         payload.tool_choice = sawTools ? "none" : "auto";
       }
       return Promise.resolve(chatOnce(payload)).catch(function (err) {
         if (allowTools && sawTools && (/tool/i.test(err.message || "") || /400/.test(err.message || ""))) {
-          return Promise.resolve(chatOnce({ temperature: 0.2, messages: messages }));
+          var fallback = { temperature: 0.2, messages: messages };
+          if (maxTokens) fallback.max_tokens = maxTokens;
+          return Promise.resolve(chatOnce(fallback));
         }
         throw err;
       }).then(function (data) {
         var message = (((data && data.choices) || [])[0] || {}).message || {};
         var calls = message.tool_calls || [];
         var content = String(message.content || "").trim();
+        if (content) lastContent = content;
         if (!calls.length) return content;
         if (sawTools) {
           if (content) return content;
@@ -1837,11 +1996,31 @@
             content: dispatchAgentTool(fn.name, args, lexicon, trace, stub)
           });
         });
-        messages.push({ role: "user", content: TOOL_ANSWER_NOW });
+        messages.push({ role: "user", content: toolAnswerNow(sourceText) });
         return step(round + 1, true, true);
       });
     }
     return step(1, false, !!useTools);
+  }
+
+  function ensureSourceCoverage(chatOnce, messages, lexicon, trace, sourceText, translated, maxTokens) {
+    var current = translated || "";
+    var extra = 0;
+    function attempt(left) {
+      if (!coverageIncomplete(sourceText, current) || left <= 0) {
+        return Promise.resolve({ text: finalizeTranslation(sourceText, current), extra: extra });
+      }
+      messages.push({ role: "assistant", content: current });
+      messages.push({ role: "user", content: coverageNudge(sourceText, current) });
+      return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 2, sourceText, maxTokens).then(function (nxt) {
+        extra += 1;
+        nxt = cleanModelText(nxt);
+        if (!nxt) return { text: finalizeTranslation(sourceText, current), extra: extra };
+        current = mergeTranslation(sourceText, current, nxt);
+        return attempt(left - 1);
+      });
+    }
+    return attempt(COVERAGE_ATTEMPTS);
   }
 
   function translateAgent(text, lexicon, opts) {
@@ -1858,16 +2037,26 @@
       { role: "system", content: agentSystemPrompt(tgt) },
       { role: "user", content: buildAgentUserPrompt(text, lexicon, src, tgt) }
     ];
+    var seed = messages.slice();
     var chatOnce = opts.chatOnce;
-    return runChatToolLoop(chatOnce, messages.slice(), lexicon, trace, true, opts.maxRounds || 3).catch(function (err) {
+    var tokens = maxOutputTokens(text);
+    var units = splitSourceUnits(text);
+    var maxRounds = Math.max(opts.maxRounds || 3, Math.min(8, 2 + Math.max(1, Math.floor(units.length / 4))));
+    return runChatToolLoop(chatOnce, messages, lexicon, trace, true, maxRounds, text, tokens).catch(function (err) {
       if (/tool/i.test(err.message || "") || /400/.test(err.message || "")) {
         notes.push("ツール非対応のため生成の単発に切り替えました。規則下訳には戻しません。");
-        return runChatToolLoop(chatOnce, messages.slice(), lexicon, trace, false, 3);
+        messages = seed.slice();
+        return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 3, text, tokens);
       }
       throw err;
     }).then(function (out) {
       out = cleanModelText(out);
       if (!out) throw new Error("生成結果が空でした。規則ベースへはフォールバックしません。");
+      return ensureSourceCoverage(chatOnce, messages, lexicon, trace, text, out, tokens).then(function (covered) {
+        if (covered.extra) notes.push("未訳単位を同一セッションで追記しました。");
+        return covered.text;
+      });
+    }).then(function (out) {
       var stub = phoneticStub(trace, src, tgt, text);
       function maybeRewrite(textOut) {
         if (tgt !== "baronh") return Promise.resolve({ text: textOut, invented: [] });
@@ -1875,12 +2064,12 @@
         if (!invented.length) return Promise.resolve({ text: textOut, invented: invented });
         var critique = "次の語は辞書の語形でも発音転記でもありません: " + invented.join(", ") +
           "。造語せず、search_lexicon / find_synonyms の queries にまとめて辞書の類義語へ寄せて書き直してください。" +
-          "規則ベースの下訳は無いので、自分で訳してください。訳文だけを出力してください。";
-        var retry = messages.concat([
-          { role: "assistant", content: textOut },
-          { role: "user", content: critique }
-        ]);
-        return runChatToolLoop(chatOnce, retry, lexicon, trace, true, 4).then(function (rewritten) {
+          "規則ベースの下訳は無いので、自分で訳してください。" +
+          "要約せず、次の原文を番号順に省略なく訳してください。訳文だけを出力してください。\n\n原文:\n" +
+          formatNumberedSource(text);
+        messages.push({ role: "assistant", content: textOut });
+        messages.push({ role: "user", content: critique });
+        return runChatToolLoop(chatOnce, messages, lexicon, trace, true, 4, text, tokens).then(function (rewritten) {
           rewritten = cleanModelText(rewritten);
           notes.push("辞書にない語形 " + invented.join(", ") + " を検出し、再生成しました。");
           if (rewritten) {
@@ -1969,6 +2158,11 @@
     AGENT_TOOLS: AGENT_TOOLS,
     CHAT_TOOLS: CHAT_TOOLS,
     TOOL_ANSWER_NOW: TOOL_ANSWER_NOW,
+    splitSourceUnits: splitSourceUnits,
+    formatNumberedSource: formatNumberedSource,
+    toolAnswerNow: toolAnswerNow,
+    parseNumberedMap: parseNumberedMap,
+    coverageIncomplete: coverageIncomplete,
     collectToolStrings: collectToolStrings,
     grammarContext: grammarContext,
     agentSystemPrompt: agentSystemPrompt,

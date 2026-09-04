@@ -242,6 +242,158 @@ class BatchToolTest(unittest.TestCase):
         self.assertEqual(payloads[1]["tool_choice"], "none")
         self.assertEqual(messages[-1]["content"], TOOL_ANSWER_NOW)
 
+    def test_tool_loop_restates_source_after_tools(self):
+        from baronh.openai_backend import run_chat_tool_loop, tool_answer_now
+
+        payloads: list[dict] = []
+
+        def fake_chat(payload):
+            payloads.append(payload)
+            if len(payloads) == 1:
+                return {
+                    "choices": [{
+                        "message": {
+                            "tool_calls": [{
+                                "id": "c1",
+                                "function": {
+                                    "name": "lookup_lexicon",
+                                    "arguments": json.dumps({"queries": ["アーヴ"]}, ensure_ascii=False),
+                                },
+                            }]
+                        }
+                    }]
+                }
+            return {"choices": [{"message": {"content": "F'a bale."}}]}
+
+        src = "私はアーヴです"
+        messages = [{"role": "user", "content": src}]
+        out, rounds = run_chat_tool_loop(
+            url="http://example/v1/chat/completions",
+            api_key="no-key",
+            model="gemini-3.5-flash-lite",
+            messages=messages,
+            lexicon=self.lex,
+            use_tools=True,
+            chat_once=fake_chat,
+            source_text=src,
+            max_tokens=2048,
+        )
+        self.assertEqual(out, "F'a bale.")
+        self.assertEqual(rounds, 2)
+        last = messages[-1]["content"]
+        self.assertEqual(last, tool_answer_now(src))
+        self.assertIn(src, last)
+        self.assertIn("省略せず", last)
+        self.assertEqual(payloads[-1].get("max_tokens"), 2048)
+
+
+class SourceCoverageTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lex = load_lexicon()
+
+    def test_split_sample_paragraph(self):
+        from baronh.openai_backend import coverage_incomplete, format_numbered_source, split_source_units
+
+        src = (
+            "アーヴ語翻訳機\n\n"
+            "リン・ジントって奴はあれでなかなか頭の出来がいい。"
+            "なんたって故郷、俺らの、ついでにアーヴ語を読み書き出来るんだからな。"
+            "よく分からん言葉を喋ってると別人に見えて困る。"
+            "だからと言ってアーヴ語なんて覚える気はない、覚えられない訳じゃないぜ？"
+            "　とは言えアーヴ語で何を喋ってるのか気にならんこともない。"
+            "てな訳で機械に翻訳機を作って貰った。"
+            "これでアーヴ語の読み書きは完璧だぜ。\n\n"
+            "って、何喋ってるかは分からないじゃねーか！"
+        )
+        units = split_source_units(src)
+        self.assertGreaterEqual(len(units), 8)
+        self.assertEqual(units[0], "アーヴ語翻訳機")
+        self.assertTrue(units[-1].endswith("！") or "分からない" in units[-1])
+        numbered = format_numbered_source(src)
+        self.assertIn("[1]", numbered)
+        self.assertIn("[2]", numbered)
+        short = "ringhintoc a almee éni. murrautec farh, lo barone gobhoth."
+        self.assertTrue(coverage_incomplete(src, short))
+        self.assertFalse(coverage_incomplete("私はアーヴです", "F'a bale."))
+
+    def test_agent_continues_same_session_for_missing_units(self):
+        from baronh.agent import translate_agent
+
+        src = "私はアーヴです。分かりますか。"
+        calls: list[dict] = []
+
+        def chat_once(payload):
+            calls.append(json.loads(json.dumps(payload)))
+            last = payload["messages"][-1]
+            n = len(calls)
+            if n == 1:
+                return {
+                    "choices": [{
+                        "message": {
+                            "tool_calls": [{
+                                "id": "1",
+                                "function": {
+                                    "name": "search_lexicon",
+                                    "arguments": json.dumps({"queries": ["アーヴ"]}),
+                                },
+                            }]
+                        }
+                    }]
+                }
+            if "未訳" in last.get("content", "") or "欠けて" in last.get("content", ""):
+                self.assertTrue(any(m.get("role") == "tool" for m in payload["messages"]))
+                return {
+                    "choices": [{
+                        "message": {"content": "[1] F'a bale.\n[2] face sa?"}
+                    }]
+                }
+            if payload.get("tool_choice") == "none":
+                self.assertIn("私はアーヴです", last.get("content", ""))
+                self.assertIn("[1]", last.get("content", ""))
+                return {"choices": [{"message": {"content": "F'a bale."}}]}
+            return {"choices": [{"message": {"content": "[1] F'a bale.\n[2] face sa?"}}]}
+
+        out = translate_agent(src, self.lex, source_lang="ja", target_lang="baronh", chat_once=chat_once)
+        self.assertIn("bale", out.text)
+        self.assertIn("face", out.text)
+        self.assertGreaterEqual(len(calls), 3)
+        self.assertTrue(any("未訳単位" in note or "追記" in note for note in out.notes))
+
+    def test_rewrite_keeps_tool_history(self):
+        from baronh.agent import translate_agent
+
+        src = "私はアーヴです"
+        calls: list[dict] = []
+
+        def chat_once(payload):
+            calls.append(payload)
+            n = len(calls)
+            if n == 1:
+                return {
+                    "choices": [{
+                        "message": {
+                            "tool_calls": [{
+                                "id": "1",
+                                "function": {
+                                    "name": "search_lexicon",
+                                    "arguments": json.dumps({"queries": ["アーヴ"]}),
+                                },
+                            }]
+                        }
+                    }]
+                }
+            if n == 2:
+                return {"choices": [{"message": {"content": "F'a xyzzy."}}]}
+            roles = [m.get("role") for m in payload["messages"]]
+            self.assertIn("tool", roles)
+            self.assertTrue(any("xyzzy" in str(m.get("content") or "") for m in payload["messages"]))
+            return {"choices": [{"message": {"content": "F'a bale."}}]}
+
+        out = translate_agent(src, self.lex, source_lang="ja", target_lang="baronh", chat_once=chat_once)
+        self.assertIn("bale", out.text)
+        self.assertGreaterEqual(len(calls), 3)
+
 
 class ChatRequestRetryTest(unittest.TestCase):
     def test_retries_503_then_succeeds(self):
