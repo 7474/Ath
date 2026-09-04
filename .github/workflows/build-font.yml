@@ -9,6 +9,8 @@ on:
       - 'templates/**'
       - 'LICENSE.md'
       - 'index.html'
+      - 'site.css'
+      - 'ath/**'
       - 'aarth.css'
       - 'requirements.txt'
       - 'web/**'
@@ -43,12 +45,14 @@ jobs:
             --output-dir docs \
             --debug
 
-      - name: Copy demo page and stylesheet into docs
+      - name: Copy site pages and stylesheet into docs
         run: |
           cp index.html docs/index.html
+          cp site.css docs/site.css
           cp aarth.css docs/aarth.css
-          rm -rf docs/web
-          mkdir -p docs/web/data docs/data
+          rm -rf docs/ath docs/web
+          mkdir -p docs/ath docs/web/data docs/data
+          cp ath/index.html docs/ath/index.html
           cp -r web/css web/js web/index.html docs/web/
           cp -f web/aarth.woff2 web/aarth.ttf docs/web/
           python3 -m baronh export-web --out docs/web/data

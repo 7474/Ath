@@ -137,7 +137,7 @@ select, input[type="text"], input[type="password"] {
 
 label.block { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .35rem; }
 
-<textarea {
+textarea {
   width: 100%;
   min-height: 8.5rem;
   border: 1px solid #ccc;
