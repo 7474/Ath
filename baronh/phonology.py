@@ -66,6 +66,45 @@ def normalize_baronh(text: str) -> str:
     return unicodedata.normalize("NFC", text.strip())
 
 
+def fold_latin1_oelig(text: str) -> str:
+    """Latin-1 環境の ``oe`` を、Wikipedia / アース字母の ``œ`` へ畳む。
+
+    Dadh Baronr など Latin-1 / euc-jp の資料は œ (U+0153) を書けないため
+    ASCII の ``oe`` で代用する。掻き集め辞書は ``&#339;`` で œ を表す。
+    語末の ``oe`` は o 語幹 + 不定詞 -e（``boe`` 思う、``ramgoe`` さまよう）
+    のことがあるので畳まない。
+    """
+    if not text:
+        return text
+    src = unicodedata.normalize("NFC", text)
+    pieces: list[str] = []
+    for token in re.split(r"(\s+)", src):
+        if not token or token.isspace():
+            pieces.append(token)
+            continue
+        pieces.append(_fold_latin1_oelig_token(token))
+    return "".join(pieces)
+
+
+def _fold_latin1_oelig_token(token: str) -> str:
+    tail = ""
+    body = token
+    if len(body) >= 2 and body[-2:].lower() == "oe":
+        tail = body[-2:]
+        body = body[:-2]
+    out: list[str] = []
+    i = 0
+    while i < len(body):
+        pair = body[i : i + 2]
+        if pair.lower() == "oe":
+            out.append("Œ" if pair[0].isupper() else "œ")
+            i += 2
+            continue
+        out.append(body[i])
+        i += 1
+    return "".join(out) + tail
+
+
 def to_ath_keys(text: str) -> str:
     """このリポジトリの Aarth フォントが期待する入力キーへ変換する。"""
     src = normalize_baronh(text)

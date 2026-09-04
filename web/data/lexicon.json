@@ -25,7 +25,7 @@
       "スペシャルサンクス: アーヴ語掻き集め『アーヴ語辞書』（http://mule.s59.xrea.com/seikai/jisyo/ 、2005-01-23 版）。語彙表を走査して辞書を拡充しました。",
       "スペシャルサンクス: Dadh Baronr — アーヴ語の世界『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』（http://dadh-baronr.s5.xrea.com/etc/ondic.html）。見出し語と品詞・語釈を走査して辞書を拡充しました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。"
     ],
-    "entry_count": 2435
+    "entry_count": 2408
   },
   "entries": [
     {
@@ -521,7 +521,9 @@
       "stem": "bœr",
       "reading_ja": "ベール",
       "tags": [
-        "wikipedia"
+        "wikipedia",
+        "dadh-baronr",
+        "ingested"
       ],
       "source": "seed"
     },
@@ -668,7 +670,7 @@
     {
       "lemma": "cairhoth",
       "pos": "noun",
-      "gloss_ja": "入学 / 入ること; ある組織に加入すること / （扉を）通過する。入学",
+      "gloss_ja": "入学 / 入ること; ある組織に加入すること",
       "gloss_en": "entering school",
       "declension": "2",
       "stem": "cairhot",
@@ -676,8 +678,7 @@
       "tags": [
         "wikipedia",
         "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
+        "ingested"
       ],
       "source": "seed"
     },
@@ -1621,11 +1622,12 @@
     {
       "lemma": "aï",
       "pos": "interjection",
-      "gloss_ja": "肯定の返事",
+      "gloss_ja": "肯定の返事 / はい",
       "gloss_en": "肯定の返事",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -1840,12 +1842,11 @@
     {
       "lemma": "anade",
       "pos": "noun",
-      "gloss_ja": "ane と -ad- の複合形 / 〜ではない。",
+      "gloss_ja": "ane と -ad- の複合形",
       "gloss_en": "ane と -ad- の複合形",
       "tags": [
         "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
+        "ingested"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2171,14 +2172,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
-      "lemma": "badoebe",
+      "lemma": "badœbe",
       "pos": "verb",
       "gloss_ja": "間延びする",
       "gloss_en": "間延びする",
-      "stem": "badoeb",
+      "stem": "badœb",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2222,14 +2224,16 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
-      "lemma": "baicoecec",
+      "lemma": "baicœcec",
       "pos": "noun",
-      "gloss_ja": "反物質燃料槽",
+      "gloss_ja": "反物質燃料槽 / 燃料槽。反物質燃料層",
       "gloss_en": "反物質燃料槽",
+      "reading_ja": "ベケーク",
       "tags": [
         "dadh-baronr",
         "ingested",
-        "reconstructed"
+        "reconstructed",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2532,12 +2536,13 @@
     {
       "lemma": "bautee",
       "pos": "verb",
-      "gloss_ja": "着る",
+      "gloss_ja": "着る / （服を）着る。まとう",
       "gloss_en": "着る",
       "stem": "baute",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2679,7 +2684,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
-      "lemma": "bezoerh",
+      "lemma": "bezœrh",
       "pos": "noun",
       "gloss_ja": "緑色の意か",
       "gloss_en": "緑色の意か",
@@ -3123,7 +3128,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "blogoer",
+      "lemma": "blogœr",
       "pos": "adverb",
       "gloss_ja": "前出の文あるいは文全体を肯定する",
       "gloss_en": "前出の文あるいは文全体を肯定する",
@@ -3159,40 +3164,33 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "bodoemiac",
+      "lemma": "bodœmiac",
       "pos": "noun",
       "gloss_ja": "偵察艇",
       "gloss_en": "偵察艇",
+      "reading_ja": "ボデーミア",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "boerh",
-      "pos": "noun",
-      "gloss_ja": "子爵",
-      "gloss_en": "子爵",
-      "tags": [
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
-    },
-    {
-      "lemma": "boerïéc",
+      "lemma": "bœrïéc",
       "pos": "noun",
       "gloss_ja": "子爵家",
       "gloss_en": "子爵家",
+      "reading_ja": "ベーリェ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "boerscorec",
+      "lemma": "bœrscorec",
       "pos": "noun",
       "gloss_ja": "子爵領",
       "gloss_en": "子爵領",
@@ -3274,13 +3272,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "bondoebec",
+      "lemma": "bondœbec",
       "pos": "noun",
       "gloss_ja": "掌兵科",
       "gloss_en": "掌兵科",
+      "reading_ja": "ボンデーブ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
@@ -3490,12 +3490,11 @@
     {
       "lemma": "butoca",
       "pos": "adjective",
-      "gloss_ja": "大変だ / 大変。難しい",
+      "gloss_ja": "大変だ",
       "gloss_en": "大変だ",
       "tags": [
         "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
+        "ingested"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
@@ -3574,7 +3573,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "cafoer-ec",
+      "lemma": "cafœr-ec",
       "pos": "noun",
       "gloss_ja": "短衣",
       "gloss_en": "短衣",
@@ -4273,7 +4272,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "ciloemh",
+      "lemma": "cilœmh",
       "pos": "noun",
       "gloss_ja": "瞳",
       "gloss_en": "瞳",
@@ -4284,7 +4283,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "ciloeri",
+      "lemma": "cilœri",
       "pos": "adverb",
       "gloss_ja": "ひとりで",
       "gloss_en": "ひとりで",
@@ -4716,13 +4715,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
-      "lemma": "ctaroebh",
+      "lemma": "ctarœbh",
       "pos": "noun",
-      "gloss_ja": "飾帯",
+      "gloss_ja": "飾帯 / 飾帯。装帯",
       "gloss_en": "飾帯",
+      "reading_ja": "クタレーヴ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
@@ -5371,7 +5372,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
-      "lemma": "desoemec",
+      "lemma": "desœmec",
       "pos": "noun",
       "gloss_ja": "猫目石",
       "gloss_en": "猫目石",
@@ -6187,7 +6188,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
-      "lemma": "faicec syrgzoedér",
+      "lemma": "faicec syrgzœdér",
       "pos": "phrase",
       "gloss_ja": "スュルグゼーデ王国",
       "gloss_en": "スュルグゼーデ王国",
@@ -6297,13 +6298,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
-      "lemma": "fasanzoerh",
+      "lemma": "fasanzœrh",
       "pos": "noun",
       "gloss_ja": "皇族",
       "gloss_en": "皇族",
+      "reading_ja": "ファサンゼール",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
@@ -6552,7 +6555,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
-      "lemma": "flidoerh",
+      "lemma": "flidœrh",
       "pos": "noun",
       "gloss_ja": "距離",
       "gloss_en": "距離",
@@ -6727,7 +6730,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
-      "lemma": "fsoetdorariac",
+      "lemma": "fsœtdorariac",
       "pos": "noun",
       "gloss_ja": "勅任翔士",
       "gloss_en": "勅任翔士",
@@ -7152,11 +7155,12 @@
     {
       "lemma": "gaumdacha",
       "pos": "adjective",
-      "gloss_ja": "無理もない、やむをえない",
+      "gloss_ja": "無理もない、やむをえない / 無理もない。やむをえない",
       "gloss_en": "無理もない、やむをえない",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
@@ -7388,18 +7392,20 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
-      "lemma": "gloec",
+      "lemma": "glœc",
       "pos": "noun",
       "gloss_ja": "人類",
       "gloss_en": "人類",
+      "reading_ja": "グレー",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
-      "lemma": "gloegecoth",
+      "lemma": "glœgecoth",
       "pos": "noun",
       "gloss_ja": "展開",
       "gloss_en": "展開",
@@ -7495,18 +7501,20 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
-      "lemma": "goemh",
+      "lemma": "gœmh",
       "pos": "noun",
       "gloss_ja": "地獄",
       "gloss_en": "地獄",
+      "reading_ja": "ゲーフ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
-      "lemma": "goer",
+      "lemma": "gœr",
       "pos": "postposition",
       "gloss_ja": "〜より",
       "gloss_en": "〜より",
@@ -7565,14 +7573,16 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
-      "lemma": "gonoec",
+      "lemma": "gonœc",
       "pos": "noun",
       "gloss_ja": "与圧服",
       "gloss_en": "与圧服",
+      "reading_ja": "ゴネー",
       "tags": [
         "dadh-baronr",
         "ingested",
-        "reconstructed"
+        "reconstructed",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
@@ -9529,7 +9539,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loeb",
+      "lemma": "lœb",
       "pos": "adverb",
       "gloss_ja": "既知の内容を省略することを示す",
       "gloss_en": "既知の内容を省略することを示す",
@@ -9540,86 +9550,96 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loebec",
+      "lemma": "lœbec",
       "pos": "noun",
       "gloss_ja": "侯爵",
       "gloss_en": "侯爵",
-      "tags": [
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
-    },
-    {
-      "lemma": "loebeghéc",
-      "pos": "noun",
-      "gloss_ja": "侯爵家",
-      "gloss_en": "侯爵家",
+      "reading_ja": "レーブ",
       "tags": [
         "dadh-baronr",
         "ingested",
-        "reconstructed"
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loebehynh",
+      "lemma": "lœbeghéc",
+      "pos": "noun",
+      "gloss_ja": "侯爵家",
+      "gloss_en": "侯爵家",
+      "reading_ja": "レーブジェ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "reconstructed",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "lœbehynh",
       "pos": "noun",
       "gloss_ja": "侯国",
       "gloss_en": "侯国",
+      "reading_ja": "レーバヒューニュ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loech",
+      "lemma": "lœch",
       "pos": "noun",
-      "gloss_ja": "時刻",
+      "gloss_ja": "時刻 / 時間。とき",
       "gloss_en": "時刻",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loedame",
+      "lemma": "lœdame",
       "pos": "verb",
       "gloss_ja": "営む",
       "gloss_en": "営む",
-      "stem": "loedam",
+      "stem": "lœdam",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loer",
+      "lemma": "lœr",
       "pos": "noun",
       "gloss_ja": "〜にとって",
       "gloss_en": "〜にとって",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loerh",
+      "lemma": "lœrh",
       "pos": "noun",
-      "gloss_ja": "道路",
+      "gloss_ja": "道路 / 鳥 / 道路。通り",
       "gloss_en": "道路",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loes-ec",
+      "lemma": "lœs-ec",
       "pos": "noun",
       "gloss_ja": "〔物理〕時間",
       "gloss_en": "〔物理〕時間",
@@ -9631,7 +9651,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loess",
+      "lemma": "lœss",
       "pos": "noun",
       "gloss_ja": "年",
       "gloss_en": "年",
@@ -9643,7 +9663,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loessoti",
+      "lemma": "lœssoti",
       "pos": "adverb",
       "gloss_ja": "毎年",
       "gloss_en": "毎年",
@@ -9654,7 +9674,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "loeza",
+      "lemma": "lœza",
       "pos": "adjective",
       "gloss_ja": "閉じた",
       "gloss_en": "閉じた",
@@ -10032,7 +10052,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "luloemec",
+      "lemma": "lulœmec",
       "pos": "noun",
       "gloss_ja": "勤務",
       "gloss_en": "勤務",
@@ -10132,22 +10152,23 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "luzoec",
+      "lemma": "luzœc",
       "pos": "noun",
       "gloss_ja": "会議",
       "gloss_en": "会議",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "luzoee",
+      "lemma": "luzœe",
       "pos": "verb",
       "gloss_ja": "集まる",
       "gloss_en": "集まる",
-      "stem": "luzoe",
+      "stem": "luzœ",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -10355,7 +10376,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "-mezoech",
+      "lemma": "-mezœch",
       "pos": "suffix",
       "gloss_ja": "名詞化語尾",
       "gloss_en": "名詞化語尾",
@@ -10605,8 +10626,7 @@
       "gloss_en": "ありがとう",
       "tags": [
         "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
+        "ingested"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
@@ -10635,12 +10655,13 @@
     {
       "lemma": "niée",
       "pos": "verb",
-      "gloss_ja": "見える",
+      "gloss_ja": "見える / 〜のようだ。〜のように見える",
       "gloss_en": "見える",
       "stem": "nié",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
@@ -10809,13 +10830,14 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
-      "lemma": "noec",
+      "lemma": "nœc",
       "pos": "noun",
       "gloss_ja": "妹",
       "gloss_en": "妹",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
@@ -10866,13 +10888,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
-      "lemma": "oboetec",
+      "lemma": "obœtec",
       "pos": "noun",
       "gloss_ja": "透明面頬",
       "gloss_en": "透明面頬",
+      "reading_ja": "オベート",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
@@ -10936,7 +10960,7 @@
     {
       "lemma": "onh",
       "pos": "noun",
-      "gloss_ja": "愚か者",
+      "gloss_ja": "愚か者 / ばか / 愚か者",
       "gloss_en": "愚か者",
       "reading_ja": "オーニュ",
       "tags": [
@@ -11944,7 +11968,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
-      "lemma": "rinmoec",
+      "lemma": "rinmœc",
       "pos": "noun",
       "gloss_ja": "林檎酒",
       "gloss_en": "林檎酒",
@@ -12115,14 +12139,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
-      "lemma": "roenh",
+      "lemma": "rœnh",
       "pos": "noun",
       "gloss_ja": "翡翠",
       "gloss_en": "翡翠",
       "tags": [
         "dadh-baronr",
         "ingested",
-        "reconstructed"
+        "reconstructed",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
@@ -13412,7 +13437,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
-      "lemma": "scoemec",
+      "lemma": "scœmec",
       "pos": "noun",
       "gloss_ja": "軍匠科",
       "gloss_en": "軍匠科",
@@ -13528,11 +13553,11 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
-      "lemma": "senoere",
+      "lemma": "senœre",
       "pos": "verb",
       "gloss_ja": "〜するつもりである",
       "gloss_en": "〜するつもりである",
-      "stem": "senoer",
+      "stem": "senœr",
       "tags": [
         "dadh-baronr",
         "ingested"
@@ -13744,13 +13769,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
-      "lemma": "seloemecoth",
+      "lemma": "selœmecoth",
       "pos": "noun",
       "gloss_ja": "義務",
       "gloss_en": "義務",
+      "reading_ja": "スレムコス",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
@@ -13889,7 +13916,7 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
-      "lemma": "snoesnése",
+      "lemma": "snœsnése",
       "pos": "noun",
       "gloss_ja": "支配する",
       "gloss_en": "支配する",
@@ -14695,13 +14722,15 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
-      "lemma": "üaboedec",
+      "lemma": "üabœdec",
       "pos": "noun",
-      "gloss_ja": "思い出",
+      "gloss_ja": "思い出 / 想い出",
       "gloss_en": "思い出",
+      "reading_ja": "ワベード",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
@@ -15297,12 +15326,13 @@
     {
       "lemma": "zase",
       "pos": "verb",
-      "gloss_ja": "出す、取りだす; 提示する",
+      "gloss_ja": "出す、取りだす; 提示する / 出す。取り出す。（信号を）発信する",
       "gloss_en": "出す、取りだす; 提示する",
       "stem": "zas",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
@@ -15332,12 +15362,13 @@
     {
       "lemma": "zée",
       "pos": "verb",
-      "gloss_ja": "出る",
+      "gloss_ja": "出る / 出る。出身",
       "gloss_en": "出る",
       "stem": "zé",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
@@ -15366,13 +15397,14 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
-      "lemma": "zoech",
+      "lemma": "zœch",
       "pos": "noun",
-      "gloss_ja": "時期",
+      "gloss_ja": "時期 / 〜時。〜期",
       "gloss_en": "時期",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
@@ -15617,19 +15649,8 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "aï",
-      "pos": "adjective",
-      "gloss_ja": "はい",
-      "gloss_en": "はい",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "alairbaïc",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "無理もない。当然",
       "gloss_en": "無理もない。当然",
       "tags": [
@@ -15786,6 +15807,17 @@
       "pos": "noun",
       "gloss_ja": "扱う",
       "gloss_en": "扱う",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "anade",
+      "pos": "adjective",
+      "gloss_ja": "〜ではない。",
+      "gloss_en": "〜ではない。",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -16045,35 +16077,11 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "badœbe",
-      "pos": "verb",
-      "gloss_ja": "間延びする",
-      "gloss_en": "間延びする",
-      "stem": "badœb",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "baïc rüécotr",
       "pos": "phrase",
       "gloss_ja": "帝国創設以前。帝国暦前",
       "gloss_en": "帝国創設以前。帝国暦前",
       "reading_ja": "バイ・ルエコト",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "baicœcec",
-      "pos": "noun",
-      "gloss_ja": "燃料槽。反物質燃料層",
-      "gloss_en": "燃料槽。反物質燃料層",
-      "reading_ja": "ベケーク",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -16352,7 +16360,7 @@
     },
     {
       "lemma": "basc",
-      "pos": "interjection",
+      "pos": "noun",
       "gloss_ja": "まさか",
       "gloss_en": "まさか",
       "tags": [
@@ -16466,17 +16474,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "bautee",
-      "pos": "noun",
-      "gloss_ja": "（服を）着る。まとう",
-      "gloss_en": "（服を）着る。まとう",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "béare",
       "pos": "verb",
       "gloss_ja": "目に留まる",
@@ -16583,7 +16580,7 @@
     },
     {
       "lemma": "bénnaic",
-      "pos": "adjective",
+      "pos": "noun",
       "gloss_ja": "修技生。見習い",
       "gloss_en": "修技生。見習い",
       "tags": [
@@ -17123,18 +17120,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "bodœmiac",
-      "pos": "noun",
-      "gloss_ja": "偵察艇",
-      "gloss_en": "偵察艇",
-      "reading_ja": "ボデーミア",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "boe",
       "pos": "noun",
       "gloss_ja": "思う",
@@ -17201,18 +17186,6 @@
       "gloss_ja": "パリューニュ子爵",
       "gloss_en": "パリューニュ子爵",
       "reading_ja": "ベール・パリュン",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "bœrïéc",
-      "pos": "noun",
-      "gloss_ja": "子爵家",
-      "gloss_en": "子爵家",
-      "reading_ja": "ベーリェ",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -17307,18 +17280,6 @@
       "gloss_ja": "主計百翔長",
       "gloss_en": "主計百翔長",
       "reading_ja": "ボモワス・サゾイル",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "bondœbec",
-      "pos": "noun",
-      "gloss_ja": "掌兵科",
-      "gloss_en": "掌兵科",
-      "reading_ja": "ボンデーブ",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -17469,6 +17430,17 @@
       "pos": "noun",
       "gloss_ja": "向こうに。反対側に",
       "gloss_en": "向こうに。反対側に",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "butoca",
+      "pos": "noun",
+      "gloss_ja": "大変。難しい",
+      "gloss_en": "大変。難しい",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -17653,6 +17625,17 @@
         "ingested"
       ],
       "notes": "→未踏領域",
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "cairhoth",
+      "pos": "verb",
+      "gloss_ja": "（扉を）通過する。入学",
+      "gloss_en": "（扉を）通過する。入学",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -18676,9 +18659,20 @@
     },
     {
       "lemma": "cob",
-      "pos": "noun",
-      "gloss_ja": "だいたい。ほぼ / ほど",
+      "pos": "adjective",
+      "gloss_ja": "だいたい。ほぼ",
       "gloss_en": "だいたい。ほぼ",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "cob",
+      "pos": "noun",
+      "gloss_ja": "ほど",
+      "gloss_en": "ほど",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -18773,18 +18767,6 @@
       "gloss_ja": "薬剤科",
       "gloss_en": "薬剤科",
       "reading_ja": "クリューリア",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "ctarœbh",
-      "pos": "noun",
-      "gloss_ja": "飾帯。装帯",
-      "gloss_en": "飾帯。装帯",
-      "reading_ja": "クタレーヴ",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -19194,7 +19176,7 @@
     },
     {
       "lemma": "datc",
-      "pos": "interjection",
+      "pos": "noun",
       "gloss_ja": "〜だったのですか",
       "gloss_en": "〜だったのですか",
       "tags": [
@@ -19403,7 +19385,7 @@
     },
     {
       "lemma": "dhan",
-      "pos": "noun",
+      "pos": "verb",
       "gloss_ja": "じゃん。軽く同意を求る。 疑問の気持ちを示す。",
       "gloss_en": "じゃん。軽く同意を求る。 疑問の気持ちを示す。",
       "tags": [
@@ -19943,7 +19925,7 @@
     },
     {
       "lemma": "faicoth",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "お祝い。祝うこと",
       "gloss_en": "お祝い。祝うこと",
       "tags": [
@@ -20123,18 +20105,6 @@
       "pos": "noun",
       "gloss_ja": "嘘をつかねばならない",
       "gloss_en": "嘘をつかねばならない",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "fasanzœrh",
-      "pos": "noun",
-      "gloss_ja": "皇族",
-      "gloss_en": "皇族",
-      "reading_ja": "ファサンゼール",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -20385,7 +20355,7 @@
     },
     {
       "lemma": "férsi",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "ありがたい。嬉しい",
       "gloss_en": "ありがたい。嬉しい",
       "tags": [
@@ -21011,17 +20981,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "gaumdacha",
-      "pos": "noun",
-      "gloss_ja": "無理もない。やむをえない",
-      "gloss_en": "無理もない。やむをえない",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "ggarér",
       "pos": "noun",
       "gloss_ja": "飛翔科",
@@ -21192,18 +21151,6 @@
       "pos": "noun",
       "gloss_ja": "箸",
       "gloss_en": "箸",
-      "reading_ja": "グレー",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "glœc",
-      "pos": "noun",
-      "gloss_ja": "人類",
-      "gloss_en": "人類",
       "reading_ja": "グレー",
       "tags": [
         "mule-jisyo",
@@ -21385,18 +21332,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "gœmh",
-      "pos": "noun",
-      "gloss_ja": "地獄",
-      "gloss_en": "地獄",
-      "reading_ja": "ゲーフ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "gœr",
       "pos": "noun",
       "gloss_ja": "〜より",
@@ -21463,18 +21398,6 @@
         "ingested"
       ],
       "notes": "→家政室主任家士",
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "gonœc",
-      "pos": "noun",
-      "gloss_ja": "与圧服",
-      "gloss_en": "与圧服",
-      "reading_ja": "ゴネー",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -23165,91 +23088,10 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "lœbec",
-      "pos": "noun",
-      "gloss_ja": "侯爵",
-      "gloss_en": "侯爵",
-      "reading_ja": "レーブ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœbeghéc",
-      "pos": "noun",
-      "gloss_ja": "侯爵家",
-      "gloss_en": "侯爵家",
-      "reading_ja": "レーブジェ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœbehynh",
-      "pos": "noun",
-      "gloss_ja": "侯国",
-      "gloss_en": "侯国",
-      "reading_ja": "レーバヒューニュ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœch",
-      "pos": "noun",
-      "gloss_ja": "時間。とき",
-      "gloss_en": "時間。とき",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœdame",
-      "pos": "verb",
-      "gloss_ja": "営む",
-      "gloss_en": "営む",
-      "stem": "lœdam",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœr",
-      "pos": "noun",
-      "gloss_ja": "〜にとって",
-      "gloss_en": "〜にとって",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "lœr fari",
       "pos": "phrase",
       "gloss_ja": "我々にとって",
       "gloss_en": "我々にとって",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "lœrh",
-      "pos": "noun",
-      "gloss_ja": "鳥 / 道路。通り",
-      "gloss_en": "鳥",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -23536,9 +23378,10 @@
     },
     {
       "lemma": "loraigee",
-      "pos": "noun",
+      "pos": "verb",
       "gloss_ja": "取り上げる。（政府が）召しあげる",
       "gloss_en": "取り上げる。（政府が）召しあげる",
+      "stem": "loraige",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -23661,7 +23504,7 @@
     },
     {
       "lemma": "lüancha",
-      "pos": "adjective",
+      "pos": "noun",
       "gloss_ja": "地味。おとなしい",
       "gloss_en": "地味。おとなしい",
       "tags": [
@@ -23808,17 +23651,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "luzœc",
-      "pos": "noun",
-      "gloss_ja": "会議",
-      "gloss_en": "会議",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "luzœc fanigalacr",
       "pos": "phrase",
       "gloss_ja": "上皇会議",
@@ -23832,9 +23664,20 @@
     },
     {
       "lemma": "ly",
-      "pos": "noun",
-      "gloss_ja": "つい。ほんの / 五",
+      "pos": "adjective",
+      "gloss_ja": "つい。ほんの",
       "gloss_en": "つい。ほんの",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "ly",
+      "pos": "noun",
+      "gloss_ja": "五",
+      "gloss_en": "五",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -24314,6 +24157,17 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
+      "lemma": "néglo",
+      "pos": "noun",
+      "gloss_ja": "ありがとう",
+      "gloss_en": "ありがとう",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
       "lemma": "néhati",
       "pos": "adjective",
       "gloss_ja": "ありがたい。幸い",
@@ -24342,17 +24196,6 @@
       "gloss_ja": "入れる",
       "gloss_en": "入れる",
       "stem": "nïa",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "niée",
-      "pos": "noun",
-      "gloss_ja": "〜のようだ。〜のように見える",
-      "gloss_en": "〜のようだ。〜のように見える",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -24424,17 +24267,6 @@
       "gloss_ja": "完全移動状態",
       "gloss_en": "完全移動状態",
       "reading_ja": "ノークタフ・バタ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "nœc",
-      "pos": "noun",
-      "gloss_ja": "妹",
-      "gloss_en": "妹",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -24524,18 +24356,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "obœtec",
-      "pos": "noun",
-      "gloss_ja": "透明面頬",
-      "gloss_en": "透明面頬",
-      "reading_ja": "オベート",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "obsaic",
       "pos": "noun",
       "gloss_ja": "主機関",
@@ -24560,21 +24380,9 @@
     },
     {
       "lemma": "oïs",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "ぐらい。およそ",
       "gloss_en": "ぐらい。およそ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "onh",
-      "pos": "interjection",
-      "gloss_ja": "ばか",
-      "gloss_en": "ばか",
-      "reading_ja": "オーニュ",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -24686,7 +24494,7 @@
     },
     {
       "lemma": "podaini",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "危ない。危険",
       "gloss_en": "危ない。危険",
       "tags": [
@@ -25391,19 +25199,8 @@
     {
       "lemma": "ro",
       "pos": "noun",
-      "gloss_ja": "そう。そのように",
+      "gloss_ja": "そう。そのように / そうですか",
       "gloss_en": "そう。そのように",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "ro",
-      "pos": "interjection",
-      "gloss_ja": "そうですか",
-      "gloss_en": "そうですか",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -25464,17 +25261,6 @@
       "pos": "noun",
       "gloss_ja": "襲う",
       "gloss_en": "襲う",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "rœnh",
-      "pos": "noun",
-      "gloss_ja": "翡翠",
-      "gloss_en": "翡翠",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -26167,7 +25953,7 @@
     },
     {
       "lemma": "sa",
-      "pos": "interjection",
+      "pos": "noun",
       "gloss_ja": "か",
       "gloss_en": "か",
       "tags": [
@@ -26190,9 +25976,10 @@
     },
     {
       "lemma": "sace",
-      "pos": "adjective",
+      "pos": "verb",
       "gloss_ja": "欠く。もたない",
       "gloss_en": "欠く。もたない",
+      "stem": "sac",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -26542,9 +26329,10 @@
     },
     {
       "lemma": "saigre",
-      "pos": "noun",
+      "pos": "verb",
       "gloss_ja": "限る。場合",
       "gloss_en": "限る。場合",
+      "stem": "saigr",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -26680,7 +26468,7 @@
     },
     {
       "lemma": "samade",
-      "pos": "noun",
+      "pos": "adjective",
       "gloss_ja": "構わない。〜してもいい",
       "gloss_en": "構わない。〜してもいい",
       "tags": [
@@ -26830,9 +26618,10 @@
     },
     {
       "lemma": "saüae",
-      "pos": "noun",
+      "pos": "verb",
       "gloss_ja": "面会する。顔・会う",
       "gloss_en": "面会する。顔・会う",
+      "stem": "saüa",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -27153,18 +26942,6 @@
       "pos": "noun",
       "gloss_ja": "けど。けれど。しかし",
       "gloss_en": "けど。けれど。しかし",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "selœmecoth",
-      "pos": "noun",
-      "gloss_ja": "義務",
-      "gloss_en": "義務",
-      "reading_ja": "スレムコス",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -28556,18 +28333,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "üabœdec",
-      "pos": "noun",
-      "gloss_ja": "想い出",
-      "gloss_en": "想い出",
-      "reading_ja": "ワベード",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "üacér",
       "pos": "noun",
       "gloss_ja": "空挺科",
@@ -29089,32 +28854,10 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "zase",
-      "pos": "noun",
-      "gloss_ja": "出す。取り出す。（信号を）発信する",
-      "gloss_en": "出す。取り出す。（信号を）発信する",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "zé",
       "pos": "noun",
       "gloss_ja": "それで。それに",
       "gloss_en": "それで。それに",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "zée",
-      "pos": "noun",
-      "gloss_ja": "出る。出身",
-      "gloss_en": "出る。出身",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -29134,7 +28877,7 @@
     },
     {
       "lemma": "zo",
-      "pos": "interjection",
+      "pos": "noun",
       "gloss_ja": "どう。どのように。どうなのか",
       "gloss_en": "どう。どのように。どうなのか",
       "tags": [
@@ -29156,7 +28899,7 @@
     },
     {
       "lemma": "zocch",
-      "pos": "interjection",
+      "pos": "noun",
       "gloss_ja": "どこか",
       "gloss_en": "どこか",
       "tags": [
@@ -29194,17 +28937,6 @@
       "gloss_ja": "機関甲板",
       "gloss_en": "機関甲板",
       "reading_ja": "ゾク・セール",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "zœch",
-      "pos": "noun",
-      "gloss_ja": "〜時。〜期",
-      "gloss_en": "〜時。〜期",
       "tags": [
         "mule-jisyo",
         "ingested"

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 from baronh.paths import SEED_LEXICON_PATH, default_lexicon_paths
-from baronh.phonology import hira_to_kata
+from baronh.phonology import fold_latin1_oelig, hira_to_kata
 
 CASES = ("nom", "acc", "gen", "dat", "all", "abl", "ins")
 CASE_JA = {
@@ -334,6 +334,9 @@ class Lexicon:
 
         if lang in ("auto", "baronh"):
             take(self._by_lemma.get(key, []))
+            folded_oe = _normalize_key(fold_latin1_oelig(query))
+            if folded_oe != key:
+                take(self._by_lemma.get(folded_oe, []))
         if lang in ("auto", "ja"):
             take(self._by_gloss_ja.get(key, []))
         if lang in ("auto", "en"):

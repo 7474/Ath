@@ -362,6 +362,8 @@ python3 -m baronh export-web --out web/data
 
 `ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。
 
+見出しのラテン転写は Wikipedia「アーヴ語」およびアース字母（`é ï œ ü ÿ`、二重字 `ai au eu`）に揃えます。Latin-1 資料が œ の代わりに書く `oe` は取り込み時に `œ` へ畳みます。語末の `oe`（`boe` 思う、`ramgoe` さまよう）は o 語幹に不定詞 `-e` が付いた形なので畳みません。掻き集め辞書の `&#339;` は HTML 実体として œ になります。
+
 ### スペシャルサンクス
 
 語彙の拡充にあたり、次の公開資料を走査させていただきました。いずれもファンによる再構成であり、公式辞書ではありません。森岡浩之氏はこれらの内容に関知していません。

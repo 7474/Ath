@@ -314,6 +314,21 @@
     return map[form.toLowerCase()] || (form + " a");
   }
 
+  function foldLatin1Oelig(text) {
+    return String(text || "").replace(/[^\s]+/g, function (token) {
+      var tail = "";
+      var body = token;
+      if (body.length >= 2 && body.slice(-2).toLowerCase() === "oe") {
+        tail = body.slice(-2);
+        body = body.slice(0, -2);
+      }
+      return body.replace(/oe/gi, function (pair) {
+        return pair.charAt(0) === pair.charAt(0).toUpperCase() && pair.charAt(0) !== pair.charAt(0).toLowerCase()
+          ? "Œ" : "œ";
+      }) + tail;
+    });
+  }
+
   function toAthKeys(text) {
     var src = String(text || "").normalize("NFC");
     var out = "";
@@ -450,7 +465,11 @@
       });
     }
     lang = lang || "auto";
-    if (lang === "auto" || lang === "baronh") take(this.byLemma[key]);
+    if (lang === "auto" || lang === "baronh") {
+      take(this.byLemma[key]);
+      var foldedOe = norm(foldLatin1Oelig(query));
+      if (foldedOe !== key) take(this.byLemma[foldedOe]);
+    }
     if (lang === "auto" || lang === "ja") take(this.byJa[key]);
     if (lang === "auto" || lang === "en") take(this.byEn[key]);
     if (!found.length && key.length >= 3 && !/[\u3040-\u30ff\u4e00-\u9fff]/.test(query)) {
@@ -1929,6 +1948,7 @@
     detectLang: detectLang,
     readingJa: readingJa,
     toAthKeys: toAthKeys,
+    foldLatin1Oelig: foldLatin1Oelig,
     parseImported: parseImported,
     topicContract: topicContract,
     GRAMMAR_BRIEF: GRAMMAR_BRIEF,

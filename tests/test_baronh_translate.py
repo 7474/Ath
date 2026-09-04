@@ -168,6 +168,8 @@ class PhonologyTest(unittest.TestCase):
         self.assertEqual(to_ath_keys("sairh"), "sArh")
         self.assertEqual(to_ath_keys("laure"), "lIre")
         self.assertEqual(to_ath_keys("greuc"), "grEc")
+        self.assertEqual(to_ath_keys("bœrh"), "bœrh")
+        self.assertNotEqual(to_ath_keys("boerh"), "bœrh")
 
     def test_reading_abh(self):
         reading = reading_ja("abh")
