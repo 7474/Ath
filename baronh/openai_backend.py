@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from baronh.grammar import FormIndex, conjugate, decline
+from baronh.grammar import FormIndex, VERB_ENDINGS, VOICE_SUFFIX, conjugate, decline
 from baronh.lexicon import Entry, Lexicon
 from baronh.phonology import reading_ja, to_ath_keys
 from baronh.translate import (
@@ -77,7 +77,21 @@ FEW_SHOT_FROM_BARONH = """
 - zom. → ありがとう / Thanks.
 """
 
-CLOSED_BARONH = frozenset({"a", "éü", "sa", "te", "le", "lo", "f'a", "d'a", "s'a"})
+CLOSED_BARONH = frozenset(
+    {
+        "a",
+        "éü",
+        "sa",
+        "te",
+        "le",
+        "lo",
+        "f'a",
+        "d'a",
+        "s'a",
+        *VERB_ENDINGS.values(),
+        *VOICE_SUFFIX.values(),
+    }
+)
 
 LOOKUP_QUERY_LIMIT = 24
 TOOL_ANSWER_NOW = (
@@ -599,6 +613,8 @@ def invented_baronh_forms(
         if not re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", surface):
             continue
         if idx.lookup(surface):
+            continue
+        if len(key) <= 2 and key in CLOSED_BARONH:
             continue
         invented.append(surface)
     return invented

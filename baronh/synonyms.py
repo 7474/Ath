@@ -64,6 +64,28 @@ PARAPHRASE_KEYS: dict[str, tuple[str, ...]] = {
     "friend": ("人",),
     "時間": ("〔物理〕時間",),
     "time": ("〔物理〕時間",),
+    "喋る": ("話す", "しゃべる", "言う", "語る"),
+    "しゃべる": ("話す", "言う"),
+    "俺": ("私",),
+    "おれ": ("私",),
+    "俺ら": ("私たち", "私"),
+    "俺たち": ("私たち",),
+    "我々": ("私たち",),
+    "我ら": ("私たち",),
+    "完璧": ("完全", "完全な"),
+    "いい": ("良い",),
+    "よい": ("良い",),
+    "別人": ("他人", "人"),
+    "言葉": ("言う", "話す"),
+    "翻訳機": ("機械通訳", "機械"),
+    "翻訳": ("機械通訳",),
+    "通訳": ("機械通訳",),
+    "覚える": ("知る",),
+    "覚え": ("知る",),
+    "分からん": ("分からない", "分かる"),
+    "わからん": ("分からない", "分かる"),
+    "貰う": ("もらう",),
+    "もらう": ("受ける",),
 }
 
 _JA_MORPH = (
@@ -396,3 +418,179 @@ def format_plan(plan: list[CoverageItem]) -> str:
         elif item.status == "phonetic":
             lines.append(f"- {item.source} → {item.lemma}（固有名詞の発音転記）")
     return "\n".join(lines) if lines else "(辞書で足りている)"
+
+
+HINT_SPLIT_RE = re.compile(
+    r"(?:って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)"
+)
+KATAKANA_NAME_RE = re.compile(r"[ァ-ヶー]+(?:[・＝][ァ-ヶー]+)+")
+HINT_STOP = frozenset({"奴", "やつ", "ぜ", "だ", "って", "な", "ん", "こ", "よ", "ね"})
+VECTOR_RETRIEVE_MIN_SCORE = 0.42
+RESOLVE_HIT_LIMIT = 6
+
+
+def hint_query_pieces(token: str) -> list[str]:
+    """口語の残り塊から、固有名詞と短い片を取り出す。"""
+    word = (token or "").strip(".,!?;:。？！ \t")
+    if not word:
+        return []
+    pieces: list[str] = []
+    seen: set[str] = set()
+
+    def add(item: str) -> None:
+        item = item.strip(".,!?;:。？！ \t")
+        if not item or item in HINT_STOP or item in seen or item in JA_PARTICLES:
+            return
+        seen.add(item)
+        pieces.append(item)
+
+    for name in KATAKANA_NAME_RE.findall(word):
+        add(name)
+    rest = KATAKANA_NAME_RE.sub(" ", word)
+    for part in HINT_SPLIT_RE.split(rest):
+        add(part)
+    return pieces or ([word] if word not in HINT_STOP else [])
+
+
+def name_for_transcription(raw: str) -> str:
+    """口語の飾りを剥がし、発音転記するカタカナ名だけを残す。"""
+    word = (raw or "").strip()
+    if not word:
+        return word
+    for piece in hint_query_pieces(word):
+        if looks_like_proper_noun(piece):
+            return piece
+    return word
+
+
+def _known_piece(text: str, lexicon: Lexicon) -> bool:
+    if not text or text in JA_PARTICLES or text in HINT_STOP:
+        return False
+    if lexicon.lookup(text, lang="auto"):
+        return True
+    if text in PARAPHRASE_KEYS or text.casefold() in PARAPHRASE_KEYS:
+        return True
+    for variant in _morph_keys(text)[:12]:
+        if variant != text and lexicon.lookup(variant, lang="auto"):
+            return True
+    return False
+
+
+def peel_known_pieces(text: str, lexicon: Lexicon) -> list[str]:
+    """長い残りから、辞書または類義語に載る部分を左から剥がす。"""
+    word = (text or "").strip()
+    if not word:
+        return []
+    if _known_piece(word, lexicon) or looks_like_proper_noun(word):
+        return [word]
+    out: list[str] = []
+    i = 0
+    n = len(word)
+    while i < n:
+        matched = ""
+        for j in range(n, i, -1):
+            chunk = word[i:j]
+            if _known_piece(chunk, lexicon):
+                matched = chunk
+                break
+        if matched:
+            out.append(matched)
+            i += len(matched)
+        else:
+            i += 1
+    return out or hint_query_pieces(word)
+
+
+def expand_hint_queries(tokens: Iterable[str], lexicon: Lexicon) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for tok in tokens:
+        for piece in hint_query_pieces(str(tok)):
+            for item in peel_known_pieces(piece, lexicon) or [piece]:
+                if not item or item in seen:
+                    continue
+                seen.add(item)
+                out.append(item)
+    return out
+
+
+def compact_entry_hit(
+    entry: Entry,
+    *,
+    via: str,
+    score: float,
+    relation: str = "",
+) -> dict[str, object]:
+    row: dict[str, object] = {
+        "lemma": entry.lemma,
+        "pos": entry.pos,
+        "gloss_ja": entry.gloss_ja,
+        "gloss_en": entry.gloss_en,
+        "via": via,
+        "score": round(float(score), 3),
+    }
+    if relation:
+        row["relation"] = relation
+    return row
+
+
+def resolve_lexicon_hits(
+    query: str,
+    lexicon: Lexicon,
+    *,
+    limit: int = RESOLVE_HIT_LIMIT,
+    vector: bool = True,
+) -> list[dict[str, object]]:
+    """辞書一致と類義語を優先し、弱いベクトル類似は返さない。"""
+    text = (query or "").strip()
+    if not text:
+        return []
+    rows: list[dict[str, object]] = []
+    seen: set[str] = set()
+
+    def take(entry: Entry, via: str, score: float, relation: str = "") -> None:
+        key = _normalize_key(entry.lemma) + "|" + entry.pos
+        if key in seen:
+            return
+        seen.add(key)
+        rows.append(compact_entry_hit(entry, via=via, score=score, relation=relation))
+
+    for entry in lexicon.lookup(text, lang="auto"):
+        take(entry, "exact", 1.0, "exact")
+    for hit in find_synonyms(text, lexicon, limit=limit):
+        take(hit.entry, hit.via, hit.score / 1000, hit.relation)
+    if not rows:
+        for piece in expand_hint_queries([text], lexicon):
+            if piece == text:
+                continue
+            for entry in lexicon.lookup(piece, lang="auto"):
+                take(entry, piece, 0.9, "piece")
+            for hit in find_synonyms(piece, lexicon, limit=3):
+                take(hit.entry, hit.via, hit.score / 1000, hit.relation)
+    if vector and not rows:
+        from baronh.vectordb import get_index
+
+        for hit in get_index(lexicon).search(text, limit=3, min_score=VECTOR_RETRIEVE_MIN_SCORE):
+            take(hit.entry, "vector", hit.score, "vector")
+    return rows[:limit]
+
+
+def format_resolved_context(queries: Iterable[str], lexicon: Lexicon, *, limit: int = 16) -> str:
+    best: dict[str, dict[str, object]] = {}
+    for query in queries:
+        for row in resolve_lexicon_hits(str(query), lexicon, limit=4, vector=True):
+            key = str(row.get("lemma") or "") + "|" + str(row.get("pos") or "")
+            prev = best.get(key)
+            if prev is None or float(row.get("score") or 0) > float(prev.get("score") or 0):
+                best[key] = row
+    ranked = sorted(best.values(), key=lambda item: -float(item.get("score") or 0))[:limit]
+    if not ranked:
+        return "(ヒットなし。search_lexicon で追加検索してください)"
+    lines: list[str] = []
+    for row in ranked:
+        line = (
+            f"- {row.get('lemma')} [{row.get('pos')}] ja:{row.get('gloss_ja')} "
+            f"en:{row.get('gloss_en') or ''} via:{row.get('via')} score={row.get('score')}"
+        )
+        lines.append(line)
+    return "\n".join(lines)

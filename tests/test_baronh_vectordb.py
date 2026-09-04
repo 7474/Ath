@@ -127,7 +127,7 @@ class AgentPromptTest(unittest.TestCase):
             source_lang="ja",
             target_lang="baronh",
         )
-        self.assertIn("ベクトル検索", prompt)
+        self.assertIn("関連辞書", prompt)
         self.assertIn("sairiac", prompt)
         self.assertIn("search_lexicon", prompt)
         self.assertNotIn("規則ベースの下訳（誤り・抜けあり", prompt)

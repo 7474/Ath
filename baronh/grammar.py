@@ -262,6 +262,22 @@ class FormIndex:
 
     def _add(self, analysis: FormAnalysis) -> None:
         self._exact.setdefault(_norm(analysis.form), []).append(analysis)
+        form = analysis.form or ""
+        if " " not in form and "-" not in form:
+            return
+        for part in form.replace("-", " ").split():
+            if part and _norm(part) != _norm(form):
+                self._exact.setdefault(_norm(part), []).append(
+                    FormAnalysis(
+                        part,
+                        analysis.entry,
+                        analysis.kind,
+                        case=analysis.case,
+                        mood=analysis.mood,
+                        aspect=analysis.aspect,
+                        voices=analysis.voices,
+                    )
+                )
 
     def _rebuild(self) -> None:
         self._exact.clear()
