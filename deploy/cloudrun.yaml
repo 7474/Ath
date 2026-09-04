@@ -1,0 +1,28 @@
+# Cloud Run に載せるときの例。実デプロイは gcloud run deploy でもよい。
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: baronh-agent
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: "true"
+    spec:
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: IMAGE
+          ports:
+            - containerPort: 8080
+          env:
+            - name: BARONH_CORS_ORIGIN
+              value: https://7474.github.io
+            - name: OPENAI_BASE_URL
+              value: https://aiplatform.googleapis.com/v1/projects/PROJECT/locations/asia-northeast1/endpoints/openapi
+            - name: OPENAI_CHAT_MODEL
+              value: google/gemini-2.0-flash
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi

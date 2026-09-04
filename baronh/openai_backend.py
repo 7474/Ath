@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -30,6 +31,8 @@ DEFAULT_CHAT_MODEL = "gpt-4o-mini"
 DEFAULT_TTS_MODEL = "gpt-4o-mini-tts"
 DEFAULT_TTS_VOICE = "alloy"
 DEFAULT_API_BASE = "https://api.openai.com/v1"
+CHAT_RETRIES = 3
+RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 
 GRAMMAR_BRIEF = """
 あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、
@@ -180,24 +183,38 @@ def resolve_api_key(explicit: str | None = None, *, api_base: str | None = None)
     return "no-key"
 
 
+def _sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
 def _request(url: str, api_key: str, payload: dict, *, accept: str = "application/json") -> bytes:
     body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "Accept": accept,
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            return resp.read()
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"OpenAI API error {exc.code}: {detail}") from exc
+    last_error: Exception | None = None
+    for attempt in range(CHAT_RETRIES):
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": accept,
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            last_error = RuntimeError(f"OpenAI API error {exc.code}: {detail}")
+            if exc.code not in RETRYABLE_STATUS or attempt >= CHAT_RETRIES - 1:
+                raise last_error from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_error = RuntimeError(f"OpenAI API に接続できません: {exc}")
+            if attempt >= CHAT_RETRIES - 1:
+                raise last_error from exc
+        _sleep(0.4 * (2 ** attempt))
+    raise last_error or RuntimeError("OpenAI API に接続できません")
 
 
 def _format_entry(entry) -> str:
@@ -450,7 +467,7 @@ def _chat_once(
     return data
 
 
-def _run_tool_loop(
+def run_chat_tool_loop(
     *,
     url: str,
     api_key: str,
@@ -459,8 +476,14 @@ def _run_tool_loop(
     lexicon: Lexicon,
     use_tools: bool,
     max_rounds: int = 6,
+    tools: list[dict[str, Any]] | None = None,
+    dispatch: Any = None,
+    chat_once: Any = None,
 ) -> tuple[str, int]:
+    """Chat Completions のツール往復。エージェント側から tools / dispatch を差し替えられる。"""
     rounds = 0
+    dispatch_fn = dispatch or dispatch_tool
+    chat_fn = chat_once or (lambda payload: _chat_once(url, api_key, payload))
     for _ in range(max_rounds):
         rounds += 1
         payload: dict[str, Any] = {
@@ -469,9 +492,9 @@ def _run_tool_loop(
             "messages": messages,
         }
         if use_tools:
-            payload["tools"] = CHAT_TOOLS
+            payload["tools"] = tools if tools is not None else CHAT_TOOLS
             payload["tool_choice"] = "auto"
-        data = _chat_once(url, api_key, payload)
+        data = chat_fn(payload)
         message = (data.get("choices") or [{}])[0].get("message") or {}
         tool_calls = message.get("tool_calls") or []
         if not tool_calls:
@@ -484,7 +507,7 @@ def _run_tool_loop(
                 args = json.loads(fn.get("arguments") or "{}")
             except json.JSONDecodeError:
                 args = {}
-            result = dispatch_tool(name, args if isinstance(args, dict) else {}, lexicon)
+            result = dispatch_fn(name, args if isinstance(args, dict) else {}, lexicon)
             messages.append(
                 {
                     "role": "tool",
@@ -493,6 +516,27 @@ def _run_tool_loop(
                 }
             )
     return "", rounds
+
+
+def _run_tool_loop(
+    *,
+    url: str,
+    api_key: str,
+    model: str,
+    messages: list[dict[str, Any]],
+    lexicon: Lexicon,
+    use_tools: bool,
+    max_rounds: int = 6,
+) -> tuple[str, int]:
+    return run_chat_tool_loop(
+        url=url,
+        api_key=api_key,
+        model=model,
+        messages=messages,
+        lexicon=lexicon,
+        use_tools=use_tools,
+        max_rounds=max_rounds,
+    )
 
 
 def translate_openai(

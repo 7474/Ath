@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from baronh.grammar import analyze_form, conjugate, decline, topic_contract
+from baronh.grammar import analyze_form, conjugate, decline, grammar_context, topic_contract
 from baronh.lexicon import load_lexicon
 
 
@@ -89,6 +89,15 @@ class ConjugationTest(unittest.TestCase):
         self.assertTrue(hits)
         self.assertEqual(hits[0].entry.lemma, "sac")
         self.assertEqual(hits[0].mood, "indicative")
+
+    def test_grammar_context_covers_core(self):
+        text = grammar_context()
+        self.assertIn("# アーヴ語文法", text)
+        self.assertIn("主格", text)
+        self.assertIn("直説法", text)
+        self.assertIn("-e", text)
+        self.assertIn("F'a", text)
+        self.assertIn("SOV", text)
 
 
 if __name__ == "__main__":

@@ -83,6 +83,7 @@ class TranslationResult:
     analysis: list[TokenGloss] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     unknown: list[str] = field(default_factory=list)
+    substitutions: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -96,6 +97,7 @@ class TranslationResult:
             "analysis": [item.__dict__ for item in self.analysis],
             "notes": self.notes,
             "unknown": self.unknown,
+            "substitutions": self.substitutions,
         }
 
 
@@ -317,13 +319,47 @@ def _apply_case(entry: Entry, case: str) -> str:
     return entry.lemma
 
 
-def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
+def _vector_hit(query: str, lexicon: Lexicon, *, nxt: str = "") -> tuple[Entry, float] | None:
+    if looks_like_proper_noun(query, nxt=nxt, copula=nxt in JA_COPULA):
+        return None
+    from baronh.vectordb import get_index
+
+    hits = get_index(lexicon).search(query, limit=1, min_score=0.12)
+    if not hits:
+        return None
+    return hits[0].entry, hits[0].score
+
+
+def _substitution(source: str, entry: Entry, score: float) -> dict[str, str]:
+    return {
+        "from": source,
+        "to": entry.gloss_ja,
+        "lemma": entry.lemma,
+        "pos": entry.pos,
+        "gloss": entry.gloss_ja,
+        "score": f"{score:.3f}",
+        "via": "vector",
+    }
+
+
+def _vector_search_notes(substitutions: list[dict[str, str]]) -> list[str]:
+    if not substitutions:
+        return []
+    bits = [
+        f"{item.get('from') or item.get('source')}→{item['lemma']}「{item.get('gloss') or item.get('gloss_ja') or ''}」"
+        for item in substitutions
+    ]
+    return ["ベクトル検索: " + "、".join(bits) + "。"]
+
+
+def _translate_ja_to_baronh(text: str, lexicon: Lexicon, *, vector_search: bool = False) -> TranslationResult:
     tokens = _tokenize_ja(text, lexicon)
     question = bool(JA_QUESTION_RE.search(text.strip())) or "か" in tokens
     vocative = "よ" in tokens
     pieces: list[str] = []
     analysis: list[TokenGloss] = []
     unknown: list[str] = []
+    substitutions: list[dict[str, str]] = []
     phonetic_pairs: list[str] = []
     pending_noun: Entry | None = None
     pending_src = ""
@@ -387,6 +423,13 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
             core, hon = split_honorific(tok)
             if hon:
                 entries = _lookup_ja(lexicon, core)
+        if not entries and vector_search:
+            nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
+            hit = _vector_hit(tok, lexicon, nxt=nxt)
+            if hit is not None:
+                entry, score = hit
+                entries = [entry]
+                substitutions.append(_substitution(tok, entry, score))
         if not entries:
             nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
             phonetic = _try_phonetic_noun(tok, nxt)
@@ -476,6 +519,7 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
     notes = []
     if phonetic_pairs:
         notes.append(PHONETIC_SUMMARY + " " + "、".join(phonetic_pairs) + "。")
+    notes.extend(_vector_search_notes(substitutions))
     if unknown:
         notes.append("未登録の語は原文のまま残しています。ingest で辞書を足せます。")
     return TranslationResult(
@@ -488,15 +532,17 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         analysis=analysis,
         notes=notes,
         unknown=unknown,
+        substitutions=substitutions,
     )
 
 
-def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
+def _translate_en_to_baronh(text: str, lexicon: Lexicon, *, vector_search: bool = False) -> TranslationResult:
     tokens = _tokenize_en(text)
     question = text.strip().endswith("?") or (tokens and tokens[0].lower() in {"is", "are", "do", "does", "can"})
     pieces: list[str] = []
     analysis: list[TokenGloss] = []
     unknown: list[str] = []
+    substitutions: list[dict[str, str]] = []
     phonetic_pairs: list[str] = []
     pending: Entry | None = None
     pending_src = ""
@@ -530,6 +576,14 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         entries = lexicon.lookup(low, lang="en")
         if not entries and low.endswith("s"):
             entries = lexicon.lookup(low[:-1], lang="en")
+        if not entries and vector_search and not is_latin_name(tok, require_capital=True):
+            hit = _vector_hit(tok, lexicon)
+            if hit is None and low != tok:
+                hit = _vector_hit(low, lexicon)
+            if hit is not None:
+                entry, score = hit
+                entries = [entry]
+                substitutions.append(_substitution(tok, entry, score))
         if not entries:
             if is_latin_name(tok, require_capital=True):
                 lemma, declension = transcribe_proper_noun(tok)
@@ -607,9 +661,11 @@ def _translate_en_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         analysis=analysis,
         notes=[item for item in [
             (PHONETIC_SUMMARY + " " + "、".join(phonetic_pairs) + "。") if phonetic_pairs else "",
+            *(_vector_search_notes(substitutions)),
             "英語は語順の解析が粗いため、短い句向けです。" if unknown else "",
         ] if item],
         unknown=unknown,
+        substitutions=substitutions,
     )
 
 
@@ -734,6 +790,7 @@ def translate(
     *,
     source_lang: str = "auto",
     target_lang: str = "auto",
+    vector_search: bool = False,
 ) -> TranslationResult:
     text = text.strip()
     src = detect_lang(text, lexicon) if source_lang in {"", "auto"} else source_lang
@@ -749,24 +806,26 @@ def translate(
         result = TranslationResult(src, tgt, text, text, ath_keys=to_ath_keys(text), reading_ja=reading_ja(text) if src == "baronh" else "")
         return result
     if src == "ja" and tgt == "baronh":
-        return _translate_ja_to_baronh(text, lexicon)
+        return _translate_ja_to_baronh(text, lexicon, vector_search=vector_search)
     if src == "en" and tgt == "baronh":
-        return _translate_en_to_baronh(text, lexicon)
+        return _translate_en_to_baronh(text, lexicon, vector_search=vector_search)
     if src == "baronh" and tgt in {"ja", "en"}:
         return _translate_baronh_out(text, lexicon, tgt)
     # ja↔en は辞書グロッスの橋渡し
     if src == "ja" and tgt == "en":
-        mid = _translate_ja_to_baronh(text, lexicon)
+        mid = _translate_ja_to_baronh(text, lexicon, vector_search=vector_search)
         back = _translate_baronh_out(mid.text, lexicon, "en")
         back.source_lang = "ja"
         back.source_text = text
         back.notes.append("日本語→アーヴ語→英語の二段翻訳です。")
+        back.substitutions = list(mid.substitutions)
         return back
     if src == "en" and tgt == "ja":
-        mid = _translate_en_to_baronh(text, lexicon)
+        mid = _translate_en_to_baronh(text, lexicon, vector_search=vector_search)
         back = _translate_baronh_out(mid.text, lexicon, "ja")
         back.source_lang = "en"
         back.source_text = text
         back.notes.append("英語→アーヴ語→日本語の二段翻訳です。")
+        back.substitutions = list(mid.substitutions)
         return back
     raise ValueError(f"no local route for {src}->{tgt}")

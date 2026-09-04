@@ -27,9 +27,10 @@
     <h1>アーヴ語と日本語・英語</h1>
     <p class="lead">
       Wikipedia「アーヴ語」の文法と、ファンサイトの公開辞書を走査した語彙で動く規則ベース翻訳です。
-      ブラウザ内で完結します。出典はページ末尾のスペシャルサンクスを見てください。
-      辞書にない固有名詞は発音からアーヴ語ローマ字へ転記し、その旨を表示します。
-      任意で OpenAI 互換 API を指定すると、下訳と検索した辞書を渡して生成翻訳できます。音声合成は別呼び出しです。
+      出典はページ末尾のスペシャルサンクスを見てください。
+      辞書にない固有名詞は発音からアーヴ語ローマ字へ転記します。
+      サーバエージェントとブラウザの生成AIは、いずれもベクトル検索した辞書と文法全文をコンテキストに渡します。ベクトル索引は GitHub Actions の <code>export-web</code> が事前構築し、ブラウザはそれを読みます。
+      サーバエージェントは <code>python -m baronh serve</code> または Cloud Run です。生成 AI 必須。
     </p>
 
     <section class="panel">
@@ -54,8 +55,13 @@
         <label>エンジン
           <select id="engine">
             <option value="local">ローカル辞書</option>
-            <option value="openai">生成AI（OpenAI 互換）</option>
+            <option value="agent" hidden>サーバエージェント</option>
+            <option value="openai">生成AI（ブラウザ）</option>
           </select>
+        </label>
+        <label class="opt" id="local-vector-wrap">
+          <input type="checkbox" id="local-vector-search" />
+          訳語をベクトル検索
         </label>
         <span class="badge" id="dict-count">辞書 …</span>
       </div>
@@ -108,18 +114,21 @@
     </section>
 
     <section class="panel" id="settings-panel" hidden>
-      <h2>生成AI / OpenAI 互換 API（任意）</h2>
+      <h2>サーバエージェント / OpenAI 互換（任意）</h2>
       <p class="hint">
-        キーとベース URL は localStorage にだけ保存し、指定したエンドポイントへだけ送ります。
-        既定は <code>https://api.openai.com/v1</code> です。LM Studio / vLLM / LiteLLM / Ollama（OpenAI 互換）なども同じ形で指定できます。
-        未設定ならローカル辞書のみで動きます。辞書全文は送りません。関連語は辞書を全件スキャンして点数付けし、足りない語は <code>lookup_lexicon</code> / <code>grammar_note</code> で追加検索します。生成したアーヴ語は辞書の語形と照合し、造語なら書き直しを求めます。
-        音声合成は翻訳とは別の <code>/audio/speech</code> です。未対応の互換実装ではブラウザ読み上げに戻ります。
+        サーバエージェントは辞書のベクトル検索・文法コンテキスト・ツール往復をサーバで行います。キーはサーバの環境変数に置き、ブラウザには出しません。生成 AI が無いと動きません。
+        既定の URL は同じオリジンの <code>/api/translate</code> です（<code>python -m baronh serve</code>）。
+        GitHub Pages から使うときは Cloud Run などの URL を入れてください。構成の比較はリポジトリの <code>baronh/DEPLOY.md</code> にあります。
+        ブラウザの生成AI（Chat Completions を直接呼ぶ経路）も同じハーネスです。辞書はページ内のベクトルDB、文法はシステムプロンプトに全文を載せます。キーは localStorage にだけ保存します。
       </p>
       <div class="settings-grid">
-        <label class="block">ベース URL
+        <label class="block">エージェント URL
+          <input type="text" id="agent-url" placeholder="/api/translate または https://…/api/translate" autocomplete="off" />
+        </label>
+        <label class="block">ベース URL（ブラウザ生成AI）
           <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
         </label>
-        <label class="block">API キー
+        <label class="block">API キー（ブラウザ生成AI）
           <input type="password" id="api-key" placeholder="sk-...（ローカル互換なら空でも可）" autocomplete="off" />
         </label>
         <label class="block">チャットモデル
@@ -149,6 +158,7 @@
     </section>
   </footer>
 
+  <script src="js/vectordb.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/app.js"></script>
 </body>

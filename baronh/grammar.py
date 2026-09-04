@@ -297,3 +297,39 @@ def topic_contract(form: str) -> str:
         return "a"
     contracted = {"fe": "F'a", "de": "D'a", "se": "S'a"}
     return contracted.get(form.casefold(), f"{form} a")
+
+
+def grammar_context() -> str:
+    """生成 AI のシステムプロンプトに載せる文法の全文。ツールで分割取得しない。"""
+    verb_lines = []
+    for (mood, aspect), ending in VERB_ENDINGS.items():
+        verb_lines.append(f"- {MOOD_JA[mood]} / {ASPECT_JA[aspect]}: -{ending}")
+    return "\n".join(
+        [
+            "# アーヴ語文法",
+            "名詞は7格: 主格 nom（が）対格 acc（を）生格 gen（の）与格 dat（に）向格 all（へ）奪格 abl（から）具格 ins（で）。",
+            "第1型 abh/abe/bar/bari/baré/abhar/bale。第2型 -h: lamh/lame/lamr/lami/lamé/lamhar/lamhle。",
+            "第3型 -c: duc/dul/dur/duri/dugh/dusar/dule。第4型 -iac: saidiac/saidél/saidér/saidéri/saidégh/saidiasar/saidéle。",
+            "主題は代名詞で F'a / D'a / S'a（Fe+a の縮約）。普通名詞の主題は lemma a。",
+            "",
+            "## 動詞",
+            "動詞は語幹+態+語尾。態接辞は語幹と語尾の間に使役 -as- 受動 -ar- 否定 -ad- の順。",
+            "命令は母音語幹なら -éno。例: sac → sace / sacle / sacasé。",
+            *verb_lines,
+            "",
+            "## 代名詞",
+            "fe 私, de あなた, se 彼/彼女, farh 私たち, darh あなたたち, cnac 彼ら, so これ, re それ, ai あれ。",
+            "fe の格: fe/fal/far/feri/feré/fasar/fale。",
+            "",
+            "## 統語",
+            "語順は SOV または SVO。修飾語は被修飾語の後ろ。",
+            "後置詞: a は, éü よ, sa か, te と（引用）, le/lo と（並列）。",
+            "「AはBだ」は A(主題) + B(具格)。コピュラ ane は省略することが多い。疑問は sa を文末に置く。",
+            "",
+            "## 音韻・正書法",
+            "c は /k/。ch は摩擦音。Ath キー: ai→A, au→I, eu→E。",
+            "辞書にない固有名詞はアーヴ語正書法で発音転記する。",
+            "カ行は ca/ci/cu/ce/co。ジ行は gh（g+h=[ʒ]）。ヴは bh。アースに無い j/k/w/v は使わない。",
+            "名詞の主格は -c / -h / -n で終わる。",
+        ]
+    )
