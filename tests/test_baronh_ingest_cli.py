@@ -80,7 +80,13 @@ class CliSmokeTest(unittest.TestCase):
         self.assertIn("dadh-baronr", completed.stdout)
         self.assertIn("スペシャルサンクス", completed.stdout)
 
-    def test_export_seed_json_roundtrip(self):
+    def test_web_lexicon_is_merged(self):
+        path = ROOT / "web" / "data" / "lexicon.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertGreater(len(data["entries"]), 2000)
+        thanks = " ".join(data.get("meta", {}).get("thanks") or [])
+        self.assertIn("mule.s59.xrea.com", thanks)
+        self.assertIn("dadh-baronr", thanks)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "lexicon.json"
             write_seed_lexicon(path)

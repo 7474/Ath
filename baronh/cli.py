@@ -242,6 +242,9 @@ class _TranslatorHandler(SimpleHTTPRequestHandler):
         if rel in {"/", "/index.html"}:
             return str(WEB_DIR / "index.html")
         if rel.startswith("/data/"):
+            web_target = (WEB_DIR / rel.lstrip("/")).resolve()
+            if str(web_target).startswith(str(WEB_DIR.resolve())) and web_target.is_file():
+                return str(web_target)
             target = (DATA_DIR / rel[len("/data/") :]).resolve()
             if str(target).startswith(str(DATA_DIR.resolve())) and target.is_file():
                 return str(target)
