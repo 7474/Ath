@@ -2,18 +2,20 @@
 """
 generate_aarth_font.py
 ======================
-Generates aarth.ttf and aarth.woff2 from the Ath (Ath alphabet) raster image.
+Generates aarth.ttf and aarth.woff2 from Ath raster images (alphabet ± digits).
 
 Pipeline:
   1. Download the source PNG from Wikimedia Commons (or use a local file).
   2. Pre-process with OpenCV: grayscale → threshold.
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
-     parent glyph; keep the 4×7 alphabet grid (drop the header).
+     parent glyph; keep the 4×7 alphabet grid (drop the header) and, when
+     present, the numeral cells 0–9 from the same sheet or ``--digits-image``.
   4. For each glyph: split ink into components, 8× silhouette-blur, potrace.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
 Usage:
     python generate_aarth_font.py [--image PATH_OR_URL]
+    python generate_aarth_font.py --write-template templates/ath_source_template.png
 
 Requirements (install once):
     pip install opencv-python-headless pillow fonttools brotli
@@ -38,17 +40,25 @@ from PIL import Image
 # Mapping: glyph extraction order (row-major, L→R) → Unicode code points
 # The Ath/Ath alphabet has 28 phonemes; we map them to lowercase ASCII
 # letters plus a handful of digraph keys following the "Nine Lives" convention.
+# Optional numerals 0–9 follow the alphabet on the same sheet (or a second
+# raster passed as --digits-image) and map to ASCII digits.
 #
 # Row 0: a  i  u  é  o  e  c      → a  i  u  U+00E9  o  e  c
 # Row 1: s  t  l  n  h  p  f      → s  t  l  n  h  p  f
 # Row 2: m  ï  ai y  œ  r  ü      → m  U+00EF  U+0061U+0069→'A'  y  U+0153  r  U+00FC
 # Row 3: au ÿ  eu g  z  d  b      → U+0061U+0075→'I'  U+00FF  U+0065U+0075→'E'  g  z  d  b
+# Row 4: 0  1  2  3  4  5  6      → 0 1 2 3 4 5 6
+# Row 5: 7  8  9                  → 7 8 9
 #
 # For simplicity the digraphs / special vowels get mapped to uppercase ASCII
 # placeholders so they can be used in CSS/HTML if needed.
 # ---------------------------------------------------------------------------
 
-GLYPH_CODEPOINTS = [
+ALPHABET_COLS = 7
+ALPHABET_ROWS = 4
+DIGIT_COUNT = 10
+
+ALPHABET_CODEPOINTS = [
     # row 0
     ord('a'), ord('i'), ord('u'), 0x00E9, ord('o'), ord('e'), ord('c'),
     # row 1
@@ -59,11 +69,41 @@ GLYPH_CODEPOINTS = [
     ord('I'), 0x00FF, ord('E'), ord('g'), ord('z'), ord('d'), ord('b'),
 ]
 
-GLYPH_NAMES = [
+ALPHABET_NAMES = [
     'a', 'i', 'u', 'eacute', 'o', 'e', 'c',
     's', 't', 'l', 'n', 'h', 'p', 'f',
     'm', 'idieresis', 'ai', 'y', 'oe', 'r', 'udieresis',
     'au', 'ydieresis', 'eu', 'g', 'z', 'd', 'b',
+]
+
+# Labels printed under each cell on the input template (typing keys).
+ALPHABET_LABELS = [
+    'a', 'i', 'u', 'é', 'o', 'e', 'c',
+    's', 't', 'l', 'n', 'h', 'p', 'f',
+    'm', 'ï', 'ai', 'y', 'œ', 'r', 'ü',
+    'au', 'ÿ', 'eu', 'g', 'z', 'd', 'b',
+]
+
+DIGIT_CODEPOINTS = [ord(c) for c in '0123456789']
+DIGIT_NAMES = [
+    'zero', 'one', 'two', 'three', 'four',
+    'five', 'six', 'seven', 'eight', 'nine',
+]
+DIGIT_LABELS = list('0123456789')
+
+# Full inventory in template order (alphabet, then digits).
+GLYPH_CODEPOINTS = ALPHABET_CODEPOINTS + DIGIT_CODEPOINTS
+GLYPH_NAMES = ALPHABET_NAMES + DIGIT_NAMES
+GLYPH_LABELS = ALPHABET_LABELS + DIGIT_LABELS
+
+# Row-major cell layout for the fill-in source template.
+GLYPH_LAYOUT = [
+    ALPHABET_LABELS[0:7],
+    ALPHABET_LABELS[7:14],
+    ALPHABET_LABELS[14:21],
+    ALPHABET_LABELS[21:28],
+    DIGIT_LABELS[0:7],
+    DIGIT_LABELS[7:10],
 ]
 
 SOURCE_URL = (
@@ -225,50 +265,127 @@ def group_boxes_into_rows(boxes: list) -> list[list]:
     return rows
 
 
-def select_alphabet_grid(boxes: list, expected: int = 28) -> list:
-    """
-    Keep 7-column rows of letter-sized boxes.
+def _letter_sized_boxes(boxes: list) -> list:
+    """Drop short Latin labels; keep letter-sized (and header-sample) boxes.
 
-    The source PNG has a 6-item header ('Ath' + three sample glyphs) above a
-    4×7 alphabet grid, plus small Latin labels under each glyph. After
-    diacritic merging, letter bodies are tall (~25px) while labels are short.
+    Wikipedia source letters are ~25px with ~8px labels. A high-res fill-in
+    template has much taller bodies, so the cutoff scales with the tallest box.
     """
-    letter_boxes = [b for b in boxes if b[3] >= 18]
-    rows = group_boxes_into_rows(letter_boxes)
-    grid_rows = [row for row in rows if len(row) == 7]
-    result = [box for row in grid_rows for box in row]
-    if len(result) == expected:
-        return result
-    if rows and len(rows[0]) != 7:
-        rest = [box for row in rows[1:] for box in row]
-        if len(rest) == expected:
-            return rest
-    return result
+    if not boxes:
+        return []
+    max_h = max(b[3] for b in boxes)
+    threshold = max(18, int(max_h * 0.40))
+    return [b for b in boxes if b[3] >= threshold]
 
 
-def find_glyph_boxes(binary: np.ndarray, min_area: int = 8):
-    """
-    Find bounding boxes of the 28 alphabet glyphs, including disconnected
-    overlines and umlaut dots.
+def _is_grid_content_row(row: list) -> bool:
+    n = len(row)
+    return n in (3, ALPHABET_COLS, DIGIT_COUNT)
 
-    Returns list of (x, y, w, h) sorted top-to-bottom, left-to-right by row.
-    """
+
+def collect_contour_boxes(binary: np.ndarray, min_area: int = 8) -> list:
+    """Bounding boxes of ink blobs, ignoring hairline noise and page-wide rules."""
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     boxes = []
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         if w * h < min_area:
             continue
-        # Ignore very wide boxes that are likely separator lines
         if w > binary.shape[1] * 0.8:
             continue
         boxes.append((x, y, w, h))
+    return boxes
 
+
+def select_alphabet_grid(boxes: list, expected: int = 28) -> list:
+    """Backward-compatible wrapper: alphabet cells only (no numerals)."""
+    alphabet, _digits = select_glyph_grid(boxes)
+    if len(alphabet) == expected:
+        return alphabet
+    return alphabet
+
+
+def select_glyph_grid(boxes: list) -> tuple[list, list]:
+    """
+    Split letter-sized boxes into the 4×7 alphabet and optional numerals.
+
+    The source PNG has a short header above a 4×7 alphabet grid, plus small
+    Latin labels under each glyph. After diacritic merging, letter bodies are
+    tall while labels are short. Extra rows after the alphabet are digits:
+    either one 10-wide row, or 7 + 3 (0–6 then 7–9), matching the template.
+    """
+    letter_boxes = _letter_sized_boxes(boxes)
+    rows = group_boxes_into_rows(letter_boxes)
+    if rows and not _is_grid_content_row(rows[0]):
+        rows = rows[1:]
+    if not rows:
+        return [], []
+
+    seven_rows = [row for row in rows if len(row) == ALPHABET_COLS]
+    if len(seven_rows) >= ALPHABET_ROWS:
+        alphabet: list = []
+        last_alpha_i = -1
+        taken = 0
+        for i, row in enumerate(rows):
+            if taken < ALPHABET_ROWS and len(row) == ALPHABET_COLS:
+                alphabet.extend(row)
+                taken += 1
+                last_alpha_i = i
+                if taken == ALPHABET_ROWS:
+                    break
+        digits: list = []
+        for row in rows[last_alpha_i + 1:]:
+            digits.extend(row)
+        return alphabet, digits[:DIGIT_COUNT]
+
+    # Digits-only sheet: one row of 10, or 7+3 (0–6 then 7–9).
+    if _looks_like_digits_only(rows):
+        return [], [box for row in rows for box in row][:DIGIT_COUNT]
+
+    # Partial alphabet (no complete 4×7 and not a numeral sheet).
+    return [box for row in rows for box in row], []
+
+
+def _looks_like_digits_only(rows: list) -> bool:
+    flat_n = sum(len(row) for row in rows)
+    if flat_n != DIGIT_COUNT:
+        return False
+    if len(rows) == 1 and len(rows[0]) == DIGIT_COUNT:
+        return True
+    if len(rows) == 2 and len(rows[0]) == ALPHABET_COLS and len(rows[1]) == 3:
+        return True
+    return False
+
+
+def find_glyph_boxes(binary: np.ndarray, min_area: int = 8):
+    """
+    Find bounding boxes of the 28 alphabet glyphs (and optional 0–9), including
+    disconnected overlines and umlaut dots.
+
+    Returns list of (x, y, w, h) sorted top-to-bottom, left-to-right by row.
+    Alphabet cells come first; numeral cells follow when present.
+    """
+    alphabet, digits = find_alphabet_and_digit_boxes(binary, min_area=min_area)
+    return alphabet + digits
+
+
+def find_alphabet_and_digit_boxes(binary: np.ndarray, min_area: int = 8) -> tuple[list, list]:
+    """Return ``(alphabet_boxes, digit_boxes)`` from one raster sheet."""
+    boxes = collect_contour_boxes(binary, min_area=min_area)
     if not boxes:
-        return boxes
-
+        return [], []
     boxes = merge_diacritic_boxes(boxes)
-    return select_alphabet_grid(boxes, expected=len(GLYPH_CODEPOINTS))
+    return select_glyph_grid(boxes)
+
+
+def find_digit_boxes(binary: np.ndarray, min_area: int = 8) -> list:
+    """Find up to 10 numeral boxes on a digits-only or combined raster."""
+    alphabet, digits = find_alphabet_and_digit_boxes(binary, min_area=min_area)
+    if digits:
+        return digits
+    if len(alphabet) == DIGIT_COUNT:
+        return alphabet
+    return []
 
 
 def crop_glyph(binary: np.ndarray, box, padding: int = 4) -> np.ndarray:
@@ -591,13 +708,215 @@ def build_font(glyph_data: list[dict], output_dir: Path):
 
 
 # ---------------------------------------------------------------------------
+# Input template (alphabet 4×7 + numerals 0–9)
+# ---------------------------------------------------------------------------
+
+_TEMPLATE_SANS = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+_TEMPLATE_SANS_BOLD = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+_TEMPLATE_JP = Path("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc")
+
+CELL_W = 128
+CELL_H = 168
+GLYPH_AREA_H = 118
+GAP_X = 20
+GAP_Y = 28
+MARGIN_X = 56
+MARGIN_TOP = 118
+MARGIN_BOTTOM = 72
+GUIDE_FILL = (252, 252, 250)
+GUIDE_OUTLINE = (236, 236, 230)
+LABEL_FILL = (120, 120, 120)
+TITLE_FILL = (70, 70, 70)
+NOTE_FILL = (110, 110, 110)
+
+
+def _try_font(path: Path, size: int):
+    from PIL import ImageFont
+    if path.is_file():
+        try:
+            return ImageFont.truetype(str(path), size=size)
+        except OSError:
+            pass
+    return ImageFont.load_default()
+
+
+def _centered_text(draw, xy, text, font, fill):
+    x, y, w, h = xy
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(
+        (x + (w - tw) / 2 - bbox[0], y + (h - th) / 2 - bbox[1]),
+        text, font=font, fill=fill,
+    )
+
+
+def _paste_glyph_in_cell(canvas, src_rgb: np.ndarray, box, cell_xy, padding: int = 6):
+    """Paste a cropped source glyph, scaled to fit the cell's glyph area."""
+    x, y, w, h = box
+    img_h, img_w = src_rgb.shape[:2]
+    x1 = max(0, x - padding)
+    y1 = max(0, y - padding)
+    x2 = min(img_w, x + w + padding)
+    y2 = min(img_h, y + h + padding)
+    crop = src_rgb[y1:y2, x1:x2]
+    if crop.size == 0:
+        return
+    crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB) if crop.ndim == 3 else crop
+    glyph = Image.fromarray(crop_rgb)
+    inner_w = CELL_W - 16
+    inner_h = GLYPH_AREA_H - 16
+    gw, gh = glyph.size
+    scale = min(inner_w / gw, inner_h / gh)
+    new_size = (max(1, int(gw * scale)), max(1, int(gh * scale)))
+    glyph = glyph.resize(new_size, Image.Resampling.LANCZOS)
+    cx, cy = cell_xy
+    px = cx + (CELL_W - new_size[0]) // 2
+    py = cy + (GLYPH_AREA_H - new_size[1]) // 2
+    canvas.paste(glyph, (px, py))
+
+
+def write_source_template(dest: Path, alphabet_image: Path | None = None) -> Path:
+    """
+    Write a labeled raster template: 4×7 alphabet cells + 0–9 numeral cells.
+
+    When ``alphabet_image`` is given, detected Ath letters are copied into the
+    alphabet cells so the sheet can be used as ``--image`` immediately; numeral
+    cells stay empty for the user to draw into.
+    """
+    from PIL import ImageDraw
+
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    n_rows = len(GLYPH_LAYOUT)
+    n_cols = ALPHABET_COLS
+    width = MARGIN_X * 2 + n_cols * CELL_W + (n_cols - 1) * GAP_X
+    height = MARGIN_TOP + n_rows * CELL_H + (n_rows - 1) * GAP_Y + MARGIN_BOTTOM
+    canvas = Image.new("RGB", (width, height), (255, 255, 255))
+    draw = ImageDraw.Draw(canvas)
+
+    title_font = _try_font(_TEMPLATE_SANS_BOLD, 28)
+    jp_font = _try_font(_TEMPLATE_JP, 16)
+    note_font = _try_font(_TEMPLATE_SANS, 14)
+    label_font = _try_font(_TEMPLATE_SANS, 18)
+    small_font = _try_font(_TEMPLATE_SANS, 13)
+
+    draw.text((MARGIN_X, 28), "Aarth source template", font=title_font, fill=TITLE_FILL)
+    draw.text(
+        (MARGIN_X, 64),
+        "字母 4×7 ＋ 数字 0–9   /   Draw numerals in the empty cells (labels stay below).",
+        font=jp_font if _TEMPLATE_JP.is_file() else note_font,
+        fill=NOTE_FILL,
+    )
+
+    alphabet_boxes = []
+    src_bgr = None
+    if alphabet_image is not None and Path(alphabet_image).is_file():
+        src_bgr = cv2.imread(str(alphabet_image), cv2.IMREAD_COLOR)
+        gray = load_grayscale(Path(alphabet_image))
+        binary = binarize(gray)
+        alphabet_boxes, _digits = find_alphabet_and_digit_boxes(binary)
+
+    slot = 0
+    for r, row_labels in enumerate(GLYPH_LAYOUT):
+        for c, label in enumerate(row_labels):
+            cx = MARGIN_X + c * (CELL_W + GAP_X)
+            cy = MARGIN_TOP + r * (CELL_H + GAP_Y)
+            is_digit = r >= ALPHABET_ROWS
+            box_xy = (cx, cy, cx + CELL_W, cy + GLYPH_AREA_H)
+            if is_digit:
+                # Corner ticks only — a closed grey box would survive Otsu as a
+                # fake "glyph" when the cell has no ink yet.
+                tick = 14
+                x0, y0, x1, y1 = box_xy
+                draw.line((x0, y0, x0 + tick, y0), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x0, y0, x0, y0 + tick), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x1 - tick, y0, x1, y0), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x1, y0, x1, y0 + tick), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x0, y1 - tick, x0, y1), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x0, y1, x0 + tick, y1), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x1, y1 - tick, x1, y1), fill=GUIDE_OUTLINE, width=2)
+                draw.line((x1 - tick, y1, x1, y1), fill=GUIDE_OUTLINE, width=2)
+            else:
+                draw.rounded_rectangle(
+                    box_xy, radius=10, fill=GUIDE_FILL, outline=GUIDE_OUTLINE, width=1,
+                )
+                if slot < len(alphabet_boxes) and src_bgr is not None:
+                    _paste_glyph_in_cell(canvas, src_bgr, alphabet_boxes[slot], (cx, cy))
+            slot += 1
+            _centered_text(
+                draw,
+                (cx, cy + GLYPH_AREA_H + 6, CELL_W, CELL_H - GLYPH_AREA_H - 6),
+                label,
+                label_font,
+                LABEL_FILL,
+            )
+
+    footer = (
+        "Row-major order: 28 letters, then 0–9. "
+        "python3 generate_aarth_font.py --image this.png"
+    )
+    draw.text((MARGIN_X, height - 44), footer, font=small_font, fill=NOTE_FILL)
+
+    canvas.save(str(dest), "PNG")
+    print(f"[output] source template → {dest}")
+    return dest
+
+
+def _acquire_image(spec: str | None, output_dir: Path, fallback_name: str) -> Path:
+    if spec and not spec.startswith("http"):
+        return Path(spec)
+    dest = output_dir / fallback_name
+    url = spec if spec else SOURCE_URL
+    if not dest.exists():
+        download_image(url, dest)
+    else:
+        print(f"[info] using cached {dest}")
+    return dest
+
+
+def _trace_boxes(
+    gray, binary, boxes, names, codepoints, tmp_dir: Path, glyph_data: list, idx0: int = 0,
+):
+    for i, box in enumerate(boxes):
+        idx = idx0 + i
+        codepoint = codepoints[i]
+        name = names[i]
+        print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
+        svg_d = trace_glyph(gray, binary, box, tmp_dir, idx)
+        print(" ok" if svg_d else " (no path)")
+        glyph_data.append({"codepoint": codepoint, "name": name, "svg_d": svg_d})
+
+
+def _write_debug_boxes(binary, labeled_boxes: list[tuple], dest: Path) -> None:
+    debug_img = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
+    for (x, y, w, h), label in labeled_boxes:
+        cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+        cv2.putText(
+            debug_img, label, (x, max(12, y - 2)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 180, 255), 1, cv2.LINE_AA,
+        )
+    cv2.imwrite(str(dest), debug_img)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Aarth webfont from Ath alphabet image")
+    parser = argparse.ArgumentParser(
+        description="Generate Aarth webfont from Ath raster images (alphabet ± digits)",
+    )
     parser.add_argument("--image", default=None,
                         help="Path to PNG image or URL (default: download from Wikimedia)")
+    parser.add_argument(
+        "--digits-image", default=None,
+        help="Optional raster of Ath numerals 0–9 (7+3 or 10-wide grid; see --write-template)",
+    )
+    parser.add_argument(
+        "--write-template", default=None, metavar="PATH",
+        help="Write the labeled source-image template (letters + empty 0–9 cells) and exit",
+    )
     parser.add_argument("--output-dir", default=".", help="Directory for output files")
     parser.add_argument("--debug", action="store_true", help="Save debug images")
     args = parser.parse_args()
@@ -605,16 +924,17 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.write_template:
+        alphabet_src = None
+        if args.image and not args.image.startswith("http"):
+            alphabet_src = Path(args.image)
+        elif (Path("Ath_alphabet.png")).is_file():
+            alphabet_src = Path("Ath_alphabet.png")
+        write_source_template(Path(args.write_template), alphabet_image=alphabet_src)
+        return
+
     # --- 1. Acquire image ---
-    if args.image and not args.image.startswith("http"):
-        image_path = Path(args.image)
-    else:
-        image_path = output_dir / "Ath_alphabet.png"
-        url = args.image if args.image else SOURCE_URL
-        if not image_path.exists():
-            download_image(url, image_path)
-        else:
-            print(f"[info] using cached {image_path}")
+    image_path = _acquire_image(args.image, output_dir, "Ath_alphabet.png")
 
     # --- 2. Pre-process ---
     print("[process] binarizing image …")
@@ -623,56 +943,72 @@ def main():
 
     # --- 3. Detect glyph boxes ---
     print("[process] detecting glyphs …")
-    boxes = find_glyph_boxes(binary)
-    print(f"  found {len(boxes)} candidate glyph boxes")
+    alphabet_boxes, digit_boxes = find_alphabet_and_digit_boxes(binary)
+    print(
+        f"  found {len(alphabet_boxes)} alphabet"
+        f" + {len(digit_boxes)} digit boxes on --image"
+    )
+
+    digits_gray = gray
+    digits_binary = binary
+    if args.digits_image:
+        digits_path = Path(args.digits_image)
+        print(f"[process] reading digits image {digits_path} …")
+        digits_gray = load_grayscale(digits_path)
+        digits_binary = binarize(digits_gray)
+        digit_boxes = find_digit_boxes(digits_binary)
+        print(f"  found {len(digit_boxes)} digit boxes on --digits-image")
 
     if args.debug:
-        debug_img = cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
-        for i, (x, y, w, h) in enumerate(boxes):
-            cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
-            label = GLYPH_NAMES[i] if i < len(GLYPH_NAMES) else str(i)
-            cv2.putText(
-                debug_img, label, (x, max(12, y - 2)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 180, 255), 1, cv2.LINE_AA,
+        labeled = [
+            (box, ALPHABET_NAMES[i] if i < len(ALPHABET_NAMES) else str(i))
+            for i, box in enumerate(alphabet_boxes)
+        ]
+        _write_debug_boxes(binary, labeled, output_dir / "debug_boxes.png")
+        if digit_boxes:
+            d_labeled = [
+                (box, DIGIT_NAMES[i] if i < len(DIGIT_NAMES) else str(i))
+                for i, box in enumerate(digit_boxes)
+            ]
+            _write_debug_boxes(
+                digits_binary, d_labeled, output_dir / "debug_digit_boxes.png",
             )
-        cv2.imwrite(str(output_dir / "debug_boxes.png"), debug_img)
 
-    # Warn if too few/many glyphs found
-    expected = len(GLYPH_CODEPOINTS)
-    if len(boxes) != expected:
-        print(f"  [warn] expected {expected} glyphs but found {len(boxes)}.")
-        if len(boxes) < expected:
-            print("  The font will be partial.")
-        else:
-            print(f"  using first {expected}.")
-            boxes = boxes[:expected]
+    n_alpha = len(alphabet_boxes)
+    n_digit = len(digit_boxes)
+    if n_alpha != len(ALPHABET_CODEPOINTS):
+        print(
+            f"  [warn] expected {len(ALPHABET_CODEPOINTS)} alphabet glyphs "
+            f"but found {n_alpha}. The font will be partial."
+        )
+    if n_digit and n_digit != DIGIT_COUNT:
+        print(
+            f"  [warn] expected {DIGIT_COUNT} digits but found {n_digit}."
+        )
+    if n_alpha == len(ALPHABET_CODEPOINTS) and n_digit == 0:
+        print("  [info] no numerals in the source; font will omit 0–9.")
+
+    alphabet_boxes = alphabet_boxes[:len(ALPHABET_CODEPOINTS)]
+    digit_boxes = digit_boxes[:DIGIT_COUNT]
 
     # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
         glyph_data = []
 
-        for idx, box in enumerate(boxes):
-            if idx >= expected:
-                break
-            codepoint = GLYPH_CODEPOINTS[idx]
-            name = GLYPH_NAMES[idx]
-            print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
-
-            svg_d = trace_glyph(gray, binary, box, tmp_dir, idx)
-
-            if svg_d:
-                print(" ok")
-            else:
-                print(" (no path)")
-
-            # build_font() scales each glyph from its own outline bounding box,
-            # so no per-box scale/offset needs to be computed here.
-            glyph_data.append({
-                "codepoint": codepoint,
-                "name": name,
-                "svg_d": svg_d,
-            })
+        _trace_boxes(
+            gray, binary, alphabet_boxes,
+            ALPHABET_NAMES[:len(alphabet_boxes)],
+            ALPHABET_CODEPOINTS[:len(alphabet_boxes)],
+            tmp_dir, glyph_data, idx0=0,
+        )
+        if digit_boxes:
+            _trace_boxes(
+                digits_gray, digits_binary, digit_boxes,
+                DIGIT_NAMES[:len(digit_boxes)],
+                DIGIT_CODEPOINTS[:len(digit_boxes)],
+                tmp_dir, glyph_data, idx0=len(alphabet_boxes),
+            )
 
         print("[build] assembling font …")
         build_font(glyph_data, output_dir)
