@@ -54,6 +54,7 @@ jobs:
           mkdir -p docs/ath docs/web/data docs/data
           cp ath/index.html docs/ath/index.html
           cp -r web/css web/js web/index.html docs/web/
+          cp -f web/aarth.woff2 web/aarth.ttf docs/web/
           python3 -m baronh export-web --out docs/web/data
           cp docs/web/data/lexicon.json docs/data/lexicon.json
           touch docs/.nojekyll

@@ -57,6 +57,9 @@ class SiteStructureTest(unittest.TestCase):
     def test_translator_font_face_works_on_pages(self):
         css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("../../aarth.woff2", css)
+        self.assertIn('url("aarth.woff2")', css)
+        self.assertIn("textarea {", css)
+        self.assertNotIn("<textarea {", css)
 
     def test_readme_describes_site_map(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
