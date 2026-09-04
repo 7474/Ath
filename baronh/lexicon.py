@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 from baronh.paths import SEED_LEXICON_PATH, default_lexicon_paths
-from baronh.phonology import fold_latin1_oelig, hira_to_kata
+from baronh.phonology import fold_fan_romanization, fold_latin1_oelig, hira_to_kata
 
 CASES = ("nom", "acc", "gen", "dat", "all", "abl", "ins")
 CASE_JA = {
@@ -188,7 +188,7 @@ def seed_entries() -> list[Entry]:
         _e("samad", "verb", "構う", "mind", stem="samad", reading_ja="サマド"),
         _e("sot", "verb", "同席する", "sit together", stem="sot", reading_ja="ソト"),
         _e("zain", "verb", "だよね", "right?", stem="zain", reading_ja="ザイン"),
-        _e("ïku", "verb", "行く", "go", stem="ïku", reading_ja="イク", tags=["public"]),
+        _e("ïcu", "verb", "行く", "go", stem="ïcu", reading_ja="イク", tags=["public"]),
         _e("lar", "verb", "来る", "come", stem="lar", reading_ja="ラル", tags=["public"]),
         _e("mire", "verb", "見る", "see", stem="mire", reading_ja="ミレ", tags=["public"]),
         _e("banas", "verb", "話す", "speak", stem="banas", reading_ja="バナス", tags=["public"]),
@@ -334,7 +334,7 @@ class Lexicon:
 
         if lang in ("auto", "baronh"):
             take(self._by_lemma.get(key, []))
-            folded_oe = _normalize_key(fold_latin1_oelig(query))
+            folded_oe = _normalize_key(fold_fan_romanization(query))
             if folded_oe != key:
                 take(self._by_lemma.get(folded_oe, []))
         if lang in ("auto", "ja"):

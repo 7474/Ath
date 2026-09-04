@@ -25,7 +25,7 @@
       "スペシャルサンクス: アーヴ語掻き集め『アーヴ語辞書』（http://mule.s59.xrea.com/seikai/jisyo/ 、2005-01-23 版）。語彙表を走査して辞書を拡充しました。",
       "スペシャルサンクス: Dadh Baronr — アーヴ語の世界『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』（http://dadh-baronr.s5.xrea.com/etc/ondic.html）。見出し語と品詞・語釈を走査して辞書を拡充しました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。"
     ],
-    "entry_count": 2408
+    "entry_count": 2407
   },
   "entries": [
     {
@@ -1227,11 +1227,11 @@
       "source": "seed"
     },
     {
-      "lemma": "ïku",
+      "lemma": "ïcu",
       "pos": "verb",
       "gloss_ja": "行く",
       "gloss_en": "go",
-      "stem": "ïku",
+      "stem": "ïcu",
       "reading_ja": "イク",
       "tags": [
         "public"
@@ -12473,9 +12473,11 @@
       "pos": "phrase",
       "gloss_ja": "帝国元帥",
       "gloss_en": "帝国元帥",
+      "reading_ja": "ルエ・スペーヌ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
@@ -25722,18 +25724,6 @@
       "gloss_ja": "帝国副代表",
       "gloss_en": "帝国副代表",
       "reading_ja": "ルエ・ロイルサーガ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
-      "lemma": "rüé spe'nec",
-      "pos": "phrase",
-      "gloss_ja": "帝国元帥",
-      "gloss_en": "帝国元帥",
-      "reading_ja": "ルエ・スペーヌ",
       "tags": [
         "mule-jisyo",
         "ingested"

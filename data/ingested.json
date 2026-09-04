@@ -11438,9 +11438,11 @@
       "pos": "phrase",
       "gloss_ja": "帝国元帥",
       "gloss_en": "帝国元帥",
+      "reading_ja": "ルエ・スペーヌ",
       "tags": [
         "dadh-baronr",
-        "ingested"
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
@@ -24872,18 +24874,6 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
-      "lemma": "rüé spe'nec",
-      "pos": "phrase",
-      "gloss_ja": "帝国元帥",
-      "gloss_en": "帝国元帥",
-      "reading_ja": "ルエ・スペーヌ",
-      "tags": [
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
-    },
-    {
       "lemma": "rüé symh",
       "pos": "phrase",
       "gloss_ja": "帝国貴族",
@@ -28197,7 +28187,7 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     }
   ],
-  "count": 2358,
+  "count": 2357,
   "sources_ingested": [
     "http://mule.s59.xrea.com/seikai/jisyo/",
     "http://dadh-baronr.s5.xrea.com/etc/ondic.html"

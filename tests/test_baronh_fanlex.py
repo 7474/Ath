@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 
 from baronh.fanlex import entries_from_dadh_pairs, entries_from_mule_table, parse_dadh_html
 from baronh.ingest import _TableParser
-from baronh.phonology import fold_latin1_oelig
+from baronh.phonology import fold_ascii_acute, fold_fan_romanization, fold_latin1_oelig
 
 
 MULE_HTML = """
@@ -21,6 +21,7 @@ MULE_HTML = """
 <tr><td>usere</td><td></td><td>移る。移民する</td><td>移る</td><td></td><td>ピック</td><td></td><td></td></tr>
 <tr><td>b&#339;rh</td><td>ベール</td><td>子爵。爵位の１つ</td><td>守</td><td></td><td>紋章読本</td><td></td><td></td></tr>
 <tr><td>boe</td><td></td><td>思う</td><td>思う</td><td></td><td>ピック</td><td></td><td></td></tr>
+<tr><td>r&uuml;&eacute; spe'nec</td><td>ルエ・スペーヌ</td><td>帝国元帥</td><td></td><td></td><td></td><td></td><td></td></tr>
 </table>
 """
 
@@ -51,6 +52,8 @@ class FanlexParseTest(unittest.TestCase):
         self.assertEqual(lemmas["bœrh"].gloss_ja, "子爵。爵位の１つ")
         self.assertIn("boe", lemmas)
         self.assertNotIn("boerh", lemmas)
+        self.assertIn("rüé spénec", lemmas)
+        self.assertNotIn("rüé spe'nec", lemmas)
 
     def test_dadh_dl(self):
         pairs = parse_dadh_html(DADH_HTML)
@@ -83,6 +86,12 @@ class AthRomanizationFoldTest(unittest.TestCase):
         self.assertEqual(fold_latin1_oelig("boe"), "boe")
         self.assertEqual(fold_latin1_oelig("roe"), "roe")
         self.assertEqual(fold_latin1_oelig("ramgoe"), "ramgoe")
+
+    def test_ascii_acute_and_non_ath_letters(self):
+        self.assertEqual(fold_ascii_acute("spe'nec"), "spénec")
+        self.assertEqual(fold_ascii_acute("F'a"), "F'a")
+        self.assertEqual(fold_fan_romanization("ïku"), "ïcu")
+        self.assertEqual(fold_fan_romanization("rüé spe'nec"), "rüé spénec")
 
 
 if __name__ == "__main__":

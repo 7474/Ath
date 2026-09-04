@@ -143,6 +143,8 @@ class CliSmokeTest(unittest.TestCase):
         self.assertIn("boe", lemmas)
         self.assertIn("roe", lemmas)
         self.assertIn("ramgoe", lemmas)
+        self.assertIn("rüé spénec", lemmas)
+        self.assertNotIn("rüé spe'nec", lemmas)
         for entry in data["entries"]:
             if "dadh-baronr" not in (entry.get("tags") or []):
                 continue
@@ -150,6 +152,23 @@ class CliSmokeTest(unittest.TestCase):
             for token in lemma.split():
                 body = token[:-2] if token.endswith("oe") and len(token) >= 2 else token
                 self.assertNotIn("oe", body, lemma)
+
+    def test_lexicon_letters_are_ath_glyphs(self):
+        from baronh.lexicon import load_lexicon
+        from baronh.phonology import to_ath_keys
+        import generate_aarth_font as aarth
+
+        font_cps = set(aarth.ALPHABET_CODEPOINTS) | set(aarth.DIGIT_CODEPOINTS)
+        allowed = font_cps | {ord(" "), ord("-")}
+        lex = load_lexicon()
+        lemmas = {entry.lemma for entry in lex.entries}
+        self.assertIn("ïcu", lemmas)
+        self.assertNotIn("ïku", lemmas)
+        self.assertIn("ise", lemmas)
+        for entry in lex.entries:
+            keys = to_ath_keys(entry.lemma)
+            leftover = [ch for ch in keys if ord(ch) not in allowed]
+            self.assertEqual(leftover, [], entry.lemma)
 
 
 class OpenAIPromptTest(unittest.TestCase):

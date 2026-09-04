@@ -86,6 +86,38 @@ def fold_latin1_oelig(text: str) -> str:
     return "".join(pieces)
 
 
+def fold_ascii_acute(text: str) -> str:
+    """ASCII の ``e'`` / ``'e`` を Wikipedia の ``é`` へ畳む。
+
+    掻き集め辞書は ``spe'nec`` のように鋭アクセントをアポストロフィで書く。
+    主題の ``F'a`` は ``'a`` なので触れない。
+    """
+    if not text:
+        return text
+    src = unicodedata.normalize("NFC", text)
+    out: list[str] = []
+    i = 0
+    while i < len(src):
+        pair = src[i : i + 2]
+        low = pair.lower()
+        if low == "e'":
+            out.append("É" if pair[0].isupper() else "é")
+            i += 2
+            continue
+        if low == "'e":
+            out.append("É" if pair[1].isupper() else "é")
+            i += 2
+            continue
+        out.append(src[i])
+        i += 1
+    return "".join(out)
+
+
+def fold_fan_romanization(text: str) -> str:
+    """ファン資料のラテン転写を、Wikipedia / アース字母の綴りへ畳む。"""
+    return fold_to_ath_spelling(fold_latin1_oelig(fold_ascii_acute(text)))
+
+
 def _fold_latin1_oelig_token(token: str) -> str:
     tail = ""
     body = token

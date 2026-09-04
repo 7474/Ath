@@ -329,6 +329,18 @@
     });
   }
 
+  function foldAsciiAcute(text) {
+    return String(text || "").replace(/e'/gi, function (pair) {
+      return pair.charAt(0) === "E" ? "É" : "é";
+    }).replace(/'e/gi, function (pair) {
+      return pair.charAt(1) === "E" ? "É" : "é";
+    });
+  }
+
+  function foldFanRomanization(text) {
+    return foldToAthSpelling(foldLatin1Oelig(foldAsciiAcute(text)));
+  }
+
   function toAthKeys(text) {
     var src = String(text || "").normalize("NFC");
     var out = "";
@@ -467,7 +479,7 @@
     lang = lang || "auto";
     if (lang === "auto" || lang === "baronh") {
       take(this.byLemma[key]);
-      var foldedOe = norm(foldLatin1Oelig(query));
+      var foldedOe = norm(foldFanRomanization(query));
       if (foldedOe !== key) take(this.byLemma[foldedOe]);
     }
     if (lang === "auto" || lang === "ja") take(this.byJa[key]);
@@ -1949,6 +1961,7 @@
     readingJa: readingJa,
     toAthKeys: toAthKeys,
     foldLatin1Oelig: foldLatin1Oelig,
+    foldFanRomanization: foldFanRomanization,
     parseImported: parseImported,
     topicContract: topicContract,
     GRAMMAR_BRIEF: GRAMMAR_BRIEF,
