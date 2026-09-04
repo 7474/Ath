@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>アーヴ語翻訳 — Ath / Baronh</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">baronh</span>
+      <span class="meta">アーヴ語翻訳 · ローカル辞書</span>
+    </div>
+    <nav class="nav">
+      <a href="../index.html">フォントデモ</a>
+      <button type="button" class="linkish" id="open-settings">設定</button>
+    </nav>
+  </header>
+
+  <main>
+    <h1>アーヴ語と日本語・英語</h1>
+    <p class="lead">
+      Wikipedia「アーヴ語」の文法と、ファンサイトの公開辞書を走査した語彙で動く規則ベース翻訳です。
+      ブラウザ内で完結します。出典はページ末尾のスペシャルサンクスを見てください。
+      辞書にない固有名詞は発音からアーヴ語ローマ字へ転記し、その旨を表示します。
+      任意で OpenAI 互換 API を指定すると、下訳と検索した辞書を渡して生成翻訳できます。音声合成は別呼び出しです。
+    </p>
+
+    <section class="panel">
+      <div class="langs">
+        <label>入力
+          <select id="source-lang">
+            <option value="auto">自動</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+            <option value="baronh">アーヴ語</option>
+          </select>
+        </label>
+        <button type="button" class="swap" id="swap-langs" title="入れ替え">⇄</button>
+        <label>出力
+          <select id="target-lang">
+            <option value="auto">自動</option>
+            <option value="baronh" selected>アーヴ語</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label>エンジン
+          <select id="engine">
+            <option value="local">ローカル辞書</option>
+            <option value="openai">生成AI（OpenAI 互換）</option>
+          </select>
+        </label>
+        <span class="badge" id="dict-count">辞書 …</span>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label class="block" for="source-text">原文</label>
+          <textarea id="source-text" placeholder="例: 私は移民します">私は移民します</textarea>
+        </div>
+        <div>
+          <label class="block" for="target-text">訳</label>
+          <textarea id="target-text" readonly></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="translate-btn">翻訳</button>
+        <button type="button" class="ghost" id="speak-btn">読み上げ</button>
+        <button type="button" class="ghost" id="copy-btn">コピー</button>
+        <button type="button" class="ghost" id="examples-btn">例文</button>
+      </div>
+      <p class="reading" id="reading"></p>
+      <p class="status" id="status"></p>
+      <div class="analysis" id="analysis"></div>
+    </section>
+
+    <section class="tools">
+      <div class="panel">
+        <h2>辞書</h2>
+        <div class="settings-row">
+          <input type="text" id="lookup-q" placeholder="abh / アーヴ / pearl" />
+          <button type="button" class="ghost" id="lookup-btn">検索</button>
+        </div>
+        <pre class="forms" id="lookup-out">語を検索すると語釈と格変化が出ます。</pre>
+        <div class="settings-row">
+          <input type="file" id="import-file" accept=".json,.csv,.tsv,.txt" />
+          <button type="button" class="ghost" id="clear-overlay">追加分を消す</button>
+        </div>
+        <p class="hint">CSV/JSON を読むとこのブラウザにだけ上乗せされます。サイト全体への取り込みは <code>python -m baronh ingest</code> を使います。</p>
+      </div>
+
+      <div class="panel">
+        <h2>活用</h2>
+        <div class="settings-row">
+          <input type="text" id="conj-q" placeholder="sac / 書く" />
+          <button type="button" class="ghost" id="conj-btn">活用表</button>
+        </div>
+        <pre class="forms" id="conj-out">動詞を入れると直説法・仮定法などの語形を出します。</pre>
+      </div>
+    </section>
+
+    <section class="panel" id="settings-panel" hidden>
+      <h2>生成AI / OpenAI 互換 API（任意）</h2>
+      <p class="hint">
+        キーとベース URL は localStorage にだけ保存し、指定したエンドポイントへだけ送ります。
+        既定は <code>https://api.openai.com/v1</code> です。LM Studio / vLLM / LiteLLM / Ollama（OpenAI 互換）なども同じ形で指定できます。
+        未設定ならローカル辞書のみで動きます。辞書全文は送りません。関連語は辞書を全件スキャンして点数付けし、足りない語は <code>lookup_lexicon</code> / <code>grammar_note</code> で追加検索します。生成したアーヴ語は辞書の語形と照合し、造語なら書き直しを求めます。
+        音声合成は翻訳とは別の <code>/audio/speech</code> です。未対応の互換実装ではブラウザ読み上げに戻ります。
+      </p>
+      <div class="settings-grid">
+        <label class="block">ベース URL
+          <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
+        </label>
+        <label class="block">API キー
+          <input type="password" id="api-key" placeholder="sk-...（ローカル互換なら空でも可）" autocomplete="off" />
+        </label>
+        <label class="block">チャットモデル
+          <input type="text" id="chat-model" value="gpt-4o-mini" />
+        </label>
+        <label class="block">TTS モデル
+          <input type="text" id="tts-model" value="gpt-4o-mini-tts" />
+        </label>
+      </div>
+      <div class="settings-row">
+        <button type="button" class="ghost" id="save-key">保存</button>
+        <button type="button" class="ghost" id="clear-key">消去</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字です。本ツールは Wikipedia「<a href="https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E">アーヴ語</a>」の文法解説（CC BY-SA）に基づく<strong>二次創作</strong>です。
+    公式の完全辞書は公開されていないため、訳は再構成であり誤りを含みます。
+    <a href="https://github.com/7474/Ath">GitHub</a>
+    <section class="thanks" style="margin-top:1rem">
+      <h2>スペシャルサンクス</h2>
+      <ul>
+        <li><a href="http://mule.s59.xrea.com/seikai/jisyo/">アーヴ語掻き集め『アーヴ語辞書』</a>（2005-01-23 版）— 語彙表を走査させていただきました。</li>
+        <li><a href="http://dadh-baronr.s5.xrea.com/etc/ondic.html">Dadh Baronr『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』</a> — 見出し語・品詞・語釈を走査させていただきました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。</li>
+      </ul>
+    </section>
+  </footer>
+
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

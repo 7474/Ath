@@ -11,6 +11,10 @@ on:
       - 'index.html'
       - 'aarth.css'
       - 'requirements.txt'
+      - 'web/**'
+      - 'data/lexicon.json'
+      - 'data/ingested.json'
+      - 'baronh/**'
       - '.github/workflows/build-font.yml'
   workflow_dispatch:
 
@@ -43,6 +47,11 @@ jobs:
         run: |
           cp index.html docs/index.html
           cp aarth.css docs/aarth.css
+          rm -rf docs/web
+          mkdir -p docs/web/data docs/data
+          cp -r web/css web/js web/index.html docs/web/
+          python3 -m baronh export-web --out docs/web/data
+          cp docs/web/data/lexicon.json docs/data/lexicon.json
           touch docs/.nojekyll
 
       - name: Commit generated files

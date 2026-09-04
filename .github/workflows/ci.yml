@@ -38,5 +38,5 @@ jobs:
           print(f"brotli      {brotli.__version__}")
           PY
 
-      - name: Run pipeline tests
+      - name: Run pipeline and translator tests
         run: python3 -m unittest discover -s tests -v
