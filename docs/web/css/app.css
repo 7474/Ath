@@ -52,9 +52,10 @@ a { color: #1a5fb4; }
 }
 
 .logo {
-  font-family: "Aarth", serif;
-  font-size: 1.6rem;
+  font-family: system-ui, sans-serif;
+  font-size: 1.15rem;
   letter-spacing: .08em;
+  font-weight: 700;
 }
 
 .meta { font-size: .8rem; color: var(--muted); }
@@ -139,14 +140,15 @@ textarea {
   padding: .7rem .75rem;
   resize: vertical;
   background: #fff;
+  font: 1rem/1.5 system-ui, sans-serif;
 }
 
-.ath-out {
+/* アーヴ語を選んだ入出力欄だけアース文字。値はローマ字のまま。 */
+textarea.ath-script {
   font-family: "Aarth", serif;
-  font-size: 1.7rem;
-  line-height: 1.5;
+  font-size: 1.55rem;
+  line-height: 1.7;
   letter-spacing: .04em;
-  min-height: 3.2rem;
 }
 
 .actions {

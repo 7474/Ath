@@ -346,7 +346,7 @@ python3 -m baronh serve
 
 ### Web
 
-`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語の渡し方・ファジー照合の範囲・生成後の検証は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) を参照してください。音声合成は翻訳とは別の `/v1/audio/speech` です。
+`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語の渡し方・ファジー照合の範囲・生成後の検証は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) を参照してください。音声合成は翻訳とは別の `/v1/audio/speech` です。
 
 ルートで `python3 -m http.server 8000` した場合の URL は `http://127.0.0.1:8000/web/` です。
 

@@ -63,9 +63,27 @@
     }
   }
 
+  function resolvedSourceLang() {
+    var src = $("source-lang").value;
+    if (src && src !== "auto") return src;
+    if (!window.BaronhEngine) return "ja";
+    return BaronhEngine.detectLang($("source-text").value, lexicon);
+  }
+
+  function resolvedTargetLang() {
+    var tgt = $("target-lang").value;
+    if (tgt && tgt !== "auto") return tgt;
+    return resolvedSourceLang() === "baronh" ? "ja" : "baronh";
+  }
+
+  function syncAthScript() {
+    $("source-text").classList.toggle("ath-script", resolvedSourceLang() === "baronh");
+    $("target-text").classList.toggle("ath-script", resolvedTargetLang() === "baronh");
+  }
+
   function renderResult(result) {
     $("target-text").value = result.text;
-    $("ath-view").textContent = result.ath_keys || result.text;
+    syncAthScript();
     var bits = [];
     if (result.reading_ja) bits.push("読み: " + result.reading_ja);
     bits.push(result.source_lang + " → " + result.target_lang + " / " + result.engine);
@@ -326,7 +344,11 @@
     var src = $("source-text").value;
     $("source-text").value = $("target-text").value;
     $("target-text").value = src;
+    syncAthScript();
   });
+  $("source-lang").addEventListener("change", syncAthScript);
+  $("target-lang").addEventListener("change", syncAthScript);
+  $("source-text").addEventListener("input", syncAthScript);
   $("lookup-btn").addEventListener("click", doLookup);
   $("lookup-q").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLookup(); });
   $("conj-btn").addEventListener("click", doConj);
@@ -385,6 +407,7 @@
   }).then(function () {
     applyOverlay();
     refreshCount();
+    syncAthScript();
     runTranslate();
   }).catch(function (err) {
     setStatus("辞書を読めませんでした: " + err.message + "。python -m baronh serve で起動してください。");
