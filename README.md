@@ -72,6 +72,32 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 
 ---
 
+## 生成AI翻訳と音声合成
+
+デモの「生成AI翻訳と音声合成」は、**Chat Completions（翻訳）** と **音声合成** を分けます。文法・種辞書は毎回全部は載せません。入力から関連チャンクを検索し、対応していればモデルが `search_lexicon` / `search_grammar` で追加取得します（ベクトル RAG ではなくキーワード検索 + ツール呼び出し）。
+
+OpenAI 公式のほか、互換 API は Base URL で指定します。
+
+```bash
+python3 ath_translate_llm.py --api-base https://api.openai.com/v1 \
+  --api-key "$OPENAI_API_KEY" --model gpt-4o-mini '星たちよ'
+
+# 互換 API の例（Ollama）
+python3 ath_translate_llm.py --api-base http://127.0.0.1:11434/v1 \
+  --model llama3.2 --no-tools '星たちよ'
+```
+
+流れ:
+
+1. 検索 → 文法カード / 種語彙（`knowledge/`）
+2. `POST {base}/chat/completions` → アーヴ語をアース用キーで返す
+3. キーを IPA に変換（TTS はウェブフォントを読めない）
+4. 任意で `POST {base}/audio/speech`。多くの互換サーバは chat のみ。OpenAI TTS も英日向けなので、Baronh の正確な発音には音素対応エンジンが別途必要です。
+
+環境変数 `OPENAI_BASE_URL`（または `OPENAI_API_BASE`）/ `OPENAI_API_KEY` / `OPENAI_MODEL` を参照します。種データは完全な辞書ではなく、[Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) の公開記述に基づく要約です。
+
+---
+
 ## CSS / HTML usage
 
 ### jsDelivr

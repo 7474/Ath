@@ -8,6 +8,11 @@ on:
       - 'Ath_alphabet.png'
       - 'templates/**'
       - 'LICENSE.md'
+      - 'ath-llm.js'
+      - 'ath_openai.py'
+      - 'ath_retrieve.py'
+      - 'ath_translate_llm.py'
+      - 'knowledge/**'
       - 'index.html'
       - 'aarth.css'
       - 'requirements.txt'
@@ -43,6 +48,9 @@ jobs:
         run: |
           cp index.html docs/index.html
           cp aarth.css docs/aarth.css
+          cp ath-llm.js docs/ath-llm.js
+          mkdir -p docs/knowledge
+          cp knowledge/*.json knowledge/README.md docs/knowledge/
           touch docs/.nojekyll
 
       - name: Commit generated files

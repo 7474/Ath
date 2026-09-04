@@ -364,6 +364,84 @@
 
     .notice p + p { margin-top: .8rem; }
 
+    .llm-panel,
+    .llm-panel label,
+    .llm-panel textarea,
+    .llm-panel input,
+    .llm-panel button,
+    .llm-panel summary,
+    .llm-panel p,
+    .llm-panel li,
+    .llm-panel code,
+    .pipeline {
+      font-family: system-ui, sans-serif !important;
+      text-transform: none !important;
+      letter-spacing: normal;
+    }
+
+    .llm-panel textarea,
+    .llm-panel input[type="text"],
+    .llm-panel input[type="password"] {
+      width: 100%;
+      margin: .35rem 0 .7rem;
+      padding: .6rem .7rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .llm-panel textarea { min-height: 4.5rem; }
+
+    .llm-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin: .4rem 0 .8rem;
+    }
+
+    .llm-panel button {
+      padding: .45rem .9rem;
+      border: 0;
+      border-radius: 6px;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .llm-panel button.secondary { background: #555; }
+    .llm-panel button:hover { background: #333; }
+
+    .pipeline {
+      list-style: none;
+      margin: .8rem 0 1rem;
+      padding: 0;
+      border: 1px dashed #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pipeline li {
+      padding: .7rem .9rem;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .pipeline li:last-child { border-bottom: 0; }
+
+    .pipeline strong { display: block; margin-bottom: .2rem; }
+
+    .ath-out {
+      font-family: 'Aarth', serif !important;
+      text-transform: none !important;
+      font-size: 1.7rem;
+      line-height: 1.5;
+    }
+
+    .llm-notes { margin: .6rem 0 0; padding-left: 1.2rem; line-height: 1.5; }
+    .llm-error { color: #a33; margin: .5rem 0; }
+    .llm-panel .api-fields { display: grid; gap: .15rem; }
+    .llm-panel details { margin: .6rem 0; }
+    .llm-panel summary { cursor: pointer; }
+
     footer {
       margin-top: 3rem;
       padding-top: 1.5rem;
@@ -596,6 +674,69 @@
     </div>
   </section>
 
+  <section>
+    <h2>生成AI翻訳と音声合成</h2>
+    <div class="demo-block llm-panel">
+      <p>
+        Chat Completions（翻訳）と音声合成は別エンドポイントです。
+        公式 OpenAI のほか、Base URL を差し替えて互換 API を指定できます。
+      </p>
+      <ol class="pipeline">
+        <li>
+          <strong>1. 検索（RAG に近いがベクトル必須ではない）</strong>
+          文法カードと種辞書は 1 回のプロンプトに全部は載せません。
+          入力から関連チャンクだけを引き、モデルは <code>search_lexicon</code> / <code>search_grammar</code> で追加検索できます。
+          互換サーバが tools 非対応なら、最初の検索結果だけを載せて翻訳します。
+        </li>
+        <li>
+          <strong>2. 翻訳 = <code>/v1/chat/completions</code></strong>
+          意味をアーヴ語にし、アース用キー（本ウェブフォント）で返します。
+          ここは「声」ではなく「綴り」です。
+        </li>
+        <li>
+          <strong>3. 音素化</strong>
+          TTS はウェブフォントを読めません。キーを IPA に落とします（例: <code>c</code>→/k/、<code>A</code>→/ai/）。
+        </li>
+        <li>
+          <strong>4. 合成 = <code>/v1/audio/speech</code>（任意）</strong>
+          同じ Base URL の speech へ IPA または転写を渡します。
+          多くの互換サーバは chat だけで speech がありません。
+          OpenAI TTS も英日向けなので、Baronh の正確な発音には音素対応エンジンが別途必要です。
+        </li>
+      </ol>
+      <label for="ath-llm-input">日本語 / 英語</label>
+      <textarea id="ath-llm-input">星たちよ</textarea>
+      <div class="llm-actions">
+        <button type="button" id="ath-llm-search">検索だけ見る</button>
+        <button type="button" id="ath-llm-run">API で翻訳</button>
+        <button type="button" id="ath-llm-speak" class="secondary">IPA を読み上げ試行</button>
+      </div>
+      <details id="ath-api-settings" open>
+        <summary>OpenAI 互換 API</summary>
+        <p>
+          既定 Base URL は <code>https://api.openai.com/v1</code>。
+          例: Ollama <code>http://127.0.0.1:11434/v1</code>、
+          Groq <code>https://api.groq.com/openai/v1</code>、
+          OpenRouter <code>https://openrouter.ai/api/v1</code>。
+          キーはブラウザ内のみ。ブラウザから呼ぶ互換サーバは CORS が必要です。
+        </p>
+        <div class="api-fields">
+          <label for="ath-api-base">Base URL（互換 API を指定）</label>
+          <input type="text" id="ath-api-base" value="https://api.openai.com/v1" spellcheck="false" autocomplete="off" />
+          <label for="ath-api-key">API key</label>
+          <input type="password" id="ath-api-key" placeholder="省略可（ローカル互換サーバ）" autocomplete="off" />
+          <label for="ath-api-model">Chat model</label>
+          <input type="text" id="ath-api-model" value="gpt-4o-mini" spellcheck="false" autocomplete="off" />
+        </div>
+      </details>
+      <p id="ath-llm-retrieved"></p>
+      <p class="ath-out" id="ath-llm-baronh" lang="und"></p>
+      <p id="ath-llm-ipa"></p>
+      <p class="llm-error" id="ath-llm-error" hidden></p>
+      <ul class="llm-notes" id="ath-llm-notes"></ul>
+    </div>
+  </section>
+
   <!-- Source / license -->
   <section>
     <h2>出典・ライセンス</h2>
@@ -631,6 +772,7 @@
   </footer>
   </main>
 
+  <script src="ath-llm.js"></script>
   <script>
     (function () {
       document.querySelectorAll('[data-copy]').forEach(function (btn) {
@@ -679,6 +821,153 @@
           switchingTimer = window.setTimeout(function () {
             applyTranslation(next);
           }, 180);
+        });
+      }
+
+      var llmInput = document.getElementById("ath-llm-input");
+      var llmBaronh = document.getElementById("ath-llm-baronh");
+      var llmIpa = document.getElementById("ath-llm-ipa");
+      var llmNotes = document.getElementById("ath-llm-notes");
+      var llmError = document.getElementById("ath-llm-error");
+      var llmRetrieved = document.getElementById("ath-llm-retrieved");
+      var apiBase = document.getElementById("ath-api-base");
+      var apiKey = document.getElementById("ath-api-key");
+      var apiModel = document.getElementById("ath-api-model");
+      var storageKey = "ath-openai-compat";
+      var lastResult = null;
+
+      try {
+        var saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (saved) {
+          if (apiBase && saved.baseUrl) apiBase.value = saved.baseUrl;
+          if (apiKey && saved.apiKey) apiKey.value = saved.apiKey;
+          if (apiModel && saved.model) apiModel.value = saved.model;
+        }
+      } catch (err) { /* ignore */ }
+
+      function persistApi() {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({
+            baseUrl: apiBase ? apiBase.value : "",
+            apiKey: apiKey ? apiKey.value : "",
+            model: apiModel ? apiModel.value : ""
+          }));
+        } catch (err) { /* ignore */ }
+      }
+
+      [apiBase, apiKey, apiModel].forEach(function (el) {
+        if (el) el.addEventListener("change", persistApi);
+      });
+
+      function showError(msg) {
+        if (!llmError) return;
+        if (!msg) {
+          llmError.hidden = true;
+          llmError.textContent = "";
+          return;
+        }
+        llmError.hidden = false;
+        llmError.textContent = msg;
+      }
+
+      function showRetrieved(query) {
+        if (!window.AthLlm || !llmRetrieved) return;
+        var pack = AthLlm.retrieve(query || (llmInput && llmInput.value) || "");
+        var g = pack.grammar.map(function (c) { return c.title; }).join("、") || "なし";
+        var l = pack.lexicon.map(function (e) { return e.ja + "=" + e.baronh; }).join("、") || "なし";
+        llmRetrieved.textContent = "検索ヒット: 文法「" + g + "」 / 語彙「" + l + "」";
+      }
+
+      function showResult(result) {
+        lastResult = result;
+        showError("");
+        if (llmBaronh) llmBaronh.textContent = result.baronh || "";
+        if (llmIpa) llmIpa.textContent = result.ipa ? ("IPA: " + result.ipa) : "";
+        if (llmNotes) {
+          llmNotes.innerHTML = "";
+          (result.notesJa || []).forEach(function (note) {
+            var li = document.createElement("li");
+            li.textContent = note;
+            llmNotes.appendChild(li);
+          });
+          if (result.trace && result.trace.length) {
+            var li = document.createElement("li");
+            li.textContent = "trace: " + result.trace.map(function (s) {
+              return s.step + (s.name ? "(" + s.name + ")" : "");
+            }).join(" → ");
+            llmNotes.appendChild(li);
+          }
+        }
+      }
+
+      if (window.AthLlm) {
+        AthLlm.loadKnowledge("knowledge/").then(function () {
+          showRetrieved();
+        }).catch(function (err) {
+          showError("ナレッジを読めません: " + err.message);
+        });
+      }
+
+      var searchBtn = document.getElementById("ath-llm-search");
+      if (searchBtn) {
+        searchBtn.addEventListener("click", function () {
+          showRetrieved();
+        });
+      }
+
+      var runBtn = document.getElementById("ath-llm-run");
+      if (runBtn) {
+        runBtn.addEventListener("click", function () {
+          if (!window.AthLlm || !llmInput) return;
+          persistApi();
+          showError("");
+          runBtn.disabled = true;
+          AthLlm.translate(llmInput.value, {
+            baseUrl: apiBase && apiBase.value,
+            apiKey: apiKey && apiKey.value,
+            model: apiModel && apiModel.value
+          }).then(function (result) {
+            showRetrieved(llmInput.value);
+            showResult(result);
+          }).catch(function (err) {
+            showError("翻訳に失敗しました: " + (err && err.message ? err.message : String(err)));
+          }).then(function () {
+            runBtn.disabled = false;
+          });
+        });
+      }
+
+      var speakBtn = document.getElementById("ath-llm-speak");
+      if (speakBtn) {
+        speakBtn.addEventListener("click", function () {
+          var ipa = lastResult && lastResult.ipa;
+          var spoken = ipa || (llmIpa && llmIpa.textContent.replace(/^IPA:\s*/, "")) || "";
+          if (!spoken) {
+            showError("先に翻訳するか、検索語の IPA が必要です。");
+            return;
+          }
+          persistApi();
+          if (window.AthLlm && apiBase && apiBase.value) {
+            AthLlm.speakViaApi(spoken, {
+              baseUrl: apiBase.value,
+              apiKey: apiKey && apiKey.value
+            }).then(function (blob) {
+              showError("");
+              var url = URL.createObjectURL(blob);
+              var audio = new Audio(url);
+              audio.play();
+            }).catch(function (err) {
+              if (window.speechSynthesis) {
+                var u = new SpeechSynthesisUtterance(spoken);
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(u);
+                showError("互換 speech が無いため、ブラウザ読み上げに落としました（Baronh としては不正確です）: " +
+                  (err && err.message ? err.message : String(err)));
+              } else {
+                showError("speech に失敗: " + (err && err.message ? err.message : String(err)));
+              }
+            });
+          }
         });
       }
     })();

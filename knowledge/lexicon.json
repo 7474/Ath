@@ -1,0 +1,22 @@
+[
+  {"baronh": "ath", "ja": "アース", "en": "Ath (script)", "pos": "noun", "tags": ["文字", "アース"], "note": "字母・文字。本ウェブフォントの対象。"},
+  {"baronh": "abh", "ja": "アーヴ", "en": "Abh", "pos": "noun", "tags": ["種族"], "note": "第1型。主格 abh、対格 abe、生格 bar。"},
+  {"baronh": "baronh", "ja": "アーヴ語", "en": "Baronh", "pos": "noun", "tags": ["言語"], "note": "言語名。アースで書く。"},
+  {"baronh": "lamh", "ja": "真珠", "en": "pearl", "pos": "noun", "tags": ["第2型"], "note": "公開の格変化例に使われる。"},
+  {"baronh": "duc", "ja": "紅玉", "en": "ruby", "pos": "noun", "tags": ["第3型"], "note": "主格語尾 -c は発音されないことがある。"},
+  {"baronh": "saidiac", "ja": "操舵士", "en": "helmsman", "pos": "noun", "tags": ["第4型"], "note": "動詞派生 -iac。"},
+  {"baronh": "azz", "ja": "敵", "en": "enemy", "pos": "noun", "tags": ["第1型"]},
+  {"baronh": "éboth", "ja": "微笑", "en": "smile", "pos": "noun", "tags": ["第2型"]},
+  {"baronh": "ïomh", "ja": "恋人", "en": "lover", "pos": "noun", "tags": ["第2型"]},
+  {"baronh": "laimh", "ja": "国民", "en": "people", "pos": "noun", "tags": ["第2型"]},
+  {"baronh": "greuc", "ja": "星", "en": "star", "pos": "noun", "tags": ["第3型"]},
+  {"baronh": "goc", "ja": "時空", "en": "spacetime", "pos": "noun", "tags": ["第3型"]},
+  {"baronh": "nuïc", "ja": "耳", "en": "ear", "pos": "noun", "tags": ["第3型"]},
+  {"baronh": "fe", "ja": "私", "en": "I", "pos": "pronoun", "tags": ["一人称"], "note": "有情・単数。F'a は「私は」。"},
+  {"baronh": "de", "ja": "あなた", "en": "you", "pos": "pronoun", "tags": ["二人称"]},
+  {"baronh": "se", "ja": "彼/彼女", "en": "he/she", "pos": "pronoun", "tags": ["三人称"]},
+  {"baronh": "gereulach", "ja": "星たち", "en": "stars", "pos": "noun", "tags": ["呼びかけ"], "note": "Gereulach éü! 星たちよ。"},
+  {"baronh": "usere", "ja": "移民する", "en": "immigrate", "pos": "verb", "tags": ["動詞"], "note": "F'a usere. 私は移民します。"},
+  {"baronh": "bœrh", "ja": "子爵", "en": "viscount", "pos": "noun", "tags": ["称号"]},
+  {"baronh": "lonh", "ja": "閣下", "en": "lord (honorific)", "pos": "noun", "tags": ["称号"]}
+]
