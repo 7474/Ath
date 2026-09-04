@@ -1104,7 +1104,7 @@
     throw new Error("no local route for " + src + "->" + tgt);
   }
 
-  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは辞書の近い見出しに寄せてよい。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞はアーヴ語の正書法で発音転記して構いません（ジ行は gh、カ行は c、主格は -c/-h/-n。j/k/w/v は使わない）。ただし辞書に近い見出しがあるなら転記より辞書を優先します。必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。訳文だけを出力してください。";
+  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは辞書の近い見出しに寄せてよい。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞はアーヴ語の正書法で発音転記して構いません（ジ行は gh、カ行は c、主格は -c/-h/-n。j/k/w/v は使わない）。ただし辞書に近い見出しがあるなら転記より辞書を優先します。関連辞書で足りるならツールは使わず訳文だけを出す。足りない語は lookup_lexicon を1回だけ呼び、queries にすべて入れる。1語ずつの連続呼び出しは禁止。文法は下記にあるので grammar_note は原則不要。使うなら topics にまとめて1回だけ呼ぶ。訳文だけを出力してください。";
   var FEW_SHOT_TO_BARONH = "例（ja/en → baronh）:\n- 私は移民します → F'a usere.\n- 私はアーヴです → F'a bale.\n- 分かりますか → face sa?\n- ありがとう → zom.\n- ジントはアーヴです → ghintoc a bale.";
   var FEW_SHOT_FROM_BARONH = "例（baronh → ja/en）:\n- F'a usere. → 私は移民する / I immigrate.\n- F'a bale. → 私はアーヴだ / I am Abh.\n- face sa? → 分かりますか / Do you understand?\n- zom. → ありがとう / Thanks.";
   var CLOSED_BARONH = { a: 1, "éü": 1, sa: 1, te: 1, le: 1, lo: 1, "f'a": 1, "d'a": 1, "s'a": 1 };
@@ -1117,9 +1117,13 @@
     phonology: "c は /k/。Ath キー: ai→A, au→I, eu→E。辞書にない固有名詞はアーヴ語正書法で発音転記する（ジ行は gh、カ行は ca/ci/cu/ce/co、主格は -c/-h/-n。j/k/w/v は使わない）。読み上げはローマ字を仮名に落として日本語 TTS に渡す。"
   };
 
+  var LOOKUP_QUERY_LIMIT = 24;
+  var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、訳文だけを出力してください。";
+  var TOOL_BATCH_RULE = "関連辞書で足りるならツールは使わず訳文だけを出す。足りない語は lookup_lexicon を1回だけ呼び、queries にすべて入れる。1語ずつの連続呼び出しは禁止。文法は既に提示してあるので grammar_note は原則不要。使うなら topics にまとめて1回だけ呼ぶ。";
+
   var CHAT_TOOLS = [
-    { type: "function", function: { name: "lookup_lexicon", description: "ローカル辞書を引く。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。", parameters: { type: "object", properties: { query: { type: "string" }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["query"] } } },
-    { type: "function", function: { name: "grammar_note", description: "文法トピックを取り出す。", parameters: { type: "object", properties: { topic: { type: "string", enum: ["cases", "verbs", "pronouns", "syntax", "phonology"] } }, required: ["topic"] } } }
+    { type: "function", function: { name: "lookup_lexicon", description: "ローカル辞書を一度に複数語引く。足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。関連辞書にある語は再検索しない。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" }, description: "引きたい語をすべて入れる" }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["queries"] } } },
+    { type: "function", function: { name: "grammar_note", description: "文法トピックを取り出す。要点は既出なので原則不要。使うなら topics にまとめて1回だけ呼ぶ。", parameters: { type: "object", properties: { topics: { type: "array", items: { type: "string", enum: ["cases", "verbs", "pronouns", "syntax", "phonology"] } } }, required: ["topics"] } } }
   ];
 
   function formatEntry(entry) {
@@ -1183,7 +1187,7 @@
 
   function retrieveLexiconContext(text, lexicon, local, limit) {
     var picked = retrieveLexiconEntries(text, lexicon, local, limit).map(formatEntry);
-    return picked.length ? picked.join("\n") : "(該当なし。lookup_lexicon で追加検索してください)";
+    return picked.length ? picked.join("\n") : "(該当なし。lookup_lexicon の queries に必要な語をまとめて追加検索してください)";
   }
 
   function describeGaps(local, lexicon) {
@@ -1241,7 +1245,7 @@
       "\n\n規則ベースの下訳（誤り・抜けあり。辞書で直してよい）:\n" + local.text +
       "\n\n関連辞書（全文スキャンの上位。全文ではない）:\n" + retrieved +
       gapBlock +
-      "\n\n訳文だけを出力してください。解説は不要です。足りない語は lookup_lexicon / grammar_note で引いてください。";
+      "\n\n訳文だけを出力してください。解説は不要です。" + TOOL_BATCH_RULE;
   }
 
   function phoneticDeclinedForms(lemma) {
@@ -1297,16 +1301,63 @@
     return out.replace(/^["「]+|["」]+$/g, "");
   }
 
+  function collectLookupQueries(args, limit) {
+    args = args || {};
+    limit = limit || LOOKUP_QUERY_LIMIT;
+    var raw = [];
+    if (typeof args.queries === "string") raw.push(args.queries);
+    else if (Array.isArray(args.queries)) raw = raw.concat(args.queries);
+    if (typeof args.query === "string") raw.push(args.query);
+    else if (Array.isArray(args.query)) raw = raw.concat(args.query);
+    var out = [];
+    var seen = {};
+    raw.forEach(function (item) {
+      String(item || "").split(/[,、]+/).forEach(function (part) {
+        var word = part.trim();
+        if (!word || seen[word] || out.length >= limit) return;
+        seen[word] = 1;
+        out.push(word);
+      });
+    });
+    return out;
+  }
+
+  function collectGrammarTopics(args) {
+    args = args || {};
+    var raw = [];
+    ["topics", "topic"].forEach(function (key) {
+      if (typeof args[key] === "string") raw.push(args[key]);
+      else if (Array.isArray(args[key])) raw = raw.concat(args[key]);
+    });
+    var out = [];
+    var seen = {};
+    raw.forEach(function (item) {
+      String(item || "").split(/[,、\s]+/).forEach(function (part) {
+        var topic = part.trim();
+        if (!topic || !GRAMMAR_TOPICS[topic] || seen[topic]) return;
+        seen[topic] = 1;
+        out.push(topic);
+      });
+    });
+    return out;
+  }
+
   function dispatchTool(name, args, lexicon) {
     args = args || {};
     if (name === "lookup_lexicon") {
-      var hits = lexicon.search(args.query || "", args.lang || "auto", 8);
-      return JSON.stringify({ query: args.query || "", hits: hits.map(formatEntry) });
+      var queries = collectLookupQueries(args);
+      if (!queries.length) return JSON.stringify({ query: "", hits: [] });
+      function pack(query) {
+        return { query: query, hits: lexicon.search(query, args.lang || "auto", 8).map(formatEntry) };
+      }
+      if (queries.length === 1) return JSON.stringify(pack(queries[0]));
+      return JSON.stringify({ results: queries.map(pack) });
     }
     if (name === "grammar_note") {
-      var note = GRAMMAR_TOPICS[args.topic];
-      if (!note) return JSON.stringify({ error: "unknown topic", topics: Object.keys(GRAMMAR_TOPICS) });
-      return JSON.stringify({ topic: args.topic, note: note });
+      var topics = collectGrammarTopics(args);
+      if (!topics.length) return JSON.stringify({ error: "unknown topic", topics: Object.keys(GRAMMAR_TOPICS) });
+      if (topics.length === 1) return JSON.stringify({ topic: topics[0], note: GRAMMAR_TOPICS[topics[0]] });
+      return JSON.stringify({ notes: topics.map(function (topic) { return { topic: topic, note: GRAMMAR_TOPICS[topic] }; }) });
     }
     return JSON.stringify({ error: "unknown tool: " + name });
   }
@@ -1346,6 +1397,10 @@
     GRAMMAR_BRIEF: GRAMMAR_BRIEF,
     GRAMMAR_TOPICS: GRAMMAR_TOPICS,
     CHAT_TOOLS: CHAT_TOOLS,
+    TOOL_ANSWER_NOW: TOOL_ANSWER_NOW,
+    TOOL_BATCH_RULE: TOOL_BATCH_RULE,
+    collectLookupQueries: collectLookupQueries,
+    collectGrammarTopics: collectGrammarTopics,
     retrieveLexiconContext: retrieveLexiconContext,
     retrieveLexiconEntries: retrieveLexiconEntries,
     dispatchTool: dispatchTool,

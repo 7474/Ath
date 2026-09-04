@@ -136,11 +136,11 @@
       { role: "system", content: BaronhEngine.systemPrompt(targetLang) },
       { role: "user", content: BaronhEngine.buildUserPrompt($("source-text").value, lexicon, local, targetLang) }
     ];
-    function chat(useTools) {
+    function chat(useTools, answerNow) {
       var body = { model: model, temperature: 0.2, messages: messages };
       if (useTools) {
         body.tools = BaronhEngine.CHAT_TOOLS;
-        body.tool_choice = "auto";
+        body.tool_choice = answerNow ? "none" : "auto";
       }
       return fetch(apiUrl("chat/completions"), {
         method: "POST",
@@ -156,12 +156,22 @@
         });
       });
     }
-    function loop(useTools, round) {
-      if (round > 6) return Promise.resolve(local.text);
-      return chat(useTools).then(function (data) {
+    function loop(useTools, round, answerNow) {
+      if (round > 3) return Promise.resolve(local.text);
+      return chat(useTools, answerNow).catch(function (err) {
+        if (answerNow && (/tool/i.test(err.message || "") || /400/.test(err.message || ""))) {
+          return chat(false, false);
+        }
+        throw err;
+      }).then(function (data) {
         var message = (((data.choices || [])[0]) || {}).message || {};
         var calls = message.tool_calls || [];
-        if (!calls.length) return BaronhEngine.cleanModelText(String(message.content || "").trim()) || local.text;
+        var content = BaronhEngine.cleanModelText(String(message.content || "").trim());
+        if (!calls.length) return content || local.text;
+        if (answerNow) {
+          if (content) return content;
+          return loop(false, round + 1, true);
+        }
         messages.push(message);
         calls.forEach(function (call) {
           var fn = call.function || {};
@@ -173,13 +183,14 @@
             content: BaronhEngine.dispatchTool(fn.name, args, lexicon)
           });
         });
-        return loop(useTools, round + 1);
+        messages.push({ role: "user", content: BaronhEngine.TOOL_ANSWER_NOW });
+        return loop(useTools, round + 1, true);
       });
     }
-    return loop(true, 1).catch(function (err) {
+    return loop(true, 1, false).catch(function (err) {
       if (/tool/i.test(err.message || "") || /400/.test(err.message || "")) {
         messages = messages.slice(0, 2);
-        return loop(false, 1);
+        return loop(false, 1, false);
       }
       throw err;
     }).then(function (text) {
@@ -193,7 +204,7 @@
             { role: "assistant", content: text },
             { role: "user", content: "次の語は辞書の語形でも発音転記でもありません: " + invented.join(", ") + "。造語せず書き直してください。普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。" }
           ]);
-          return loop(true, 1).catch(function () { return text; }).then(function (rewritten) {
+          return loop(true, 1, false).catch(function () { return text; }).then(function (rewritten) {
             rewritten = BaronhEngine.cleanModelText(rewritten) || text;
             var again = BaronhEngine.inventedBaronhForms(rewritten, lexicon, local);
             if (again.length <= invented.length) {
