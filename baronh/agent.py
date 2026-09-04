@@ -17,15 +17,21 @@ from baronh.lexicon import Entry, Lexicon
 from baronh.openai_backend import (
     DEFAULT_CHAT_MODEL,
     GRAMMAR_TOPICS,
+    HINT_LINE_LIMIT,
+    HINT_TOKEN_MAX,
     api_url,
     clean_model_text,
     collect_lookup_queries,
     collect_tool_strings,
     dispatch_tool as openai_dispatch_tool,
+    ensure_source_coverage,
+    format_numbered_source,
     invented_baronh_forms,
+    max_output_tokens,
     normalize_api_base,
     resolve_api_key,
     run_chat_tool_loop,
+    split_source_units,
     system_prompt as openai_system_prompt,
     _json_single_or_results,
 )
@@ -57,6 +63,7 @@ AGENT_BRIEF = """
 足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。
 1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。
 validate_baronh は訳文が書けてから1回だけ。
+複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。
 訳文だけを出力し、解説や引用符は付けないでください。
 """
 
@@ -65,6 +72,7 @@ FEW_SHOT_SYNONYM = """
 - 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.
 - 私はアーヴです → F'a bale.
 - ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）
+- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?
 """
 
 AGENT_TOOLS: list[dict[str, Any]] = [
@@ -258,6 +266,8 @@ def dictionary_hints(text: str, lexicon: Lexicon, source_lang: str) -> str:
     lines: list[str] = []
     seen: set[str] = set()
     for tok in _source_tokens(text, lexicon, source_lang):
+        if len(lines) >= HINT_LINE_LIMIT:
+            break
         word = tok.strip(".,!?;:。？！")
         if not word or word in seen or word in JA_PARTICLES:
             continue
@@ -277,7 +287,11 @@ def dictionary_hints(text: str, lexicon: Lexicon, source_lang: str) -> str:
         if looks_like_proper_noun(word):
             lines.append(f"- {word}: 固有名詞の可能性。transcribe_name で発音転記")
             continue
+        if len(word) > HINT_TOKEN_MAX:
+            continue
         lines.append(f"- {word}: 未登録。search_lexicon / find_synonyms で辞書内の言い換えを探す")
+        if len(lines) >= HINT_LINE_LIMIT:
+            break
     return "\n".join(lines) if lines else "(ヒントなし。search_lexicon で引いてください)"
 
 
@@ -372,15 +386,27 @@ def build_agent_user_prompt(
     source_lang: str,
     target_lang: str,
 ) -> str:
-    queries = [text, *_source_tokens(text, lexicon, source_lang)]
+    units = split_source_units(text)
+    numbered = format_numbered_source(units)
+    token_queries = [
+        tok.strip(".,!?;:。？！")
+        for tok in _source_tokens(text, lexicon, source_lang)
+        if tok.strip(".,!?;:。？！") and tok not in JA_PARTICLES and len(tok.strip(".,!?;:。？！")) <= HINT_TOKEN_MAX
+    ]
+    queries = [*units, *token_queries]
     retrieved = search_context(queries, lexicon, limit=16)
     hints = dictionary_hints(text, lexicon, source_lang)
+    coverage = (
+        "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
+        if len(units) > 1
+        else "訳文だけを出力してください。"
+    )
     return (
         f"翻訳方向: {source_lang} → {target_lang}\n"
-        f"原文:\n{text}\n\n"
+        f"原文（番号順に省略せず全文を訳す。要約禁止）:\n{numbered}\n\n"
         f"辞書ヒント（文ではない。訳は自分で組む）:\n{hints}\n\n"
         f"ベクトル検索した関連辞書（全文ではない）:\n{retrieved}\n\n"
-        "訳文だけを出力してください。規則ベースの下訳はありません。"
+        f"{coverage}規則ベースの下訳はありません。"
         "足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries にまとめて1回で引く。"
         "1語ずつの連続呼び出しは禁止。固有名詞は transcribe_name の names にまとめる。"
         "文法はシステムプロンプトにある。validate_baronh は訳文が書けてから1回だけ。"
@@ -451,43 +477,44 @@ def translate_agent(
     key = "no-key" if chat_once is not None else resolve_api_key(api_key, api_base=base)
     chat_model = model or os.environ.get("OPENAI_CHAT_MODEL") or DEFAULT_CHAT_MODEL
     user = build_agent_user_prompt(text, lexicon, source_lang=src, target_lang=tgt)
-    messages: list[dict[str, Any]] = [
+    seed: list[dict[str, Any]] = [
         {"role": "system", "content": agent_system_prompt(tgt)},
         {"role": "user", "content": user},
     ]
+    messages: list[dict[str, Any]] = list(seed)
     url = api_url("chat/completions", api_base=base)
     notes.append(f"モデル {chat_model}（{base}）。")
+    tokens = max_output_tokens(text)
+    units = split_source_units(text)
+    loop_rounds = max(max_rounds, min(8, 2 + max(1, len(units) // 4)))
 
     def _dispatch(name: str, arguments: dict[str, Any], lex: Lexicon) -> str:
         stub.analysis = trace.phonetic_local(source_lang=src, target_lang=tgt, source_text=text).analysis
         return dispatch_agent_tool(name, arguments, lex, local=stub, trace=trace)
 
-    try:
-        out, rounds = run_chat_tool_loop(
+    def _loop(active: list[dict[str, Any]], *, use_tools: bool, rounds: int) -> tuple[str, int]:
+        return run_chat_tool_loop(
             url=url,
             api_key=key,
             model=chat_model,
-            messages=list(messages),
+            messages=active,
             lexicon=lexicon,
-            use_tools=True,
-            max_rounds=max_rounds,
+            use_tools=use_tools,
+            max_rounds=rounds,
             tools=AGENT_TOOLS,
             dispatch=_dispatch,
             chat_once=chat_once,
+            source_text=text,
+            max_tokens=tokens,
         )
+
+    try:
+        out, rounds = _loop(messages, use_tools=True, rounds=loop_rounds)
         notes.append(f"チャット往復 {rounds} 回。")
     except RuntimeError as exc:
         if "tool" in str(exc).lower() or "400" in str(exc):
-            out, rounds = run_chat_tool_loop(
-                url=url,
-                api_key=key,
-                model=chat_model,
-                messages=list(messages),
-                lexicon=lexicon,
-                use_tools=False,
-                max_rounds=3,
-                chat_once=chat_once,
-            )
+            messages = list(seed)
+            out, rounds = _loop(messages, use_tools=False, rounds=3)
             notes.append(f"ツール非対応のため生成の単発に切り替え（{rounds} 回）。規則下訳には戻しません。")
         else:
             raise
@@ -495,6 +522,16 @@ def translate_agent(
     out = clean_model_text(out)
     if not out:
         raise RuntimeError("生成結果が空でした。規則ベースへはフォールバックしません。")
+
+    covered, extra = ensure_source_coverage(
+        text=text,
+        translated=out,
+        messages=messages,
+        run_loop=lambda active: _loop(active, use_tools=False, rounds=2),
+    )
+    if extra:
+        notes.append(f"未訳単位を同一セッションで追記（+{extra} 回）。")
+    out = covered
 
     stub = trace.phonetic_local(source_lang=src, target_lang=tgt, source_text=text)
     if tgt == "baronh":
@@ -504,27 +541,16 @@ def translate_agent(
             critique = (
                 f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
                 "造語せず、search_lexicon / find_synonyms の queries にまとめて辞書の類義語へ寄せて書き直してください。"
-                "規則ベースの下訳は無いので、自分で訳してください。訳文だけを出力してください。"
+                "規則ベースの下訳は無いので、自分で訳してください。"
+                "要約せず、次の原文を番号順に省略なく訳してください。訳文だけを出力してください。\n\n"
+                f"原文:\n{format_numbered_source(text)}"
             )
-            retry_messages = list(messages) + [
-                {"role": "assistant", "content": out},
-                {"role": "user", "content": critique},
-            ]
+            messages.append({"role": "assistant", "content": out})
+            messages.append({"role": "user", "content": critique})
             try:
-                rewritten, extra = run_chat_tool_loop(
-                    url=url,
-                    api_key=key,
-                    model=chat_model,
-                    messages=retry_messages,
-                    lexicon=lexicon,
-                    use_tools=True,
-                    max_rounds=4,
-                    tools=AGENT_TOOLS,
-                    dispatch=_dispatch,
-                    chat_once=chat_once,
-                )
+                rewritten, extra_rewrite = _loop(messages, use_tools=True, rounds=4)
                 rewritten = clean_model_text(rewritten)
-                notes.append(f"辞書にない語形 {', '.join(invented)} を検出し、再生成しました（+{extra} 回）。")
+                notes.append(f"辞書にない語形 {', '.join(invented)} を検出し、再生成しました（+{extra_rewrite} 回）。")
                 if rewritten:
                     again = invented_baronh_forms(rewritten, lexicon, local=stub, index=index)
                     if len(again) <= len(invented):

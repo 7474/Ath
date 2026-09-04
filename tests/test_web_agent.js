@@ -143,6 +143,9 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
       };
     }
     assert.strictEqual(payload.tool_choice, "none");
+    var last = payload.messages[payload.messages.length - 1].content;
+    assert.ok(last.indexOf("星たちの光を見ます") >= 0);
+    assert.ok(last.indexOf("省略せず") >= 0);
     return { choices: [{ message: { content: "gereulacr sairiac mire." } }] };
   }
 }).then(function (out) {
@@ -152,6 +155,56 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
   assert.ok(out.text.indexOf("mire") >= 0);
   assert.ok(calls >= 2);
   console.log("OK prebuilt=" + built + "ms light=" + light[0].entry.lemma + " translate=" + out.text);
+
+  var sample = "アーヴ語翻訳機\n\nリン・ジントって奴はあれでなかなか頭の出来がいい。なんたって故郷、俺らの、ついでにアーヴ語を読み書き出来るんだからな。よく分からん言葉を喋ってると別人に見えて困る。だからと言ってアーヴ語なんて覚える気はない、覚えられない訳じゃないぜ？　とは言えアーヴ語で何を喋ってるのか気にならんこともない。てな訳で機械に翻訳機を作って貰った。これでアーヴ語の読み書きは完璧だぜ。\n\nって、何喋ってるかは分からないじゃねーか！";
+  var units = engine.splitSourceUnits(sample);
+  assert.ok(units.length >= 8, "units " + units.length);
+  assert.strictEqual(units[0], "アーヴ語翻訳機");
+  var numbered = engine.formatNumberedSource(sample);
+  assert.ok(numbered.indexOf("[1]") >= 0);
+  assert.ok(engine.coverageIncomplete(sample, "ringhintoc a almee éni. murrautec farh."));
+  assert.ok(!engine.coverageIncomplete("私はアーヴです", "F'a bale."));
+  var prompt = engine.buildAgentUserPrompt(sample, lexicon, "ja", "baronh");
+  assert.ok(prompt.indexOf("[1]") >= 0);
+  assert.ok(prompt.indexOf("要約禁止") >= 0);
+
+  var longCalls = 0;
+  var longSrc = "私はアーヴです。分かりますか。";
+  return engine.translateAgent(longSrc, lexicon, {
+    sourceLang: "ja",
+    targetLang: "baronh",
+    chatOnce: function (payload) {
+      longCalls += 1;
+      var last = payload.messages[payload.messages.length - 1];
+      if (longCalls === 1) {
+        return {
+          choices: [{
+            message: {
+              tool_calls: [{
+                id: "1",
+                function: { name: "search_lexicon", arguments: JSON.stringify({ queries: ["アーヴ"] }) }
+              }]
+            }
+          }]
+        };
+      }
+      if (/未訳|欠けて/.test(last.content || "")) {
+        assert.ok(payload.messages.some(function (m) { return m.role === "tool"; }));
+        return { choices: [{ message: { content: "[1] F'a bale.\n[2] face sa?" } }] };
+      }
+      if (payload.tool_choice === "none") {
+        assert.ok((last.content || "").indexOf("[1]") >= 0);
+        assert.ok((last.content || "").indexOf("私はアーヴです") >= 0);
+        return { choices: [{ message: { content: "F'a bale." } }] };
+      }
+      return { choices: [{ message: { content: "[1] F'a bale.\n[2] face sa?" } }] };
+    }
+  }).then(function (longOut) {
+    assert.ok(longOut.text.indexOf("bale") >= 0);
+    assert.ok(longOut.text.indexOf("face") >= 0);
+    assert.ok(longCalls >= 3, "longCalls " + longCalls);
+    console.log("OK coverage=" + longOut.text.replace(/\n/g, " / "));
+  });
 }).catch(function (err) {
   console.error(err);
   process.exit(1);

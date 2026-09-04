@@ -80,7 +80,14 @@ FEW_SHOT_FROM_BARONH = """
 CLOSED_BARONH = frozenset({"a", "éü", "sa", "te", "le", "lo", "f'a", "d'a", "s'a"})
 
 LOOKUP_QUERY_LIMIT = 24
-TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、訳文だけを出力してください。"
+TOOL_ANSWER_NOW = (
+    "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。"
+    "要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。"
+    "訳文だけを出力してください。"
+)
+COVERAGE_ATTEMPTS = 2
+HINT_TOKEN_MAX = 20
+HINT_LINE_LIMIT = 40
 TOOL_BATCH_RULE = (
     "足りない語は各ツールの queries（固有名詞は names）にまとめて1回で引く。"
     "1語ずつの連続呼び出しは禁止。"
@@ -170,6 +177,162 @@ CHAT_TOOLS: list[dict[str, Any]] = [
         },
     },
 ]
+
+
+_NUMBERED_LINE = re.compile(r"^\[(\d+)\]\s*(.*)$")
+_NUMBERED_INLINE = re.compile(r"\[(\d+)\]\s*([^\[\]]+)")
+_SENTENCE_PIECE = re.compile(r".+?(?:[。！？!?]+|$)", re.S)
+_LATIN_SENTENCE = re.compile(r".+?(?:[.!?]+(?:\s+|$)|$)")
+
+
+def split_source_units(text: str) -> list[str]:
+    """段落・句点で原文を翻訳単位に割る。辞書トークン化は使わない。"""
+    raw = (text or "").strip()
+    if not raw:
+        return []
+    units: list[str] = []
+    for para in re.split(r"(?:\r?\n){2,}", raw):
+        para = para.strip()
+        if not para:
+            continue
+        pieces = [match.group(0).strip() for match in _SENTENCE_PIECE.finditer(para)]
+        for piece in pieces:
+            if not piece:
+                continue
+            if "\n" in piece and not re.search(r"[。！？!?]", piece):
+                units.extend(line.strip() for line in piece.splitlines() if line.strip())
+                continue
+            if not re.search(r"[。！？]", piece) and re.search(r"[.!?]", piece) and " " in piece:
+                units.extend(
+                    match.group(0).strip()
+                    for match in _LATIN_SENTENCE.finditer(piece)
+                    if match.group(0).strip()
+                )
+                continue
+            units.append(piece)
+    return units or [raw]
+
+
+def format_numbered_source(text: str | list[str]) -> str:
+    units = text if isinstance(text, list) else split_source_units(text)
+    if not units:
+        return (text if isinstance(text, str) else "") or ""
+    if len(units) == 1:
+        return units[0]
+    return "\n".join(f"[{index}] {unit}" for index, unit in enumerate(units, start=1))
+
+
+def tool_answer_now(source_text: str | None = None) -> str:
+    numbered = format_numbered_source(source_text) if source_text else ""
+    if numbered:
+        return f"{TOOL_ANSWER_NOW}\n\n原文:\n{numbered}"
+    return TOOL_ANSWER_NOW
+
+
+def max_output_tokens(text: str) -> int:
+    return min(8192, max(1024, len(text or "") * 8))
+
+
+def parse_numbered_map(text: str) -> dict[int, str]:
+    mapping: dict[int, str] = {}
+    for line in (text or "").splitlines():
+        match = _NUMBERED_LINE.match(line.strip())
+        if match:
+            mapping[int(match.group(1))] = match.group(2).strip()
+    if mapping:
+        return mapping
+    for match in _NUMBERED_INLINE.finditer(text or ""):
+        mapping[int(match.group(1))] = match.group(2).strip()
+    return mapping
+
+
+def strip_unit_numbers(text: str) -> str:
+    lines = [re.sub(r"^\[\d+\]\s*", "", line) for line in (text or "").splitlines()]
+    out = "\n".join(lines).strip()
+    return re.sub(r"\[\d+\]\s*", "", out).strip()
+
+
+def join_numbered_units(mapping: dict[int, str], count: int) -> str:
+    parts = [(mapping.get(index) or "").strip() for index in range(1, count + 1)]
+    return "\n".join(part for part in parts if part)
+
+
+def missing_unit_indices(mapping: dict[int, str], count: int) -> list[int]:
+    return [index for index in range(1, count + 1) if not (mapping.get(index) or "").strip()]
+
+
+def coverage_incomplete(source_text: str, translated: str) -> bool:
+    units = split_source_units(source_text)
+    if len(units) <= 1:
+        return False
+    mapping = parse_numbered_map(translated)
+    if mapping:
+        return bool(missing_unit_indices(mapping, len(units)))
+    return len(split_source_units(translated)) < len(units)
+
+
+def coverage_nudge(source_text: str, translated: str) -> str:
+    units = split_source_units(source_text)
+    mapping = parse_numbered_map(translated)
+    missing = missing_unit_indices(mapping, len(units)) if mapping else list(range(1, len(units) + 1))
+    listed = "\n".join(f"[{index}] {units[index - 1]}" for index in missing)
+    return (
+        "訳が原文より短い、または番号が欠けています。要約せず、次の未訳単位を同じ番号で訳してください。"
+        "既訳は繰り返さなくてよいです。訳文だけを出力してください。\n\n"
+        f"{listed}"
+    )
+
+
+def merge_translation(source_text: str, previous: str, extra: str) -> str:
+    units = split_source_units(source_text)
+    count = len(units)
+    extra_map = parse_numbered_map(extra)
+    prev_map = parse_numbered_map(previous)
+    if extra_map and not missing_unit_indices(extra_map, count):
+        return join_numbered_units(extra_map, count)
+    merged = dict(prev_map)
+    merged.update({key: value for key, value in extra_map.items() if str(value).strip()})
+    if merged:
+        return "\n".join(
+            f"[{index}] {merged[index]}" for index in range(1, count + 1) if index in merged
+        )
+    return extra or previous
+
+
+def finalize_translation(source_text: str, translated: str) -> str:
+    units = split_source_units(source_text)
+    mapping = parse_numbered_map(translated)
+    if mapping and len(units) > 1:
+        joined = join_numbered_units(mapping, len(units))
+        if joined:
+            return joined
+        return strip_unit_numbers(translated)
+    return strip_unit_numbers(translated) if mapping else (translated or "")
+
+
+def ensure_source_coverage(
+    *,
+    text: str,
+    translated: str,
+    messages: list[dict[str, Any]],
+    run_loop: Any,
+    max_attempts: int = COVERAGE_ATTEMPTS,
+) -> tuple[str, int]:
+    """同一セッションで未訳単位を追記させる。ツール履歴は残す。"""
+    extra = 0
+    current = translated or ""
+    for _ in range(max_attempts):
+        if not coverage_incomplete(text, current):
+            return finalize_translation(text, current), extra
+        messages.append({"role": "assistant", "content": current})
+        messages.append({"role": "user", "content": coverage_nudge(text, current)})
+        nxt, rounds = run_loop(messages)
+        extra += rounds
+        nxt = clean_model_text(nxt)
+        if not nxt:
+            break
+        current = merge_translation(text, current, nxt)
+    return finalize_translation(text, current), extra
 
 
 def normalize_api_base(url: str | None = None) -> str:
@@ -541,6 +704,8 @@ def run_chat_tool_loop(
     tools: list[dict[str, Any]] | None = None,
     dispatch: Any = None,
     chat_once: Any = None,
+    source_text: str | None = None,
+    max_tokens: int | None = None,
 ) -> tuple[str, int]:
     """Chat Completions のツール往復。1回のツール応答のあと tool_choice=none で訳文へ進む。"""
     rounds = 0
@@ -548,6 +713,8 @@ def run_chat_tool_loop(
     chat_fn = chat_once or (lambda payload: _chat_once(url, api_key, payload))
     allow_tools = use_tools
     saw_tools = False
+    last_content = ""
+    limit = max_tokens
     for _ in range(max_rounds):
         rounds += 1
         payload: dict[str, Any] = {
@@ -555,6 +722,8 @@ def run_chat_tool_loop(
             "temperature": 0.2,
             "messages": messages,
         }
+        if limit:
+            payload["max_tokens"] = limit
         if allow_tools:
             payload["tools"] = tools if tools is not None else CHAT_TOOLS
             payload["tool_choice"] = "none" if saw_tools else "auto"
@@ -563,12 +732,17 @@ def run_chat_tool_loop(
         except RuntimeError as exc:
             if allow_tools and saw_tools and ("tool" in str(exc).lower() or "400" in str(exc)):
                 allow_tools = False
-                data = chat_fn({"model": model, "temperature": 0.2, "messages": messages})
+                fallback: dict[str, Any] = {"model": model, "temperature": 0.2, "messages": messages}
+                if limit:
+                    fallback["max_tokens"] = limit
+                data = chat_fn(fallback)
             else:
                 raise
         message = (data.get("choices") or [{}])[0].get("message") or {}
         tool_calls = message.get("tool_calls") or []
         content = (message.get("content") or "").strip()
+        if content:
+            last_content = content
         if not tool_calls:
             return content, rounds
         if saw_tools:
@@ -592,9 +766,9 @@ def run_chat_tool_loop(
                     "content": result,
                 }
             )
-        messages.append({"role": "user", "content": TOOL_ANSWER_NOW})
+        messages.append({"role": "user", "content": tool_answer_now(source_text)})
         saw_tools = True
-    return "", rounds
+    return last_content, rounds
 
 
 def _run_tool_loop(
@@ -606,6 +780,8 @@ def _run_tool_loop(
     lexicon: Lexicon,
     use_tools: bool,
     max_rounds: int = 3,
+    source_text: str | None = None,
+    max_tokens: int | None = None,
 ) -> tuple[str, int]:
     return run_chat_tool_loop(
         url=url,
@@ -615,6 +791,8 @@ def _run_tool_loop(
         lexicon=lexicon,
         use_tools=use_tools,
         max_rounds=max_rounds,
+        source_text=source_text,
+        max_tokens=max_tokens,
     )
 
 
@@ -633,25 +811,42 @@ def translate_openai(
     key = resolve_api_key(api_key, api_base=base)
     local = translate(text, lexicon, source_lang=source_lang, target_lang=target_lang)
     user = build_user_prompt(text, lexicon, local=local, target_lang=target_lang)
-    messages: list[dict[str, Any]] = [
+    seed: list[dict[str, Any]] = [
         {"role": "system", "content": system_prompt(target_lang)},
         {"role": "user", "content": user},
     ]
+    messages = list(seed)
     url = api_url("chat/completions", api_base=base)
+    tokens = max_output_tokens(text)
     notes = [
         f"OpenAI 互換 Chat Completions（{base}）。辞書は全文スキャンして関連語だけ渡し、生成後に語形を検証します。",
     ]
     used_tools = False
     try:
         out, rounds = _run_tool_loop(
-            url=url, api_key=key, model=model, messages=list(messages), lexicon=lexicon, use_tools=use_tools
+            url=url,
+            api_key=key,
+            model=model,
+            messages=messages,
+            lexicon=lexicon,
+            use_tools=use_tools,
+            source_text=text,
+            max_tokens=tokens,
         )
         used_tools = use_tools and rounds > 1
         notes.append(f"チャット往復 {rounds} 回。")
     except RuntimeError as exc:
         if use_tools and ("tool" in str(exc).lower() or "400" in str(exc)):
+            messages = list(seed)
             out, rounds = _run_tool_loop(
-                url=url, api_key=key, model=model, messages=list(messages), lexicon=lexicon, use_tools=False
+                url=url,
+                api_key=key,
+                model=model,
+                messages=messages,
+                lexicon=lexicon,
+                use_tools=False,
+                source_text=text,
+                max_tokens=tokens,
             )
             notes.append(f"ツール非対応のため単発に切り替え（{rounds} 回）。")
         else:
@@ -670,21 +865,23 @@ def translate_openai(
                 f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
                 "造語せず、関連辞書または lookup_lexicon の見出し・活用形だけで書き直してください。"
                 "必要なら queries にまとめて1回で引く。"
-                "普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。"
+                "普通名詞が見つからなければ原文の語を残してください。"
+                "要約せず、次の原文を省略なく訳してください。訳文だけを出力してください。\n\n"
+                f"原文:\n{format_numbered_source(text)}"
             )
-            retry_messages = list(messages) + [
-                {"role": "assistant", "content": out},
-                {"role": "user", "content": critique},
-            ]
+            messages.append({"role": "assistant", "content": out})
+            messages.append({"role": "user", "content": critique})
             try:
                 rewritten, extra = _run_tool_loop(
                     url=url,
                     api_key=key,
                     model=model,
-                    messages=retry_messages,
+                    messages=messages,
                     lexicon=lexicon,
                     use_tools=use_tools,
                     max_rounds=3,
+                    source_text=text,
+                    max_tokens=tokens,
                 )
                 rewritten = clean_model_text(rewritten)
                 notes.append(f"辞書にない語形 {', '.join(invented)} を検出し、再生成しました（+{extra} 回）。")
