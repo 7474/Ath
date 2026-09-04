@@ -49,21 +49,35 @@ class SiteStructureTest(unittest.TestCase):
 
     def test_ath_demo_leads_with_empire_name(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        anthem = (
+            "F'a rume catmé gereulacr, Ullote izomél, Lanote dige césati, "
+            "Lüamse nahainlace. F'a Bale, scuréle Frybarer. Frybarec éü, "
+            "Sicé léssote dar scurér alsaima. Farer Léssoth, R'a sotle botnasa "
+            "dari éïrace lona. F'a flare rycmal gereulacr, Sausnée surepuce, "
+            "Issae dade lo fade, Froce tymbaidel gol. F'a Bale, carsarh gereulacr. "
+            "Gereulach éü, Sicé dozzote dar carsarr factina. Farer dozzoth, "
+            "R'a sotle nilora rÿal dar üaiponéra. Frybarec éü, gereulach éü, "
+            "Farh a lomi zacsantto loréïl."
+        )
         self.assertNotIn("Hero text", demo)
         self.assertNotIn("Sample text (romanised Ath phonetics)", demo)
+        self.assertNotIn("lotr atosr nea rhoibhe", demo)
+        self.assertNotIn("fhemainr tlaicr suanaer", demo)
         self.assertIn("Humankind Empire of Abh", demo)
-        self.assertIn("lotr atosr nea rhoibhe", demo)
-        self.assertIn("fhemainr tlaicr suanaer", demo)
+        self.assertIn(anthem, demo)
+        self.assertEqual(demo.count('class="aarth-hero"'), 1)
         main_at = demo.find("<main")
         title_at = demo.find("Humankind Empire of Abh")
-        anthem_at = demo.find("lotr atosr nea rhoibhe")
+        anthem_at = demo.find("F'a rume catmé gereulacr")
+        close_at = demo.find("Farh a lomi zacsantto loréïl.")
         h1_at = demo.find("<h1>")
         self.assertGreater(main_at, 0)
         self.assertGreater(title_at, main_at)
         self.assertGreater(anthem_at, title_at)
-        self.assertGreater(h1_at, anthem_at)
-        self.assertEqual(demo.count("lotr atosr nea rhoibhe"), 1)
-        self.assertEqual(demo.count("fhemainr tlaicr suanaer"), 1)
+        self.assertGreater(close_at, anthem_at)
+        self.assertGreater(h1_at, close_at)
+        hero_html = demo[demo.find('<p class="aarth-hero">') : h1_at]
+        self.assertNotIn("<p class=\"aarth-hero\">", hero_html[1:])
 
     def test_translator_mentions_server_agent(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")

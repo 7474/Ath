@@ -102,7 +102,7 @@
       overflow-x: auto;
     }
 
-    /* First view: translatable nation name + Ath anthem body. */
+    /* First view: nation name + the imperial anthem as one Ath block. */
     .hero {
       margin: 0 0 1.2rem;
       padding: .4rem 0 1.4rem;
@@ -119,16 +119,12 @@
 
     .aarth-hero {
       font-family: 'Aarth', Georgia, serif;
-      font-size: clamp(1.55rem, 5.2vw, 2.7rem);
-      line-height: 1.45;
-      letter-spacing: .06em;
+      font-size: clamp(1.15rem, 2.6vw, 1.65rem);
+      line-height: 1.7;
+      letter-spacing: .05em;
       color: #1a1a1a;
       overflow-wrap: anywhere;
-      text-wrap: balance;
-    }
-
-    .aarth-hero + .aarth-hero {
-      margin-top: .55rem;
+      text-transform: lowercase;
     }
 
     /* Alphabet table */
@@ -351,11 +347,10 @@
   </header>
 
   <main class="page-content">
-  <!-- First view: nation name + anthem body (moved from sample text). -->
+  <!-- First view: nation name + the full imperial anthem, unsplit. -->
   <section class="hero" aria-label="Humankind Empire of Abh">
     <h2 class="hero-title">Humankind Empire of Abh</h2>
-    <p class="aarth-hero">lotr atosr nea rhoibhe</p>
-    <p class="aarth-hero">fhemainr tlaicr suanaer</p>
+    <p class="aarth-hero">F'a rume catmé gereulacr, Ullote izomél, Lanote dige césati, Lüamse nahainlace. F'a Bale, scuréle Frybarer. Frybarec éü, Sicé léssote dar scurér alsaima. Farer Léssoth, R'a sotle botnasa dari éïrace lona. F'a flare rycmal gereulacr, Sausnée surepuce, Issae dade lo fade, Froce tymbaidel gol. F'a Bale, carsarh gereulacr. Gereulach éü, Sicé dozzote dar carsarr factina. Farer dozzoth, R'a sotle nilora rÿal dar üaiponéra. Frybarec éü, gereulach éü, Farh a lomi zacsantto loréïl.</p>
   </section>
 
   <h1>Ath (Aarth) — glyph demo</h1>
