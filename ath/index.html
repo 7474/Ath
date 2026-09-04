@@ -67,8 +67,32 @@
     body.translated .aarth-hero,
     body.translated .alpha-cell .glyph,
     body.translated .size-scale p,
-    body.translated .aarth-para {
+    body.translated .aarth-para,
+    body.translated .ath-keys {
       font-family: 'Aarth', serif;
+    }
+
+    /* A / I / E are digraph keys (ai / au / eu). Never lowercase them. */
+    .ath-keys {
+      font-family: 'Aarth', serif;
+      letter-spacing: .04em;
+    }
+
+    body:not(.translated) .page-content .ath-keys {
+      text-transform: none;
+    }
+
+    body:not(.translated) .page-content .source-note,
+    body.translated .source-note {
+      font-family: system-ui, sans-serif;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    body:not(.translated) .page-content .source-note code,
+    body.translated .source-note code {
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+      text-transform: none;
     }
 
     body.translated .alpha-cell .label,
@@ -239,6 +263,48 @@
       line-height: 1.6;
       letter-spacing: .04em;
     }
+
+    .empire-official {
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      line-height: 1.35;
+      margin-bottom: .35rem;
+    }
+
+    .empire-short {
+      font-size: 1.35rem;
+      color: #333;
+      margin-bottom: 1.2rem;
+    }
+
+    .anthem {
+      font-size: 1.45rem;
+      line-height: 1.75;
+    }
+
+    .anthem .stanza {
+      margin: 0;
+    }
+
+    .anthem .stanza + .stanza {
+      margin-top: 1.15rem;
+    }
+
+    .anthem p {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .source-note {
+      margin-top: .9rem;
+      font-size: .9rem;
+      line-height: 1.6;
+      color: #555;
+      font-family: system-ui, sans-serif;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .source-note a { color: #1a5fb4; }
 
     code {
       background: #f0f0f0;
@@ -470,12 +536,48 @@
     </div>
   </section>
 
-  <!-- Sample sentence -->
-  <section>
-    <h2>Sample text (romanised Ath phonetics)</h2>
+  <!-- Humankind Empire of Abh: official name + imperial anthem in Ath keys -->
+  <section id="frybarec">
+    <h2>Humankind Empire of Abh</h2>
     <div class="demo-block">
-      <p class="aarth-para">lotr atosr nea rhoibhe</p>
-      <p class="aarth-para" style="margin-top:.8rem">fhemainr tlaicr suanaer</p>
+      <p class="ath-keys empire-official" lang="ath">frybarec gloer gor bari</p>
+      <p class="ath-keys empire-short" lang="ath">bar frybarec</p>
+      <div class="ath-keys anthem" lang="ath">
+        <div class="stanza">
+          <p>fa rume catmé gerElacr</p>
+          <p>ullote izomél</p>
+          <p>lanote dige césati</p>
+          <p>lüamse nahAnlace</p>
+          <p>fa bale scuréle frybarer</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü</p>
+          <p>sicé léssote dar scurér alsAma</p>
+          <p>farer léssoth</p>
+          <p>ra sotle botnasa dari éïrace lona</p>
+        </div>
+        <div class="stanza">
+          <p>fa flare rycmal gerElacr</p>
+          <p>sIsnée surepuce</p>
+          <p>issae dade lo fade</p>
+          <p>froce tymbAdel gol</p>
+          <p>fa bale carsarh gerElacr</p>
+        </div>
+        <div class="stanza">
+          <p>gerElach éü</p>
+          <p>sicé dozzote dar carsarr factina</p>
+          <p>farer dozzoth</p>
+          <p>ra sotle nilora rÿal dar üAponéra</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü gerElach éü</p>
+          <p>farh a lomi zacsantto loréïl</p>
+        </div>
+      </div>
+      <p class="source-note">
+        典拠:
+        <a href="https://www.chikyukotobamura.org/muse/wr_fiction_5.html">地球ことば村「アース（文字）」</a>
+      </p>
     </div>
   </section>
 
