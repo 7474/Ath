@@ -1,4 +1,6 @@
-/* アーヴ語 規則ベース翻訳エンジン（Python baronh パッケージと対になる） */
+/* アーヴ語 規則ベース翻訳エンジン（Python baronh パッケージと対になる）。
+ * 生成 AI 経路の特性と制約は baronh/ARCHITECTURE.md を参照。
+ */
 (function (global) {
   "use strict";
 

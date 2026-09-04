@@ -1,4 +1,7 @@
-"""辞書エントリと読み込み。"""
+"""辞書エントリと読み込み。
+
+検索の点数付け・表記ゆれ・部分一致をしない理由は baronh/ARCHITECTURE.md を参照。
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,7 @@
-"""OpenAI 互換 Chat Completions / TTS。キーとベース URL は引数または環境変数。"""
+"""OpenAI 互換 Chat Completions / TTS。キーとベース URL は引数または環境変数。
+
+アーキテクチャ上の特性と制約は baronh/ARCHITECTURE.md を参照。
+"""
 
 from __future__ import annotations
 
