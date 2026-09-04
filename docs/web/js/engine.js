@@ -413,9 +413,9 @@
     if (text.indexOf("(") >= 0) {
       aliases.push(text.split("(")[0]);
       var inner = text.slice(text.indexOf("(") + 1, text.lastIndexOf(")"));
-      if (inner) aliases.push(inner);
+      if (inner && inner.indexOf("特に") !== 0) aliases.push(inner);
     }
-    ["/", "・", "。", "、"].forEach(function (sep) {
+    ["/", "・", "。", "、", ";", "；"].forEach(function (sep) {
       var expanded = [];
       aliases.forEach(function (alias) {
         alias.split(sep).forEach(function (part) {
@@ -425,7 +425,19 @@
       });
       aliases = expanded;
     });
-    return aliases;
+    var cleaned = [];
+    var seen = {};
+    aliases.forEach(function (alias) {
+      alias = String(alias || "").replace(/^[ .。;；]+|[ .。;；]+$/g, "");
+      if (!alias) return;
+      if (alias.indexOf("特に") === 0 || /^\(?特に/.test(alias)) return;
+      if (/^(pl\.|rüé|gen\.|nom\.|acc\.)/i.test(alias)) return;
+      var key = norm(alias);
+      if (seen[key]) return;
+      seen[key] = 1;
+      cleaned.push(alias);
+    });
+    return cleaned;
   }
 
   function Lexicon(entries) {
@@ -1430,6 +1442,11 @@
         conjugate(entry, "indicative", "progressive", []),
         conjugate(entry, "imperative", "indefinite", [])
       ].join("/");
+    }
+    if (entry.notes) {
+      var note = String(entry.notes).replace(/\s+/g, " ").trim();
+      if (note.length > 80) note = note.slice(0, 79) + "…";
+      line += " notes:" + note;
     }
     return line;
   }

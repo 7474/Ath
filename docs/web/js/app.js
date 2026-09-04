@@ -382,7 +382,8 @@
       var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
       if (vec.length) {
         blocks.push("ベクトル検索:\n" + vec.map(function (hit) {
-          return hit.entry.lemma + "  [" + hit.entry.pos + "]  " + hit.entry.gloss_ja +
+          var extra = hit.entry.notes ? "  〔" + String(hit.entry.notes).replace(/\s+/g, " ").trim() + "〕" : "";
+          return hit.entry.lemma + "  [" + hit.entry.pos + "]  " + hit.entry.gloss_ja + extra +
             "  (" + hit.score.toFixed(3) + ")";
         }).join("\n"));
       }
