@@ -332,6 +332,7 @@
     $("source-lang").value = ex[0];
     $("target-lang").value = ex[1];
     $("source-text").value = ex[2];
+    syncAthScript();
     runTranslate();
   });
   $("swap-langs").addEventListener("click", function () {
