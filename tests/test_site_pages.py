@@ -15,6 +15,20 @@ class SiteStructureTest(unittest.TestCase):
             path = ROOT / rel
             self.assertTrue(path.is_file(), f"missing {rel}")
 
+    def test_pages_link_favicon(self):
+        pages = {
+            "index.html": ("favicon.ico", "icons/favicon-32.png", "icons/favicon-16.png", "icons/apple-touch-icon.png"),
+            "ath/index.html": ("../favicon.ico", "../icons/favicon-32.png", "../icons/favicon-16.png", "../icons/apple-touch-icon.png"),
+            "web/index.html": ("../favicon.ico", "../icons/favicon-32.png", "../icons/favicon-16.png", "../icons/apple-touch-icon.png"),
+        }
+        for rel, hrefs in pages.items():
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            with self.subTest(page=rel):
+                self.assertIn('rel="icon"', text)
+                self.assertIn('rel="apple-touch-icon"', text)
+                for href in hrefs:
+                    self.assertIn(f'href="{href}"', text)
+
     def test_shared_navigation(self):
         pages = {
             "index.html": ("./", "ath/", "web/"),
@@ -174,6 +188,8 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ath/**", workflow)
         self.assertIn("cp ath/index.html docs/ath/index.html", workflow)
         self.assertIn("cp site.css docs/site.css", workflow)
+        self.assertIn("cp favicon.ico docs/favicon.ico", workflow)
+        self.assertIn("cp -r icons docs/icons", workflow)
         self.assertIn("python3 -m baronh export-web --out docs/web/data", workflow)
         self.assertIn("vectors.bin", workflow)
         self.assertIn("vectors.json", workflow)
