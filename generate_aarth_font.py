@@ -964,8 +964,13 @@ def main():
             (box, ALPHABET_NAMES[i] if i < len(ALPHABET_NAMES) else str(i))
             for i, box in enumerate(alphabet_boxes)
         ]
+        if digit_boxes and not args.digits_image:
+            labeled += [
+                (box, DIGIT_NAMES[i] if i < len(DIGIT_NAMES) else str(i))
+                for i, box in enumerate(digit_boxes)
+            ]
         _write_debug_boxes(binary, labeled, output_dir / "debug_boxes.png")
-        if digit_boxes:
+        if args.digits_image and digit_boxes:
             d_labeled = [
                 (box, DIGIT_NAMES[i] if i < len(DIGIT_NAMES) else str(i))
                 for i, box in enumerate(digit_boxes)
