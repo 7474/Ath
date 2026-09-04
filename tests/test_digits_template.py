@@ -152,6 +152,20 @@ class DigitGridDetectionTest(unittest.TestCase):
         one = digits[1]
         self.assertGreater(one[2], one[3] * 2)
 
+    def test_painted_tron_zero_keeps_counters(self):
+        rasters = aarth.load_tron_digit_rasters()
+        self.assertIsNotNone(rasters)
+        self.assertEqual(len(rasters), 10)
+        gray = rasters[0][:, :, 0]
+        ink = gray < 128
+        h, w = gray.shape
+        self.assertTrue(ink.any())
+        self.assertFalse(ink[int(h * 0.28), w // 2], msg="upper counter must stay open")
+        self.assertFalse(ink[int(h * 0.72), w // 2], msg="lower counter must stay open")
+        # Midline bar of Ath 1 must not fill the whole cell.
+        one = rasters[1][:, :, 0] < 128
+        self.assertLess(one.sum(), one.size * 0.15)
+
     def test_horizontal_bar_survives_letter_size_filter(self):
         boxes = [(0, 0, 20, 25), (30, 10, 18, 2)]
         kept = aarth._letter_sized_boxes(boxes)
@@ -222,6 +236,8 @@ class DigitsInFontTest(unittest.TestCase):
                 "font generation from filled template failed:\n"
                 f"{completed.stdout}\n{completed.stderr}"
             )
+        from fontTools.pens.boundsPen import BoundsPen
+        from fontTools.pens.recordingPen import RecordingPen
         from fontTools.ttLib import TTFont
 
         font = TTFont(work / "aarth.ttf")
@@ -238,6 +254,18 @@ class DigitsInFontTest(unittest.TestCase):
         self.assertIn("Morioka", joined)
         self.assertIn("Akai", joined)
         self.assertIn("CC BY-SA 3.0", joined)
+
+        charstrings = font["CFF "].cff.topDictIndex[0].CharStrings
+        one_pen = BoundsPen(None)
+        charstrings["one"].draw(one_pen)
+        _x0, y0, _x1, y1 = one_pen.bounds
+        self.assertGreater(y0, 180, msg="Ath 1 is a midline bar, not an underscore")
+        self.assertLess(y1, 520)
+
+        rec = RecordingPen()
+        charstrings["zero"].draw(rec)
+        n_moves = sum(1 for op, _args in rec.value if op == "moveTo")
+        self.assertGreaterEqual(n_moves, 2, msg="Ath 0 must keep its counters")
 
 
 if __name__ == "__main__":

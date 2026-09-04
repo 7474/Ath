@@ -112,7 +112,10 @@ SOURCE_URL = (
 REPO_ROOT = Path(__file__).resolve().parent
 DIGIT_RASTER_DIR = REPO_ROOT / "templates" / "digits"
 FILLED_TEMPLATE = REPO_ROOT / "templates" / "ath_source_filled.png"
-DIGIT_BITMAP_SCALE = 6
+# Restroke 16×16 TRON bitmaps onto this canvas so potrace sees letter-weight
+# strokes and open counters instead of 1-px pixel cubes.
+DIGIT_PAINT_SIZE = 256
+DIGIT_PAINT_STROKE = 18
 FONT_LICENSE = (
     "CC BY-SA 3.0. Ath letters designed by Hiroyuki Morioka; "
     "numerals designed by Takami Akai. Digit rasters: "
@@ -570,7 +573,13 @@ def parse_svg_path(svg_file: Path) -> str | None:
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
-def layout_glyph(svg_d: str, target_height: float, lsb: float, scale: float | None = None):
+def layout_glyph(
+    svg_d: str,
+    target_height: float,
+    lsb: float,
+    scale: float | None = None,
+    frame_y_min: float | None = None,
+):
     """
     Fit a potrace SVG path to the font's em, without drawing yet.
 
@@ -583,6 +592,10 @@ def layout_glyph(svg_d: str, target_height: float, lsb: float, scale: float | No
     Passing a shared ``scale`` (from the tallest outline) keeps letter bodies
     consistent so overlines/umlauts sit above the cap rather than shrinking
     the whole glyph.
+
+    ``frame_y_min`` (potrace space) pins the crop's bottom to the baseline
+    instead of the outline's own y_min. Numerals use this so a midline bar
+    (Ath 1) and a short square (Ath 9) keep their seat in the cell.
 
     Returns ``(recording_pen, affine, advance)`` — replaying ``recording_pen``
     through ``TransformPen(target_pen, affine)`` places the glyph on the
@@ -608,8 +621,9 @@ def layout_glyph(svg_d: str, target_height: float, lsb: float, scale: float | No
 
     if scale is None:
         scale = target_height / raw_h
-    # font_x = scale*x + (lsb - scale*x_min);  font_y = scale*y - scale*y_min
-    affine = (scale, 0.0, 0.0, scale, lsb - scale * x_min, -scale * y_min)
+    y_anchor = y_min if frame_y_min is None else frame_y_min
+    # font_x = scale*x + (lsb - scale*x_min);  font_y = scale*y - scale*y_anchor
+    affine = (scale, 0.0, 0.0, scale, lsb - scale * x_min, -scale * y_anchor)
     advance = int(round(raw_w * scale)) + 2 * int(lsb)
     return rec, affine, advance
 
@@ -638,10 +652,11 @@ def build_font(glyph_data: list[dict], output_dir: Path):
 
     glyph_names = [".notdef"] + [g["name"] for g in glyph_data]
 
-    # Measure every outline so we can pick one scale for the whole font.
+    # Measure letter outlines so we can pick one scale for the whole font.
+    # Skip framed numerals — a midline bar's tight height must not dominate.
     max_raw_h = 0.0
     for g in glyph_data:
-        if not g["svg_d"]:
+        if not g["svg_d"] or g.get("lock_frame"):
             continue
         rec = RecordingPen()
         try:
@@ -677,7 +692,13 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         layout = None
         if g["svg_d"]:
             try:
-                layout = layout_glyph(g["svg_d"], CAP_HEIGHT, GLYPH_LSB, scale=shared_scale)
+                layout = layout_glyph(
+                    g["svg_d"],
+                    CAP_HEIGHT,
+                    GLYPH_LSB,
+                    scale=shared_scale,
+                    frame_y_min=0.0 if g.get("lock_frame") else None,
+                )
             except Exception as exc:
                 print(f"  [warn] layout failed for {g['name']}: {exc}")
 
@@ -798,6 +819,59 @@ def _draw_corner_ticks(draw, box_xy, tick: int = 14) -> None:
     draw.line((x1 - tick, y1, x1, y1), fill=GUIDE_OUTLINE, width=2)
 
 
+def frame_digit_boxes(boxes: list) -> list:
+    """Expand each numeral box to its row's full height.
+
+    Ath 1 is a midline bar and Ath 9 is a short square; tight bboxes would
+    drop them onto the baseline. Sharing the row's y-range keeps the seat.
+    """
+    if not boxes:
+        return boxes
+    framed = []
+    for row in group_boxes_into_rows(boxes):
+        top = min(b[1] for b in row)
+        height = max(b[1] + b[3] for b in row) - top
+        for x, _y, w, _h in row:
+            framed.append((x, top, w, height))
+    return framed
+
+
+def paint_tron_ink(
+    binary_small: np.ndarray,
+    size: int = DIGIT_PAINT_SIZE,
+    stroke: int = DIGIT_PAINT_STROKE,
+) -> np.ndarray:
+    """Paint a 16×16 TRON numeral as a smooth monolinear RGB glyph.
+
+    Each ink pixel becomes a round-capped 4-connected stroke so counters
+    stay open and the weight matches letter bodies after cell fitting.
+    """
+    from PIL import ImageDraw
+
+    ink = binary_small < 128
+    h, w = ink.shape
+    canvas = Image.new("L", (size, size), 255)
+    draw = ImageDraw.Draw(canvas)
+    sx = size / w
+    sy = size / h
+    r = max(1.0, stroke / 2.0)
+    yy, xx = np.nonzero(ink)
+    for y, x in zip(yy, xx):
+        cx = (x + 0.5) * sx
+        cy = (y + 0.5) * sy
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=0)
+        for dx, dy in ((1, 0), (0, 1), (1, 1), (1, -1)):
+            nx, ny = x + dx, y + dy
+            if 0 <= ny < h and 0 <= nx < w and ink[ny, nx]:
+                draw.line(
+                    (cx, cy, (nx + 0.5) * sx, (ny + 0.5) * sy),
+                    fill=0,
+                    width=int(stroke),
+                )
+    arr = np.array(canvas)
+    return np.stack([arr, arr, arr], axis=-1)
+
+
 def default_digit_raster_dir() -> Path:
     return DIGIT_RASTER_DIR
 
@@ -812,19 +886,23 @@ def load_tron_digit_rasters(digits_dir: Path | None = None) -> list[np.ndarray] 
     for path in paths:
         with Image.open(path) as im:
             gray = np.array(im.convert("L"))
-        rgb = np.full((*gray.shape, 3), 255, dtype=np.uint8)
-        rgb[gray < 128] = 0
-        rasters.append(rgb)
+        rasters.append(paint_tron_ink(gray))
     return rasters
 
 
-def _paste_bitmap_in_cell(
-    canvas, glyph_rgb: np.ndarray, cell_xy, scale: int = DIGIT_BITMAP_SCALE,
-) -> None:
-    """Paste a small bitmap (Ath numerals) with integer nearest-neighbor scale."""
+def _paste_bitmap_in_cell(canvas, glyph_rgb: np.ndarray, cell_xy) -> None:
+    """Fit a painted numeral into the cell's glyph area (same box as letters)."""
     glyph = Image.fromarray(glyph_rgb)
-    new_size = (max(1, glyph.width * scale), max(1, glyph.height * scale))
-    glyph = glyph.resize(new_size, Image.Resampling.NEAREST)
+    inner_w = CELL_W - 16
+    inner_h = GLYPH_AREA_H - 16
+    gw, gh = glyph.size
+    scale = min(inner_w / gw, inner_h / gh)
+    new_size = (max(1, int(round(gw * scale))), max(1, int(round(gh * scale))))
+    glyph = glyph.resize(new_size, Image.Resampling.BILINEAR)
+    gray = np.array(glyph.convert("L"))
+    rgb = np.full((*gray.shape, 3), 255, dtype=np.uint8)
+    rgb[gray < 160] = 0
+    glyph = Image.fromarray(rgb)
     cx, cy = cell_xy
     px = cx + (CELL_W - new_size[0]) // 2
     py = cy + (GLYPH_AREA_H - new_size[1]) // 2
@@ -1046,7 +1124,8 @@ def _acquire_image(spec: str | None, output_dir: Path, fallback_name: str) -> Pa
 
 
 def _trace_boxes(
-    gray, binary, boxes, names, codepoints, tmp_dir: Path, glyph_data: list, idx0: int = 0,
+    gray, binary, boxes, names, codepoints, tmp_dir: Path, glyph_data: list,
+    idx0: int = 0, lock_frame: bool = False,
 ):
     for i, box in enumerate(boxes):
         idx = idx0 + i
@@ -1055,7 +1134,12 @@ def _trace_boxes(
         print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
         svg_d = trace_glyph(gray, binary, box, tmp_dir, idx)
         print(" ok" if svg_d else " (no path)")
-        glyph_data.append({"codepoint": codepoint, "name": name, "svg_d": svg_d})
+        glyph_data.append({
+            "codepoint": codepoint,
+            "name": name,
+            "svg_d": svg_d,
+            "lock_frame": lock_frame,
+        })
 
 
 def _write_debug_boxes(binary, labeled_boxes: list[tuple], dest: Path) -> None:
@@ -1169,6 +1253,8 @@ def main():
 
     alphabet_boxes = alphabet_boxes[:len(ALPHABET_CODEPOINTS)]
     digit_boxes = digit_boxes[:DIGIT_COUNT]
+    if digit_boxes:
+        digit_boxes = frame_digit_boxes(digit_boxes)
 
     # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
@@ -1187,6 +1273,7 @@ def main():
                 DIGIT_NAMES[:len(digit_boxes)],
                 DIGIT_CODEPOINTS[:len(digit_boxes)],
                 tmp_dir, glyph_data, idx0=len(alphabet_boxes),
+                lock_frame=True,
             )
 
         print("[build] assembling font …")

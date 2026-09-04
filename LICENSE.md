@@ -29,7 +29,7 @@
 - ライセンス: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
 - 掲載: Wikimedia Commons（[Category:Baronh](https://commons.wikimedia.org/wiki/Category:Baronh)）および日本語版 Wikipedia「アーヴ語」の TRON コード表
 - リポジトリ内の複製: `templates/digits/`（[NOTICE](templates/digits/NOTICE.md)）
-- 本フォントでの改変: 整数倍に拡大し、輪郭をベクター化して OpenType に収録
+- 本フォントでの改変: 16×16 ビットマップを単線ストロークとして描き直し、輪郭をベクター化して OpenType に収録
 
 ## ShareAlike
 
