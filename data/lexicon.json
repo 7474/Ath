@@ -10,7 +10,7 @@
         "license": "CC BY-SA 4.0"
       }
     ],
-    "notes": "公式の公開辞書は存在しない。シードは Wikipedia の文法解説に現れる語と、広く知られた公開語彙に限る。Dadh Baronr など権利表示のある二次辞書は同梱しない。"
+    "notes": "公式の公開辞書は存在しない。文法の骨格は Wikipedia「アーヴ語」に依る。語彙はファンサイトを走査して拡充し、スペシャルサンクスに記す。"
   },
   "entries": [
     {
@@ -1306,6 +1306,17 @@
       "gloss_ja": "いいえ",
       "gloss_en": "no",
       "reading_ja": "アダ",
+      "tags": [
+        "public"
+      ],
+      "source": "seed"
+    },
+    {
+      "lemma": "zom",
+      "pos": "interjection",
+      "gloss_ja": "ありがとう",
+      "gloss_en": "thanks",
+      "reading_ja": "ゾム",
       "tags": [
         "public"
       ],

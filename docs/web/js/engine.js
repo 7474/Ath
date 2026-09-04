@@ -191,13 +191,24 @@
   }
 
   function splitJaAliases(gloss) {
-    var aliases = [gloss];
-    var text = gloss.replace(/（/g, "(").replace(/）/g, ")");
+    var text = String(gloss || "").replace(/（/g, "(").replace(/）/g, ")");
+    var aliases = [text];
     if (text.indexOf("(") >= 0) {
       aliases.push(text.split("(")[0]);
-      aliases.push(text.slice(text.indexOf("(") + 1, text.lastIndexOf(")")));
+      var inner = text.slice(text.indexOf("(") + 1, text.lastIndexOf(")"));
+      if (inner) aliases.push(inner);
     }
-    return aliases.join("/").split(/[\/・]/).map(function (s) { return s.trim(); }).filter(Boolean);
+    ["/", "・", "。", "、"].forEach(function (sep) {
+      var expanded = [];
+      aliases.forEach(function (alias) {
+        alias.split(sep).forEach(function (part) {
+          part = part.trim();
+          if (part) expanded.push(part);
+        });
+      });
+      aliases = expanded;
+    });
+    return aliases;
   }
 
   function Lexicon(entries) {
@@ -315,22 +326,60 @@
     return null;
   }
 
-  function tokenizeJa(text) {
+  function jaMatchPhrases(lexicon) {
+    if (!lexicon) return [];
+    var skip = {};
+    Object.keys(JA_PARTICLES).forEach(function (p) { skip[p] = 1; });
+    JA_ATOMIC.forEach(function (p) { skip[p] = 1; });
+    var phrases = {};
+    lexicon.entries.forEach(function (entry) {
+      splitJaAliases(entry.gloss_ja || "").forEach(function (alias) {
+        var text = String(alias || "").trim();
+        if (text.length < 2 || skip[text]) return;
+        phrases[text] = 1;
+      });
+    });
+    return Object.keys(phrases).sort(function (a, b) { return b.length - a.length; });
+  }
+
+  function longestJaPhrase(src, index, phrases) {
+    var i;
+    for (i = 0; i < phrases.length; i++) {
+      if (src.slice(index, index + phrases[i].length) === phrases[i]) return phrases[i];
+    }
+    return null;
+  }
+
+  function tokenizeJa(text, lexicon) {
     var tokens = [];
     var src = String(text || "").trim();
+    var phrases = jaMatchPhrases(lexicon);
     var i = 0;
     while (i < src.length) {
       if (/\s/.test(src[i])) { i++; continue; }
       if ("、。！？!?.,".indexOf(src[i]) >= 0) { tokens.push(src[i]); i++; continue; }
-      var matched = jaBoundary(src, i);
-      if (matched) { tokens.push(matched); i += matched.length; continue; }
+      var particle = jaBoundary(src, i);
+      var phrase = longestJaPhrase(src, i, phrases);
+      if (particle && (!phrase || phrase.length <= particle.length)) {
+        tokens.push(particle);
+        i += particle.length;
+        continue;
+      }
       var j = i + 1;
       while (j < src.length && !/\s/.test(src[j]) && "、。！？!?.,".indexOf(src[j]) < 0) {
         if (jaBoundary(src, j)) break;
         j++;
       }
-      tokens.push(src.slice(i, j));
-      i = j;
+      var leftover = src.slice(i, j);
+      if (phrase && phrase.length > leftover.length) {
+        tokens.push(phrase);
+        i += phrase.length;
+        continue;
+      }
+      if (leftover) { tokens.push(leftover); i = j; continue; }
+      if (phrase) { tokens.push(phrase); i += phrase.length; continue; }
+      tokens.push(src[i]);
+      i++;
     }
     return tokens;
   }
@@ -434,7 +483,7 @@
   }
 
   function jaToBaronh(text, lexicon) {
-    var tokens = tokenizeJa(text);
+    var tokens = tokenizeJa(text, lexicon);
     var question = /[か？?]$/.test(text.trim()) || tokens.indexOf("か") >= 0;
     var vocative = tokens.indexOf("よ") >= 0;
     var pieces = [];
@@ -495,6 +544,11 @@
         var form = conjugate(verbish, feat.mood, feat.aspect, feat.voices);
         pieces.push(form);
         analysis.push({ source: tok, target: form, note: verbish.gloss_ja });
+        continue;
+      }
+      if (other && !JA_PARTICLES[nxt]) {
+        pieces.push(other.lemma);
+        analysis.push({ source: tok, target: other.lemma, note: other.pos });
         continue;
       }
       if (nounish) { pending = nounish; pendingSrc = tok; continue; }

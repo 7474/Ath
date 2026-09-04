@@ -265,7 +265,7 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
 
 ## アーヴ語翻訳（CLI / Web）
 
-アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、シード語彙は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）の文法解説に現れる語と、広く知られた公開語に限っています。Dadh Baronr など権利表示のある二次辞書は同梱しません。自分で取り込んだ分は `data/user_lexicon.json` にだけ足せます。
+アーヴ語 (Baronh) と日本語・英語を、**ローカルの辞書と文法規則**で翻訳します。公式の完全辞書は公開されていないため、文法の骨格は Wikipedia「[アーヴ語](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E)」（CC BY-SA）に依り、語彙は下記ファンサイトを走査して拡充しています。追加の個人辞書は `data/user_lexicon.json` に足せます。
 
 構成は次のとおりです。生成 AI は使わなくても動きます。
 
@@ -300,6 +300,7 @@ python3 -m baronh decline abh
 python3 -m baronh conjugate sac --all
 
 # サイト / ファイルから辞書を取り込む
+python3 -m baronh ingest known              # 掻き集め + Dadh Baronr を走査
 python3 -m baronh ingest wikipedia
 python3 -m baronh ingest data/examples/sample.csv
 python3 -m baronh ingest https://ja.wikipedia.org/wiki/アーヴ語
@@ -316,7 +317,14 @@ python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
 python3 -m baronh serve
 ```
 
-`ingest` は Wikipedia（MediaWiki API）、任意 HTML の表、CSV/TSV/JSON を読めます。古いファンサイトは euc-jp のことがあるので、その場合もデコードを試します。取り込んだ語はシードに上乗せされ、`data/user_lexicon.json`（gitignore 済み）へ書きます。
+`ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。
+
+### スペシャルサンクス
+
+語彙の拡充にあたり、次の公開資料を走査させていただきました。いずれもファンによる再構成であり、公式辞書ではありません。森岡浩之氏はこれらの内容に関知していません。
+
+- [アーヴ語掻き集め『アーヴ語辞書』](http://mule.s59.xrea.com/seikai/jisyo/)（2005-01-23 版）
+- [Dadh Baronr『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』](http://dadh-baronr.s5.xrea.com/etc/ondic.html)
 
 ### Web
 

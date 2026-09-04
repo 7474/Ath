@@ -11,7 +11,7 @@ from urllib.parse import unquote, urlparse
 
 from baronh import __version__
 from baronh.grammar import FormIndex, all_verb_forms, analyze_form, conjugate, decline
-from baronh.ingest import ingest_auto, merge_into_lexicon, write_lexicon
+from baronh.ingest import ingest_auto, merge_into_lexicon, write_lexicon, write_lexicon_document
 from baronh.lexicon import CASE_JA, Lexicon, load_lexicon, write_seed_lexicon
 from baronh.paths import DATA_DIR, ROOT_DIR, USER_LEXICON_PATH, WEB_DIR
 from baronh.phonology import reading_ja, to_ath_keys
@@ -172,7 +172,20 @@ def cmd_speak(args: argparse.Namespace) -> int:
 
 
 def cmd_ingest(args: argparse.Namespace) -> int:
+    from baronh.fanlex import SPECIAL_THANKS
+    from baronh.paths import INGESTED_PATH
+
     document = ingest_auto(args.source)
+    kind = (document.get("meta") or {}).get("kind")
+    if kind == "ingested" or args.source.lower() in {"known", "thanks", "fan", "mule", "dadh", "ondic", "jisyo"}:
+        out = Path(args.out) if args.out else INGESTED_PATH
+        write_lexicon_document(document, out)
+        print(f"{document.get('source', args.source)} から {document.get('count', 0)} 件を取り込み、{out} に書きました")
+        for line in document.get("meta", {}).get("thanks") or [item["thanks"] for item in SPECIAL_THANKS]:
+            print(line)
+        if args.json:
+            print(json.dumps({"source": document.get("source"), "count": document.get("count")}, ensure_ascii=False))
+        return 0
     lexicon = _lexicon(args)
     added = merge_into_lexicon(lexicon, document, replace=not args.keep)
     out = Path(args.out) if args.out else USER_LEXICON_PATH
@@ -192,6 +205,11 @@ def cmd_info(args: argparse.Namespace) -> int:
     print(f"entries: {len(lexicon.entries)}")
     for pos, count in sorted(by_pos.items()):
         print(f"  {pos}: {count}")
+    from baronh.fanlex import SPECIAL_THANKS
+
+    print("special thanks:")
+    for item in SPECIAL_THANKS:
+        print(f"  - {item['thanks']}")
     return 0
 
 
@@ -199,7 +217,6 @@ def cmd_export_web(args: argparse.Namespace) -> int:
     lexicon = _lexicon(args)
     dest = Path(args.out) if args.out else WEB_DIR / "data"
     dest.mkdir(parents=True, exist_ok=True)
-    write_seed_lexicon(DATA_DIR / "lexicon.json")
     write_lexicon(lexicon, dest / "lexicon.json")
     print(dest / "lexicon.json")
     return 0
@@ -239,9 +256,8 @@ class _TranslatorHandler(SimpleHTTPRequestHandler):
 
 def cmd_serve(args: argparse.Namespace) -> int:
     WEB_DIR.mkdir(parents=True, exist_ok=True)
-    write_seed_lexicon()
-    if not (WEB_DIR / "data" / "lexicon.json").is_file():
-        write_lexicon(load_lexicon(), WEB_DIR / "data" / "lexicon.json")
+    lexicon = load_lexicon()
+    write_lexicon(lexicon, WEB_DIR / "data" / "lexicon.json")
     server = ThreadingHTTPServer((args.host, args.port), _TranslatorHandler)
     url = f"http://{args.host}:{args.port}/"
     print(f"アーヴ語翻訳 UI: {url}", file=sys.stderr)
@@ -311,7 +327,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_speak)
 
     p = sub.add_parser("ingest", help="サイトまたはファイルから辞書を取り込む", parents=[shared])
-    p.add_argument("source", help="wikipedia / URL / ファイルパス")
+    p.add_argument("source", help="known / mule / dadh / wikipedia / URL / ファイルパス")
     p.add_argument("--out", default=None, help="書き出し先 JSON (既定: data/user_lexicon.json)")
     p.add_argument("--keep", action="store_true", help="既存エントリを上書きしない")
     p.add_argument("--json", action="store_true")

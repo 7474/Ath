@@ -76,6 +76,9 @@ class CliSmokeTest(unittest.TestCase):
         completed = self._run("info")
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("entries:", completed.stdout)
+        self.assertIn("mule.s59.xrea.com", completed.stdout)
+        self.assertIn("dadh-baronr", completed.stdout)
+        self.assertIn("スペシャルサンクス", completed.stdout)
 
     def test_export_seed_json_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:

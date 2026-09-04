@@ -9,11 +9,12 @@ ROOT_DIR = PACKAGE_DIR.parent
 DATA_DIR = ROOT_DIR / "data"
 WEB_DIR = ROOT_DIR / "web"
 SEED_LEXICON_PATH = DATA_DIR / "lexicon.json"
+INGESTED_PATH = DATA_DIR / "ingested.json"
 USER_LEXICON_PATH = DATA_DIR / "user_lexicon.json"
 
 
 def default_lexicon_paths() -> list[Path]:
-    paths = [SEED_LEXICON_PATH, USER_LEXICON_PATH]
+    paths = [INGESTED_PATH, USER_LEXICON_PATH]
     home_overlay = Path.home() / ".config" / "ath-translate" / "lexicon.json"
     paths.append(home_overlay)
     return paths

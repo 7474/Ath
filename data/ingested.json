@@ -1,14 +1,9 @@
 {
   "meta": {
     "version": 1,
-    "language": "baronh",
-    "license": "CC BY-SA 4.0 for Wikipedia-derived entries; fan compilation otherwise",
+    "kind": "ingested",
+    "license": "fan compilation; see source sites for their terms",
     "sources": [
-      {
-        "name": "Wikipedia アーヴ語",
-        "url": "https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E",
-        "license": "CC BY-SA 4.0"
-      },
       {
         "name": "アーヴ語掻き集め アーヴ語辞書",
         "url": "http://mule.s59.xrea.com/seikai/jisyo/",
@@ -20,1457 +15,58 @@
         "thanks": "スペシャルサンクス: Dadh Baronr — アーヴ語の世界『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』（http://dadh-baronr.s5.xrea.com/etc/ondic.html）。見出し語と品詞・語釈を走査して辞書を拡充しました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。"
       }
     ],
-    "notes": "公式の公開辞書は存在しない。文法の骨格は Wikipedia「アーヴ語」に依る。語彙はファンサイトを走査して拡充し、スペシャルサンクスに記す。",
     "thanks": [
       "スペシャルサンクス: アーヴ語掻き集め『アーヴ語辞書』（http://mule.s59.xrea.com/seikai/jisyo/ 、2005-01-23 版）。語彙表を走査して辞書を拡充しました。",
       "スペシャルサンクス: Dadh Baronr — アーヴ語の世界『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』（http://dadh-baronr.s5.xrea.com/etc/ondic.html）。見出し語と品詞・語釈を走査して辞書を拡充しました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。"
     ],
-    "entry_count": 2435
+    "notes": "公式辞書ではない二次資料の走査結果です。語釈は各サイト編者の再構成を含み、誤りがあり得ます。"
   },
   "entries": [
     {
-      "lemma": "fe",
-      "pos": "pronoun",
-      "gloss_ja": "私",
-      "gloss_en": "I",
-      "reading_ja": "フェ",
-      "paradigm": {
-        "nom": "fe",
-        "acc": "fal",
-        "gen": "far",
-        "dat": "feri",
-        "all": "feré",
-        "abl": "fasar",
-        "ins": "fale"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "de",
-      "pos": "pronoun",
-      "gloss_ja": "あなた",
-      "gloss_en": "you",
-      "reading_ja": "デ",
-      "paradigm": {
-        "nom": "de",
-        "acc": "dal",
-        "gen": "dar",
-        "dat": "deri",
-        "all": "deré",
-        "abl": "dasar",
-        "ins": "dale"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "se",
-      "pos": "pronoun",
-      "gloss_ja": "彼/彼女",
-      "gloss_en": "he/she",
-      "reading_ja": "セ",
-      "paradigm": {
-        "nom": "se",
-        "acc": "sal",
-        "gen": "sar",
-        "dat": "seri",
-        "all": "seré",
-        "abl": "sasar",
-        "ins": "sale"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "farh",
-      "pos": "pronoun",
-      "gloss_ja": "私たち",
-      "gloss_en": "we",
-      "reading_ja": "ファール",
-      "paradigm": {
-        "nom": "farh",
-        "acc": "fare",
-        "gen": "farer",
-        "dat": "fari",
-        "all": "faré",
-        "abl": "farhar",
-        "ins": "farle"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "darh",
-      "pos": "pronoun",
-      "gloss_ja": "あなたたち",
-      "gloss_en": "you (pl.)",
-      "reading_ja": "ダール",
-      "paradigm": {
-        "nom": "darh",
-        "acc": "dare",
-        "gen": "darer",
-        "dat": "dari",
-        "all": "daré",
-        "abl": "darhar",
-        "ins": "darle"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cnac",
-      "pos": "pronoun",
-      "gloss_ja": "彼ら",
-      "gloss_en": "they",
-      "reading_ja": "クナ",
-      "paradigm": {
-        "nom": "cnac",
-        "acc": "cnal",
-        "gen": "cnar",
-        "dat": "cnari",
-        "all": "cnaré",
-        "abl": "cnasar",
-        "ins": "cnal"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "so",
-      "pos": "pronoun",
-      "gloss_ja": "これ",
-      "gloss_en": "this",
-      "reading_ja": "ソ",
-      "paradigm": {
-        "nom": "so",
-        "acc": "sol",
-        "gen": "sor",
-        "dat": "sori",
-        "all": "soré",
-        "abl": "sosar",
-        "ins": "sole"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "re",
-      "pos": "pronoun",
-      "gloss_ja": "それ",
-      "gloss_en": "that",
-      "reading_ja": "レ",
-      "paradigm": {
-        "nom": "re",
-        "acc": "rol",
-        "gen": "ror",
-        "dat": "rori",
-        "all": "roré",
-        "abl": "rosar",
-        "ins": "role"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ai",
-      "pos": "pronoun",
-      "gloss_ja": "あれ",
-      "gloss_en": "that (distal)",
-      "reading_ja": "アイ",
-      "paradigm": {
-        "nom": "ai",
-        "acc": "al",
-        "gen": "ar",
-        "dat": "ari",
-        "all": "aré",
-        "abl": "asar",
-        "ins": "ale"
-      },
-      "tags": [
-        "wikipedia",
-        "pronoun"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "abh",
-      "pos": "noun",
-      "gloss_ja": "アーヴ",
-      "gloss_en": "Abh",
-      "declension": "1",
-      "stem": "ab",
-      "reading_ja": "アーヴ",
-      "paradigm": {
-        "nom": "abh",
-        "acc": "abe",
-        "gen": "bar",
-        "dat": "bari",
-        "all": "baré",
-        "abl": "abhar",
-        "ins": "bale"
-      },
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "notes": "アーヴ",
-      "source": "seed"
-    },
-    {
-      "lemma": "ath",
-      "pos": "noun",
-      "gloss_ja": "アース（文字） / アーヴ文字",
-      "gloss_en": "Ath (letter)",
-      "declension": "1",
-      "stem": "at",
-      "reading_ja": "アース",
-      "paradigm": {
-        "nom": "ath",
-        "acc": "ate",
-        "gen": "tar",
-        "dat": "tari",
-        "all": "taré",
-        "abl": "athar",
-        "ins": "tale"
-      },
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "azz",
-      "pos": "noun",
-      "gloss_ja": "敵",
-      "gloss_en": "enemy",
-      "declension": "1",
-      "stem": "az",
-      "reading_ja": "アズ",
-      "paradigm": {
-        "nom": "azz",
-        "acc": "aze",
-        "gen": "zar",
-        "dat": "zari",
-        "all": "zaré",
-        "abl": "azzar",
-        "ins": "zale"
-      },
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lorann",
-      "pos": "noun",
-      "gloss_ja": "父",
-      "gloss_en": "father",
-      "declension": "1n",
-      "stem": "loran",
-      "reading_ja": "ロラン",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sarann",
-      "pos": "noun",
-      "gloss_ja": "母 / 母 / 母親。母",
-      "gloss_en": "mother",
-      "declension": "1n",
-      "stem": "saran",
-      "reading_ja": "サラン",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "aronn",
-      "pos": "noun",
-      "gloss_ja": "あそん / 姓称号の一",
-      "gloss_en": "ason",
-      "declension": "1n",
-      "stem": "aron",
-      "reading_ja": "アロン",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lamh",
-      "pos": "noun",
-      "gloss_ja": "真珠 / 真珠 / 珠玉。真珠 / たま / 弾",
-      "gloss_en": "pearl",
-      "declension": "2",
-      "stem": "lam",
-      "reading_ja": "ラーフ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "éboth",
-      "pos": "noun",
-      "gloss_ja": "微笑",
-      "gloss_en": "smile",
-      "declension": "2",
-      "stem": "ébot",
-      "reading_ja": "エボス",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ïomh",
-      "pos": "noun",
-      "gloss_ja": "恋人 / 想人; (- razaimena で) 妻(夫?)",
-      "gloss_en": "lover",
-      "declension": "2",
-      "stem": "ïom",
-      "reading_ja": "イオム",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "laimh",
-      "pos": "noun",
-      "gloss_ja": "国民 / ため / 国民",
-      "gloss_en": "people / nation",
-      "declension": "2",
-      "stem": "laim",
-      "reading_ja": "ライム",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "saurh",
-      "pos": "noun",
-      "gloss_ja": "家族",
-      "gloss_en": "family",
-      "declension": "2",
-      "stem": "saur",
-      "reading_ja": "サウル",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sath",
-      "pos": "noun",
-      "gloss_ja": "方 / 肩; 首の付根 / 頸の付根",
-      "gloss_en": "direction",
-      "declension": "2",
-      "stem": "sat",
-      "reading_ja": "サス",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "duc",
-      "pos": "noun",
-      "gloss_ja": "紅玉",
-      "gloss_en": "ruby",
-      "declension": "3",
-      "stem": "du",
-      "reading_ja": "デュー",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "greuc",
-      "pos": "noun",
-      "gloss_ja": "星 / 指揮杖",
-      "gloss_en": "star",
-      "declension": "3",
-      "stem": "greu",
-      "reading_ja": "グレウ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "goc",
-      "pos": "noun",
-      "gloss_ja": "時空 / 時代 / 時空",
-      "gloss_en": "spacetime",
-      "declension": "3",
-      "stem": "go",
-      "reading_ja": "ゴー",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "nuïc",
-      "pos": "noun",
-      "gloss_ja": "耳",
-      "gloss_en": "ear",
-      "declension": "3",
-      "stem": "nuï",
-      "reading_ja": "ヌイ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "dreuc",
-      "pos": "noun",
-      "gloss_ja": "伯爵",
-      "gloss_en": "count",
-      "declension": "3",
-      "stem": "dreu",
-      "reading_ja": "ドリュー",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "notes": "爵位の１つ",
-      "source": "seed"
-    },
-    {
-      "lemma": "bœrh",
-      "pos": "noun",
-      "gloss_ja": "子爵",
-      "gloss_en": "viscount",
-      "declension": "2",
-      "stem": "bœr",
-      "reading_ja": "ベール",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "nimh",
-      "pos": "noun",
-      "gloss_ja": "男爵 / 大公爵",
-      "gloss_en": "baron",
-      "declension": "2",
-      "stem": "nim",
-      "reading_ja": "ニム",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "saidiac",
-      "pos": "noun",
-      "gloss_ja": "操舵士",
-      "gloss_en": "helmsman",
-      "declension": "4",
-      "stem": "said",
-      "reading_ja": "サイディア",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "izomiac",
-      "pos": "noun",
-      "gloss_ja": "挑戦者 / 挑む者",
-      "gloss_en": "challenger",
-      "declension": "4",
-      "stem": "izom",
-      "reading_ja": "イゾミア",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "rinusiac",
-      "pos": "noun",
-      "gloss_ja": "記事",
-      "gloss_en": "article",
-      "declension": "4",
-      "stem": "rinus",
-      "reading_ja": "リヌシア",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "useriac",
-      "pos": "noun",
-      "gloss_ja": "移民",
-      "gloss_en": "immigrant",
-      "declension": "4",
-      "stem": "user",
-      "reading_ja": "ウセリア",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "reconstructed",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cilugiac",
-      "pos": "noun",
-      "gloss_ja": "皇太子/皇太女 / 皇太子(女) / 皇太子。皇太女",
-      "gloss_en": "crown prince/princess",
-      "declension": "4",
-      "stem": "cilug",
-      "reading_ja": "シルギア",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "reconstructed",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "belységac",
-      "pos": "noun",
-      "gloss_ja": "管制官 / 管制を業とするもの",
-      "gloss_en": "controller",
-      "declension": "4g",
-      "stem": "belysé",
-      "reading_ja": "ベリュセガ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "reconstructed"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "gereulach",
-      "pos": "noun",
-      "gloss_ja": "星たち / 星たち / 星々",
-      "gloss_en": "stars",
-      "declension": "2",
-      "stem": "gereulac",
-      "reading_ja": "ゲレウラ",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "gosucelach",
-      "pos": "noun",
-      "gloss_ja": "家臣団",
-      "gloss_en": "retinue",
-      "declension": "2",
-      "stem": "gosucelac",
-      "reading_ja": "ゴスセラ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cairhoth",
-      "pos": "noun",
-      "gloss_ja": "入学 / 入ること; ある組織に加入すること / （扉を）通過する。入学",
-      "gloss_en": "entering school",
-      "declension": "2",
-      "stem": "cairhot",
-      "reading_ja": "カイルホス",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "dozzoth",
-      "pos": "noun",
-      "gloss_ja": "望み",
-      "gloss_en": "wish",
-      "declension": "2",
-      "stem": "dozzot",
-      "reading_ja": "ドゾス",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cimecoth",
-      "pos": "noun",
-      "gloss_ja": "秘密 / 軍機",
-      "gloss_en": "secret",
-      "declension": "2",
-      "stem": "cimecot",
-      "reading_ja": "シメコス",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sacoth",
-      "pos": "noun",
-      "gloss_ja": "買い物 / 買物 / 買い物",
-      "gloss_en": "shopping",
-      "declension": "2",
-      "stem": "sacot",
-      "reading_ja": "サコス",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ménragh",
-      "pos": "noun",
-      "gloss_ja": "平面宇宙航行機能",
-      "gloss_en": "plane-space navigation",
-      "declension": "2",
-      "stem": "ménrag",
-      "reading_ja": "メンラグ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "baronh",
-      "pos": "noun",
-      "gloss_ja": "アーヴ語",
-      "gloss_en": "Baronh",
-      "declension": "2",
-      "stem": "baron",
-      "reading_ja": "バロン",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lonh",
-      "pos": "noun",
-      "gloss_ja": "閣下",
-      "gloss_en": "excellency",
-      "declension": "2",
-      "stem": "lon",
-      "reading_ja": "ロン",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "fïac",
-      "pos": "noun",
-      "gloss_ja": "皇子/皇女 / 殿下",
-      "gloss_en": "imperial child",
-      "declension": "3",
-      "stem": "fïa",
-      "reading_ja": "フィア",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "reconstructed",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "frymec",
-      "pos": "noun",
-      "gloss_ja": "娘 / 娘 / 愛娘",
-      "gloss_en": "daughter",
-      "declension": "3",
-      "stem": "fryme",
-      "reading_ja": "フリュメ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lartnéc",
-      "pos": "noun",
-      "gloss_ja": "公子 / 王女",
-      "gloss_en": "prince",
-      "declension": "3",
-      "stem": "lartné",
-      "reading_ja": "ラルトネ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "laburec",
-      "pos": "noun",
-      "gloss_ja": "艦 / 星界軍",
-      "gloss_en": "warship",
-      "declension": "3",
-      "stem": "labure",
-      "reading_ja": "ラブーレ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lonid",
-      "pos": "noun",
-      "gloss_ja": "門",
-      "gloss_en": "gate",
-      "stem": "lonid",
-      "reading_ja": "ロニド",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "gaftonosh",
-      "pos": "noun",
-      "gloss_ja": "紋章",
-      "gloss_en": "crest",
-      "declension": "2",
-      "stem": "gaftonos",
-      "reading_ja": "ガフトノーシュ",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "frybarec",
-      "pos": "noun",
-      "gloss_ja": "帝国",
-      "gloss_en": "empire",
-      "declension": "3",
-      "stem": "frybare",
-      "reading_ja": "フリューバレ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lébh",
-      "pos": "noun",
-      "gloss_ja": "レーフ（帝国国民）",
-      "gloss_en": "imperial citizen",
-      "declension": "2",
-      "stem": "léb",
-      "reading_ja": "レーフ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ablïarsec",
-      "pos": "noun",
-      "gloss_ja": "アブリアル",
-      "gloss_en": "Ablïarsec",
-      "declension": "3",
-      "stem": "ablïarse",
-      "reading_ja": "アブリアル",
-      "tags": [
-        "public",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lacmhacarh",
-      "pos": "noun",
-      "gloss_ja": "ラクファカール",
-      "gloss_en": "Lacmhacarh",
-      "declension": "2",
-      "stem": "lacmhacar",
-      "reading_ja": "ラクファカール",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "gatharsec",
-      "pos": "noun",
-      "gloss_ja": "ガサルス / 金色烏",
-      "gloss_en": "Gatharsec",
-      "declension": "3",
-      "stem": "gatharse",
-      "reading_ja": "ガサルス",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sarrych",
-      "pos": "noun",
-      "gloss_ja": "サリューシュ",
-      "gloss_en": "Sarrych",
-      "declension": "2",
-      "stem": "sarryc",
-      "reading_ja": "サリューシュ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "spaurh",
-      "pos": "noun",
-      "gloss_ja": "スポール",
-      "gloss_en": "Spaurh",
-      "declension": "2",
-      "stem": "spaur",
-      "reading_ja": "スポール",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lamhirh",
-      "pos": "noun",
-      "gloss_ja": "ラーフィール",
-      "gloss_en": "Lamhirh",
-      "declension": "2",
-      "stem": "lamhir",
-      "reading_ja": "ラーフィール",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "parhynh",
-      "pos": "noun",
-      "gloss_ja": "パリューニュ / 薔薇の国",
-      "gloss_en": "Parhynh",
-      "declension": "2",
-      "stem": "parhyn",
-      "reading_ja": "パリューニュ",
-      "tags": [
-        "wikipedia",
-        "mule-jisyo",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "haïdec",
-      "pos": "noun",
-      "gloss_ja": "ハイド",
-      "gloss_en": "Haïdec",
-      "declension": "3",
-      "stem": "haïde",
-      "reading_ja": "ハイド",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "aith",
-      "pos": "noun",
-      "gloss_ja": "邦国",
-      "gloss_en": "kingdom",
-      "declension": "2",
-      "stem": "ait",
-      "reading_ja": "アイス",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "alïca",
-      "pos": "noun",
-      "gloss_ja": "頭環",
-      "gloss_en": "circlet",
-      "stem": "alïca",
-      "reading_ja": "アリーカ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ane",
-      "pos": "verb",
-      "gloss_ja": "である / 存在する / ある",
-      "gloss_en": "be",
-      "stem": "an",
-      "reading_ja": "アネ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "user",
-      "pos": "verb",
-      "gloss_ja": "移民する/移る",
-      "gloss_en": "immigrate / move",
-      "stem": "user",
-      "reading_ja": "ウセル",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sac",
-      "pos": "verb",
-      "gloss_ja": "書く",
-      "gloss_en": "write",
-      "stem": "sac",
-      "reading_ja": "サク",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "fac",
-      "pos": "verb",
-      "gloss_ja": "分かる",
-      "gloss_en": "understand",
-      "stem": "fac",
-      "reading_ja": "ファク",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "dor",
-      "pos": "verb",
-      "gloss_ja": "乗る",
-      "gloss_en": "board / ride",
-      "stem": "dor",
-      "reading_ja": "ドル",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "gob",
-      "pos": "verb",
-      "gloss_ja": "呼ぶ",
-      "gloss_en": "call",
-      "stem": "gob",
-      "reading_ja": "ゴブ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cilug",
-      "pos": "verb",
-      "gloss_ja": "皇位を継承する",
-      "gloss_en": "succeed to the throne",
-      "stem": "cilug",
-      "reading_ja": "シルグ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "belysé",
-      "pos": "verb",
-      "gloss_ja": "管制する",
-      "gloss_en": "control",
-      "stem": "belysé",
-      "reading_ja": "ベリュセ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cair",
-      "pos": "verb",
-      "gloss_ja": "入る",
-      "gloss_en": "enter",
-      "stem": "cair",
-      "reading_ja": "カイル",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "doz",
-      "pos": "verb",
-      "gloss_ja": "望む",
-      "gloss_en": "wish",
-      "stem": "doz",
-      "reading_ja": "ドズ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "cime",
-      "pos": "verb",
-      "gloss_ja": "秘密にする",
-      "gloss_en": "keep secret",
-      "stem": "cime",
-      "reading_ja": "シメ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sa",
-      "pos": "verb",
-      "gloss_ja": "買う",
-      "gloss_en": "buy",
-      "stem": "sa",
-      "reading_ja": "サ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lom",
-      "pos": "verb",
-      "gloss_ja": "幸せである",
-      "gloss_en": "be happy",
-      "stem": "lom",
-      "reading_ja": "ロム",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "samad",
-      "pos": "verb",
-      "gloss_ja": "構う",
-      "gloss_en": "mind",
-      "stem": "samad",
-      "reading_ja": "サマド",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sot",
-      "pos": "verb",
-      "gloss_ja": "同席する",
-      "gloss_en": "sit together",
-      "stem": "sot",
-      "reading_ja": "ソト",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "zain",
-      "pos": "verb",
-      "gloss_ja": "だよね",
-      "gloss_en": "right?",
-      "stem": "zain",
-      "reading_ja": "ザイン",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ïku",
-      "pos": "verb",
-      "gloss_ja": "行く",
-      "gloss_en": "go",
-      "stem": "ïku",
-      "reading_ja": "イク",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lar",
-      "pos": "verb",
-      "gloss_ja": "来る",
-      "gloss_en": "come",
-      "stem": "lar",
-      "reading_ja": "ラル",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "mire",
-      "pos": "verb",
-      "gloss_ja": "見る",
-      "gloss_en": "see",
-      "stem": "mire",
-      "reading_ja": "ミレ",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "banas",
-      "pos": "verb",
-      "gloss_ja": "話す",
-      "gloss_en": "speak",
-      "stem": "banas",
-      "reading_ja": "バナス",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "om",
-      "pos": "verb",
-      "gloss_ja": "思う",
-      "gloss_en": "think",
-      "stem": "om",
-      "reading_ja": "オム",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "as",
-      "pos": "verb",
-      "gloss_ja": "する",
-      "gloss_en": "do",
-      "stem": "as",
-      "reading_ja": "アス",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ar",
-      "pos": "verb",
-      "gloss_ja": "ある/いる",
-      "gloss_en": "exist",
-      "stem": "ar",
-      "reading_ja": "アル",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
       "lemma": "a",
       "pos": "postposition",
-      "gloss_ja": "は / 物・事を他と区別して取りたてて示すのに使う",
-      "gloss_en": "topic",
-      "reading_ja": "ア",
+      "gloss_ja": "物・事を他と区別して取りたてて示すのに使う",
+      "gloss_en": "物・事を他と区別して取りたてて示すのに使う",
       "tags": [
-        "wikipedia",
         "dadh-baronr",
         "ingested"
       ],
-      "source": "seed"
-    },
-    {
-      "lemma": "éü",
-      "pos": "postposition",
-      "gloss_ja": "よ / (nom.支配)呼びかけの意を表わす / よ",
-      "gloss_en": "vocative",
-      "reading_ja": "エウ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested",
-        "mule-jisyo"
-      ],
-      "notes": "後置詞。呼びかけを表す",
-      "source": "seed"
-    },
-    {
-      "lemma": "sa",
-      "pos": "postposition",
-      "gloss_ja": "か / 疑問の意を示す",
-      "gloss_en": "question",
-      "reading_ja": "サ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "te",
-      "pos": "postposition",
-      "gloss_ja": "と（引用） / 云うこと、考えることの具体的な内容を示す",
-      "gloss_en": "quotative",
-      "reading_ja": "テ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "le",
-      "pos": "postposition",
-      "gloss_ja": "と（並列） / 並列、連結を示す",
-      "gloss_en": "and",
-      "reading_ja": "レ",
-      "tags": [
-        "wikipedia",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "lo",
-      "pos": "postposition",
-      "gloss_ja": "と（並列）",
-      "gloss_en": "and",
-      "reading_ja": "ロ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "réfaiseni",
-      "pos": "adverb",
-      "gloss_ja": "一緒",
-      "gloss_en": "together",
-      "reading_ja": "レファイセニ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "sote",
-      "pos": "adverb",
-      "gloss_ja": "ここに",
-      "gloss_en": "here",
-      "reading_ja": "ソテ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "amata",
-      "pos": "adjective",
-      "gloss_ja": "多い",
-      "gloss_en": "many",
-      "reading_ja": "アマタ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "arata",
-      "pos": "adjective",
-      "gloss_ja": "新しい",
-      "gloss_en": "new",
-      "reading_ja": "アラタ",
-      "tags": [
-        "wikipedia"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "dara",
-      "pos": "interjection",
-      "gloss_ja": "はい",
-      "gloss_en": "yes",
-      "reading_ja": "ダラ",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "ada",
-      "pos": "interjection",
-      "gloss_ja": "いいえ",
-      "gloss_en": "no",
-      "reading_ja": "アダ",
-      "tags": [
-        "public"
-      ],
-      "source": "seed"
-    },
-    {
-      "lemma": "zom",
-      "pos": "interjection",
-      "gloss_ja": "ありがとう / 曖昧な受け応えの返事",
-      "gloss_en": "thanks",
-      "reading_ja": "ゾム",
-      "tags": [
-        "public",
-        "dadh-baronr",
-        "ingested"
-      ],
-      "source": "seed"
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
       "lemma": "abair",
       "pos": "adverb",
       "gloss_ja": "あんまり",
       "gloss_en": "あんまり",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
+      "lemma": "abh",
+      "pos": "noun",
+      "gloss_ja": "アーヴ",
+      "gloss_en": "アーヴ",
+      "reading_ja": "アーヴ",
+      "paradigm": {
+        "nom": "abh",
+        "gen": "bar"
+      },
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "notes": "アーヴ",
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
+      "lemma": "ablïarsec",
+      "pos": "noun",
+      "gloss_ja": "アブリアル",
+      "gloss_en": "アブリアル",
       "tags": [
         "dadh-baronr",
         "ingested"
@@ -1850,6 +446,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
+      "lemma": "ane",
+      "pos": "verb",
+      "gloss_ja": "存在する / ある",
+      "gloss_en": "存在する",
+      "stem": "an",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
       "lemma": "apézmec",
       "pos": "noun",
       "gloss_ja": "帯留",
@@ -1948,6 +557,17 @@
         "ingested",
         "reconstructed",
         "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
+      "lemma": "aronn",
+      "pos": "noun",
+      "gloss_ja": "姓称号の一",
+      "gloss_en": "姓称号の一",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2099,6 +719,23 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
+      "lemma": "ath",
+      "pos": "noun",
+      "gloss_ja": "アーヴ文字",
+      "gloss_en": "アーヴ文字",
+      "reading_ja": "アース",
+      "paradigm": {
+        "nom": "ath",
+        "gen": "tar"
+      },
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
       "lemma": "aucec",
       "pos": "noun",
       "gloss_ja": "憧景 / 憧憬",
@@ -2143,6 +780,22 @@
         "dadh-baronr",
         "ingested",
         "reconstructed"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
+      "lemma": "azz",
+      "pos": "noun",
+      "gloss_ja": "敵",
+      "gloss_en": "敵",
+      "paradigm": {
+        "nom": "azz",
+        "gen": "zar"
+      },
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
@@ -2621,6 +1274,18 @@
       "pos": "noun",
       "gloss_ja": "管制",
       "gloss_en": "管制",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "reconstructed"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
+    },
+    {
+      "lemma": "belységac",
+      "pos": "noun",
+      "gloss_ja": "管制を業とするもの",
+      "gloss_en": "管制を業とするもの",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -3645,6 +2310,18 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
+      "lemma": "cairhoth",
+      "pos": "noun",
+      "gloss_ja": "入ること; ある組織に加入すること / （扉を）通過する。入学",
+      "gloss_en": "入ること; ある組織に加入すること",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
+    },
+    {
       "lemma": "cairiac",
       "pos": "noun",
       "gloss_ja": "短針銃 / 進路 / 短針銃",
@@ -4291,6 +2968,20 @@
       "tags": [
         "dadh-baronr",
         "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
+    },
+    {
+      "lemma": "cilugiac",
+      "pos": "noun",
+      "gloss_ja": "皇太子(女) / 皇太子。皇太女",
+      "gloss_en": "皇太子(女)",
+      "reading_ja": "キルーギア",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "reconstructed",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
@@ -5827,6 +4518,32 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
+      "lemma": "dozzoth",
+      "pos": "noun",
+      "gloss_ja": "望み",
+      "gloss_en": "望み",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
+      "lemma": "dreuc",
+      "pos": "noun",
+      "gloss_ja": "伯爵",
+      "gloss_en": "伯爵",
+      "reading_ja": "ドリュー",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "notes": "爵位の１つ",
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
       "lemma": "dreughéc",
       "pos": "noun",
       "gloss_ja": "伯爵家",
@@ -5893,6 +4610,19 @@
       "gloss_ja": "通信士",
       "gloss_en": "通信士",
       "reading_ja": "ドロキア",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
+      "lemma": "duc",
+      "pos": "noun",
+      "gloss_ja": "紅玉",
+      "gloss_en": "紅玉",
+      "reading_ja": "ドゥー",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -6064,6 +4794,19 @@
         "dadh-baronr",
         "ingested"
       ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
+      "lemma": "éü",
+      "pos": "postposition",
+      "gloss_ja": "(nom.支配)呼びかけの意を表わす / よ",
+      "gloss_en": "(nom.支配)呼びかけの意を表わす",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "notes": "後置詞。呼びかけを表す",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6430,6 +5173,20 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
+      "lemma": "fïac",
+      "pos": "noun",
+      "gloss_ja": "殿下",
+      "gloss_en": "殿下",
+      "reading_ja": "フィア",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "reconstructed",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
       "lemma": "fimdeucec",
       "pos": "noun",
       "gloss_ja": "〔鳥〕海猫 / うみねこ",
@@ -6719,6 +5476,32 @@
       "gloss_ja": "息子",
       "gloss_en": "息子",
       "reading_ja": "フルーク",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
+      "lemma": "frymec",
+      "pos": "noun",
+      "gloss_ja": "娘 / 愛娘",
+      "gloss_en": "娘",
+      "reading_ja": "フリューム",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
+    },
+    {
+      "lemma": "frybarec",
+      "pos": "noun",
+      "gloss_ja": "帝国",
+      "gloss_en": "帝国",
+      "reading_ja": "フリューバル",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -7127,6 +5910,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
+      "lemma": "gatharsec",
+      "pos": "noun",
+      "gloss_ja": "金色烏",
+      "gloss_en": "金色烏",
+      "reading_ja": "ガサルス",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
+    },
+    {
       "lemma": "gaudec",
       "pos": "noun",
       "gloss_ja": "店; 旅亭 / 宿。亭",
@@ -7495,6 +6291,18 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
+      "lemma": "goc",
+      "pos": "noun",
+      "gloss_ja": "時代 / 時空",
+      "gloss_en": "時代",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
+    },
+    {
       "lemma": "goemh",
       "pos": "noun",
       "gloss_ja": "地獄",
@@ -7692,6 +6500,19 @@
       "tags": [
         "dadh-baronr",
         "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
+    },
+    {
+      "lemma": "greuc",
+      "pos": "noun",
+      "gloss_ja": "指揮杖",
+      "gloss_en": "指揮杖",
+      "reading_ja": "グリュー",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
@@ -8449,6 +7270,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
+      "lemma": "ïomh",
+      "pos": "noun",
+      "gloss_ja": "想人; (- razaimena で) 妻(夫?)",
+      "gloss_en": "想人; (- razaimena で) 妻(夫?)",
+      "reading_ja": "ヨーフ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
+    },
+    {
       "lemma": "ïomh razaimena",
       "pos": "phrase",
       "gloss_ja": "妻、(夫?)〔原義は「定まった想人」〕",
@@ -8600,6 +7434,18 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
+      "lemma": "izomiac",
+      "pos": "noun",
+      "gloss_ja": "挑む者",
+      "gloss_en": "挑む者",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
+    },
+    {
       "lemma": "labéch",
       "pos": "noun",
       "gloss_ja": "試験 / 試験。試し",
@@ -8629,6 +7475,19 @@
       "gloss_ja": "判定者 / 判定委員",
       "gloss_en": "判定者",
       "reading_ja": "ラベスィア",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "laburec",
+      "pos": "noun",
+      "gloss_ja": "星界軍",
+      "gloss_en": "星界軍",
+      "reading_ja": "ラブール",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -8970,6 +7829,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
+      "lemma": "lamh",
+      "pos": "noun",
+      "gloss_ja": "真珠 / 珠玉。真珠 / たま / 弾",
+      "gloss_en": "真珠",
+      "reading_ja": "ラーフ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
       "lemma": "lamodh",
       "pos": "noun",
       "gloss_ja": "玉斧〔古代地球で用いられた王権を表す装飾品のひとつ〕の意、あるいは玉のように価値",
@@ -9040,6 +7912,19 @@
       "gloss_ja": "王家",
       "gloss_en": "王家",
       "reading_ja": "ラルティエ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "lartnéc",
+      "pos": "noun",
+      "gloss_ja": "王女",
+      "gloss_en": "王女",
+      "reading_ja": "ラルトネー",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -9165,6 +8050,17 @@
       "pos": "adverb",
       "gloss_ja": "前文の意味を受けて、それを否定的に限定することを述べる",
       "gloss_en": "前文の意味を受けて、それを否定的に限定することを述べる",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "le",
+      "pos": "postposition",
+      "gloss_ja": "並列、連結を示す",
+      "gloss_en": "並列、連結を示す",
       "tags": [
         "dadh-baronr",
         "ingested"
@@ -9799,6 +8695,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
+      "lemma": "lonh",
+      "pos": "noun",
+      "gloss_ja": "閣下",
+      "gloss_en": "閣下",
+      "reading_ja": "ローニュ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
       "lemma": "lonidec",
       "pos": "noun",
       "gloss_ja": "基地 / 基地。軍事基地。軌道要塞",
@@ -9831,6 +8740,18 @@
       "tags": [
         "dadh-baronr",
         "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "lorann",
+      "pos": "noun",
+      "gloss_ja": "父",
+      "gloss_en": "父",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
@@ -10344,6 +9265,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
+      "lemma": "ménragh",
+      "pos": "noun",
+      "gloss_ja": "平面宇宙航行機能",
+      "gloss_en": "平面宇宙航行機能",
+      "reading_ja": "メーンラジュ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
       "lemma": "ménuch",
       "pos": "noun",
       "gloss_ja": "船内",
@@ -10692,6 +9626,17 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
+      "lemma": "nimh",
+      "pos": "noun",
+      "gloss_ja": "大公爵",
+      "gloss_en": "大公爵",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
       "lemma": "nimïéc",
       "pos": "noun",
       "gloss_ja": "大公爵家",
@@ -10824,6 +9769,17 @@
       "pos": "noun",
       "gloss_ja": "桃",
       "gloss_en": "桃",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
+    },
+    {
+      "lemma": "nuïc",
+      "pos": "noun",
+      "gloss_ja": "耳",
+      "gloss_en": "耳",
       "tags": [
         "dadh-baronr",
         "ingested"
@@ -12600,6 +11556,17 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
+      "lemma": "sa",
+      "pos": "postposition",
+      "gloss_ja": "疑問の意を示す",
+      "gloss_en": "疑問の意を示す",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
       "lemma": "sabaïe",
       "pos": "verb",
       "gloss_ja": "構える / （店を）構える",
@@ -12618,6 +11585,18 @@
       "gloss_ja": "従士",
       "gloss_en": "従士",
       "reading_ja": "サーシュ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
+      "lemma": "sacoth",
+      "pos": "noun",
+      "gloss_ja": "買物 / 買い物",
+      "gloss_en": "買物",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -12741,6 +11720,19 @@
       "gloss_ja": "腕",
       "gloss_en": "腕",
       "reading_ja": "セーダ",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
+      "lemma": "saidiac",
+      "pos": "noun",
+      "gloss_ja": "操舵士",
+      "gloss_en": "操舵士",
+      "reading_ja": "セーディア",
       "tags": [
         "dadh-baronr",
         "ingested",
@@ -13059,6 +12051,18 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
+      "lemma": "sarann",
+      "pos": "noun",
+      "gloss_ja": "母 / 母親。母",
+      "gloss_en": "母",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
       "lemma": "sarérh",
       "pos": "noun",
       "gloss_ja": "艦長 / 艦長。司令",
@@ -13107,6 +12111,19 @@
         "dadh-baronr",
         "ingested",
         "reconstructed"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
+      "lemma": "sath",
+      "pos": "noun",
+      "gloss_ja": "肩; 首の付根 / 頸の付根",
+      "gloss_en": "肩; 首の付根",
+      "reading_ja": "サース",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
@@ -13244,6 +12261,18 @@
       "tags": [
         "dadh-baronr",
         "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
+    },
+    {
+      "lemma": "saurh",
+      "pos": "noun",
+      "gloss_ja": "家族",
+      "gloss_en": "家族",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "mule-jisyo"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
@@ -14547,6 +13576,17 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
+      "lemma": "te",
+      "pos": "postposition",
+      "gloss_ja": "云うこと、考えることの具体的な内容を示す",
+      "gloss_en": "云うこと、考えることの具体的な内容を示す",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
+    },
+    {
       "lemma": "tirec",
       "pos": "noun",
       "gloss_ja": "果汁",
@@ -15225,6 +14265,19 @@
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
+      "lemma": "useriac",
+      "pos": "noun",
+      "gloss_ja": "移民",
+      "gloss_en": "移民",
+      "tags": [
+        "dadh-baronr",
+        "ingested",
+        "reconstructed",
+        "mule-jisyo"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
+    },
+    {
       "lemma": "usiac",
       "pos": "noun",
       "gloss_ja": "浮揚車",
@@ -15381,6 +14434,17 @@
       "pos": "interjection",
       "gloss_ja": "調子はどうですか",
       "gloss_en": "調子はどうですか",
+      "tags": [
+        "dadh-baronr",
+        "ingested"
+      ],
+      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
+    },
+    {
+      "lemma": "zom",
+      "pos": "interjection",
+      "gloss_ja": "曖昧な受け応えの返事",
+      "gloss_en": "曖昧な受け応えの返事",
       "tags": [
         "dadh-baronr",
         "ingested"
@@ -18438,6 +17502,17 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
+      "lemma": "cimecoth",
+      "pos": "noun",
+      "gloss_ja": "軍機",
+      "gloss_en": "軍機",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
       "lemma": "cimena",
       "pos": "noun",
       "gloss_ja": "暗号の",
@@ -21022,6 +20097,18 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
+      "lemma": "gereulach",
+      "pos": "noun",
+      "gloss_ja": "星たち / 星々",
+      "gloss_en": "星たち",
+      "reading_ja": "グリューラシュ",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
       "lemma": "ggarér",
       "pos": "noun",
       "gloss_ja": "飛翔科",
@@ -22417,6 +21504,18 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
+      "lemma": "lacmhacarh",
+      "pos": "noun",
+      "gloss_ja": "ラクファカール",
+      "gloss_en": "ラクファカール",
+      "reading_ja": "ラクファカール",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
       "lemma": "lad",
       "pos": "noun",
       "gloss_ja": "ただ〜だけ",
@@ -22629,6 +21728,18 @@
       "pos": "noun",
       "gloss_ja": "ための",
       "gloss_en": "ための",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "laimh",
+      "pos": "noun",
+      "gloss_ja": "ため / 国民",
+      "gloss_en": "ため",
+      "reading_ja": "レーフ",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -24650,6 +23761,18 @@
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
+      "lemma": "parhynh",
+      "pos": "noun",
+      "gloss_ja": "薔薇の国",
+      "gloss_en": "薔薇の国",
+      "reading_ja": "パリューニュ",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
       "lemma": "pasaire",
       "pos": "noun",
       "gloss_ja": "ばかり",
@@ -25323,6 +24446,17 @@
       "gloss_ja": "林檎酒",
       "gloss_en": "林檎酒",
       "reading_ja": "リンメー",
+      "tags": [
+        "mule-jisyo",
+        "ingested"
+      ],
+      "source": "http://mule.s59.xrea.com/seikai/jisyo/"
+    },
+    {
+      "lemma": "rinusiac",
+      "pos": "noun",
+      "gloss_ja": "記事",
+      "gloss_en": "記事",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -29321,5 +28455,10 @@
       ],
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     }
+  ],
+  "count": 2384,
+  "sources_ingested": [
+    "http://mule.s59.xrea.com/seikai/jisyo/",
+    "http://dadh-baronr.s5.xrea.com/etc/ondic.html"
   ]
 }

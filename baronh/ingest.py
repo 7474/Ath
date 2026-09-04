@@ -13,7 +13,17 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from baronh.fanlex import (
+    DADH_DIC_PAGES,
+    DADH_ONDIC_URL,
+    MULE_JISYO_URL,
+    entries_from_dadh_pairs,
+    entries_from_mule_table,
+    parse_dadh_html,
+    thanks_document,
+)
 from baronh.lexicon import Entry, Lexicon
+from baronh.paths import INGESTED_PATH
 
 WIKI_API = "https://{lang}.wikipedia.org/w/api.php"
 USER_AGENT = "Ath-Baronh-Translator/0.1 (https://github.com/7474/Ath; educational fan tool)"
@@ -237,6 +247,53 @@ def ingest_file(path: Path) -> dict[str, Any]:
     return {"source": str(path), "entries": entries, "count": len(entries)}
 
 
+def ingest_mule_jisyo(url: str = MULE_JISYO_URL) -> dict[str, Any]:
+    html_text = fetch_text(url)
+    parser = _TableParser()
+    parser.feed(html_text)
+    rows = parser.tables[0] if parser.tables else []
+    entries = entries_from_mule_table(rows, source=url)
+    document = thanks_document(entries)
+    document["source"] = url
+    document["title"] = "アーヴ語掻き集め アーヴ語辞書"
+    document["count"] = len(entries)
+    document["entries"] = [e.to_dict() for e in entries]
+    return document
+
+
+def ingest_dadh_ondic() -> dict[str, Any]:
+    entries = []
+    for url in DADH_DIC_PAGES:
+        html_text = fetch_text(url)
+        pairs = parse_dadh_html(html_text)
+        entries.extend(entries_from_dadh_pairs(pairs, source=url))
+    document = thanks_document(entries)
+    document["source"] = DADH_ONDIC_URL
+    document["title"] = "Sidrÿac Borgh=Racair Mauch 私家版アーヴ語辞書"
+    document["count"] = len(entries)
+    document["entries"] = [e.to_dict() for e in entries]
+    return document
+
+
+def ingest_known_sources(*, out: Path | None = None) -> dict[str, Any]:
+    mule = ingest_mule_jisyo()
+    dadh = ingest_dadh_ondic()
+    lexicon = Lexicon([])
+    lexicon.merge_document(dadh, replace=False)
+    lexicon.merge_document(mule, replace=False)
+    document = thanks_document(lexicon.entries)
+    document["count"] = len(lexicon.entries)
+    document["sources_ingested"] = [mule["source"], dadh["source"]]
+    target = out or INGESTED_PATH
+    write_lexicon_document(document, target)
+    return document
+
+
+def write_lexicon_document(document: dict[str, Any], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def merge_into_lexicon(lexicon: Lexicon, document: dict[str, Any], *, replace: bool = True) -> int:
     return lexicon.merge_document(document, replace=replace)
 
@@ -248,14 +305,25 @@ def write_lexicon(lexicon: Lexicon, path: Path) -> None:
 
 def ingest_auto(target: str) -> dict[str, Any]:
     parsed = urlparse(target)
-    if target in {"wikipedia", "wiki", "wp"}:
+    key = target.strip().lower()
+    if key in {"wikipedia", "wiki", "wp"}:
         return ingest_wikipedia()
+    if key in {"mule", "jisyo", "掻き集め"}:
+        return ingest_mule_jisyo()
+    if key in {"dadh", "ondic", "baronhdic"}:
+        return ingest_dadh_ondic()
+    if key in {"known", "thanks", "fan"}:
+        return ingest_known_sources()
     if parsed.scheme in {"http", "https"}:
         if "wikipedia.org" in parsed.netloc:
             title = parsed.path.rsplit("/", 1)[-1]
             lang = parsed.netloc.split(".")[0]
             title = urllib.parse.unquote(title)
             return ingest_wikipedia(title=title or "アーヴ語", lang=lang or "ja")
+        if "mule.s59.xrea.com" in parsed.netloc and "jisyo" in parsed.path:
+            return ingest_mule_jisyo(target)
+        if "dadh-baronr" in parsed.netloc:
+            return ingest_dadh_ondic()
         return ingest_html_url(target)
     path = Path(target)
     if path.is_file():

@@ -60,6 +60,42 @@ class TranslateJaBaronhTest(unittest.TestCase):
     def test_detect_baronh(self):
         self.assertEqual(detect_lang("F'a usere.", self.lex), "baronh")
 
+    def test_arigatou(self):
+        from baronh.translate import _tokenize_ja
+
+        self.assertEqual(_tokenize_ja("ありがとう", self.lex), ["ありがとう"])
+        out = translate("ありがとう", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertIn("zom", out.text.lower())
+        self.assertNotIn("férsi", out.text)
+        self.assertNotIn("う.", out.text)
+
+    def test_hai_not_split_as_topic(self):
+        out = translate("はい", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertIn("dara", out.text.lower())
+
+
+class TranslateWithIngestedLexiconTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lex = load_lexicon()
+
+    def test_expanded_dictionary(self):
+        self.assertGreater(len(self.lex.entries), 2000)
+
+    def test_i_immigrate_still_holds(self):
+        out = translate("私は移民します", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertEqual(out.text, "F'a usere.")
+
+    def test_i_am_abh_still_holds(self):
+        out = translate("私はアーヴです", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertEqual(out.text, "F'a bale.")
+
+    def test_arigatou_from_fan_sources(self):
+        hits = self.lex.lookup("ありがとう", lang="ja")
+        self.assertTrue(hits)
+        out = translate("ありがとう", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertIn("zom", out.text.lower())
+
 
 class PhonologyTest(unittest.TestCase):
     def test_ath_keys_digraphs(self):

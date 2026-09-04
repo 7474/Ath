@@ -203,6 +203,7 @@ def seed_entries() -> list[Entry]:
         _e("arata", "adjective", "新しい", "new", reading_ja="アラタ"),
         _e("dara", "interjection", "はい", "yes", reading_ja="ダラ", tags=["public"]),
         _e("ada", "interjection", "いいえ", "no", reading_ja="アダ", tags=["public"]),
+        _e("zom", "interjection", "ありがとう", "thanks", reading_ja="ゾム", tags=["public"]),
     ]
     return pronouns + nouns + verbs + other
 
@@ -233,8 +234,8 @@ def seed_document() -> dict[str, Any]:
                 }
             ],
             "notes": (
-                "公式の公開辞書は存在しない。シードは Wikipedia の文法解説に現れる語と、"
-                "広く知られた公開語彙に限る。Dadh Baronr など権利表示のある二次辞書は同梱しない。"
+                "公式の公開辞書は存在しない。文法の骨格は Wikipedia「アーヴ語」に依る。"
+                "語彙はファンサイトを走査して拡充し、スペシャルサンクスに記す。"
             ),
         },
         "entries": [entry.to_dict() for entry in seed_entries()],
@@ -267,8 +268,16 @@ class Lexicon:
         if replace:
             self.entries = [item for item in self.entries if _normalize_key(item.lemma) != key or item.pos != entry.pos]
             existing = [item for item in existing if item.pos != entry.pos]
+        else:
+            for item in existing:
+                if item.pos == entry.pos:
+                    self._enrich(item, entry)
+                    return
         self.entries.append(entry)
         self._by_lemma.setdefault(key, existing).append(entry)
+        self._index_glosses(entry)
+
+    def _index_glosses(self, entry: Entry) -> None:
         self._by_gloss_ja.setdefault(_normalize_key(entry.gloss_ja), []).append(entry)
         if " / " in entry.gloss_ja:
             for part in entry.gloss_ja.split("/"):
@@ -279,6 +288,20 @@ class Lexicon:
             self._by_gloss_en.setdefault(_normalize_key(entry.gloss_en), []).append(entry)
             for part in entry.gloss_en.replace("/", ",").split(","):
                 self._by_gloss_en.setdefault(_normalize_key(part), []).append(entry)
+
+    def _enrich(self, existing: Entry, incoming: Entry) -> None:
+        if incoming.gloss_ja and incoming.gloss_ja not in existing.gloss_ja:
+            existing.gloss_ja = f"{existing.gloss_ja} / {incoming.gloss_ja}"
+            self._index_glosses(existing)
+        if incoming.reading_ja and not existing.reading_ja:
+            existing.reading_ja = incoming.reading_ja
+        if incoming.stem and not existing.stem:
+            existing.stem = incoming.stem
+        for tag in incoming.tags:
+            if tag not in existing.tags:
+                existing.tags.append(tag)
+        if incoming.notes and incoming.notes not in existing.notes:
+            existing.notes = (existing.notes + " " + incoming.notes).strip()
 
     def merge_document(self, document: dict[str, Any], *, replace: bool = True) -> int:
         count = 0
@@ -323,7 +346,16 @@ class Lexicon:
                 yield entry
 
     def to_document(self) -> dict[str, Any]:
+        from baronh.fanlex import SPECIAL_THANKS
+
         doc = seed_document()
+        sources = list(doc["meta"]["sources"])
+        seen_urls = {item.get("url") for item in sources}
+        for item in SPECIAL_THANKS:
+            if item["url"] not in seen_urls:
+                sources.append(item)
+        doc["meta"]["sources"] = sources
+        doc["meta"]["thanks"] = [item["thanks"] for item in SPECIAL_THANKS]
         doc["entries"] = [entry.to_dict() for entry in self.entries]
         doc["meta"]["entry_count"] = len(self.entries)
         return doc
@@ -337,7 +369,7 @@ def _split_ja_aliases(gloss: str) -> list[str]:
         inner = text[text.find("(") + 1 : text.rfind(")")]
         if inner:
             aliases.append(inner)
-    for sep in ("/", "・"):
+    for sep in ("/", "・", "。", "、"):
         expanded: list[str] = []
         for alias in aliases:
             expanded.extend(part.strip() for part in alias.split(sep) if part.strip())
@@ -346,12 +378,14 @@ def _split_ja_aliases(gloss: str) -> list[str]:
 
 
 def load_lexicon(paths: Iterable[Path] | None = None) -> Lexicon:
+    from baronh.paths import INGESTED_PATH, default_lexicon_paths
+
     lexicon = Lexicon(seed_entries())
     for path in paths if paths is not None else default_lexicon_paths():
         if path == SEED_LEXICON_PATH and path.is_file():
-            # シード JSON は seed_entries() と同期している前提。ユーザー上書きだけ後段で読む。
             continue
         if path.is_file():
             document = json.loads(path.read_text(encoding="utf-8"))
-            lexicon.merge_document(document, replace=True)
+            replace = path != INGESTED_PATH
+            lexicon.merge_document(document, replace=replace)
     return lexicon

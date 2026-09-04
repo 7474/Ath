@@ -230,6 +230,11 @@ footer {
   line-height: 1.6;
 }
 
+.thanks { margin-top: 1rem; }
+.thanks h2 { font-size: 1rem; color: var(--ink); margin-bottom: .4rem; }
+.thanks ul { padding-left: 1.2rem; }
+.thanks li { margin: .35rem 0; }
+
 .badge {
   display: inline-block;
   font-size: .72rem;

@@ -10,6 +10,7 @@
     ["ja", "baronh", "あなたの家族は？"],
     ["ja", "baronh", "星たちよ"],
     ["ja", "baronh", "分かりますか"],
+    ["ja", "baronh", "ありがとう"],
     ["baronh", "ja", "F'a usere."],
     ["baronh", "ja", "F'a bale."],
     ["baronh", "en", "Facle sa?"],
@@ -24,9 +25,9 @@
 
   function dataUrls() {
     return [
+      "data/lexicon.json",
       "/data/lexicon.json",
-      "../data/lexicon.json",
-      "data/lexicon.json"
+      "../data/lexicon.json"
     ];
   }
 

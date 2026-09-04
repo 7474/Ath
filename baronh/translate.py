@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 
 from baronh.grammar import FormIndex, conjugate, decline, topic_contract
-from baronh.lexicon import CASE_PARTICLE_JA, Entry, Lexicon
+from baronh.lexicon import CASE_PARTICLE_JA, Entry, Lexicon, _split_ja_aliases
 from baronh.phonology import normalize_baronh, reading_ja, to_ath_keys
 
 LANGS = ("baronh", "ja", "en")
@@ -135,10 +135,32 @@ def _is_ja_boundary_marker(src: str, index: int) -> str | None:
     return None
 
 
-def _tokenize_ja(text: str) -> list[str]:
+def _ja_match_phrases(lexicon: Lexicon | None) -> list[str]:
+    if lexicon is None:
+        return []
+    skip = set(JA_PARTICLES) | set(JA_ATOMIC)
+    phrases: set[str] = set()
+    for entry in lexicon.entries:
+        for alias in _split_ja_aliases(entry.gloss_ja):
+            text = alias.strip()
+            if len(text) < 2 or text in skip:
+                continue
+            phrases.add(text)
+    return sorted(phrases, key=len, reverse=True)
+
+
+def _longest_ja_phrase(src: str, index: int, phrases: list[str]) -> str | None:
+    for phrase in phrases:
+        if src.startswith(phrase, index):
+            return phrase
+    return None
+
+
+def _tokenize_ja(text: str, lexicon: Lexicon | None = None) -> list[str]:
     tokens: list[str] = []
     i = 0
     src = text.strip()
+    phrases = _ja_match_phrases(lexicon)
     while i < len(src):
         ch = src[i]
         if ch.isspace():
@@ -148,18 +170,32 @@ def _tokenize_ja(text: str) -> list[str]:
             tokens.append(ch)
             i += 1
             continue
-        matched = _is_ja_boundary_marker(src, i)
-        if matched:
-            tokens.append(matched)
-            i += len(matched)
+        particle = _is_ja_boundary_marker(src, i)
+        phrase = _longest_ja_phrase(src, i, phrases)
+        if particle and (phrase is None or len(phrase) <= len(particle)):
+            tokens.append(particle)
+            i += len(particle)
             continue
         j = i + 1
         while j < len(src) and not src[j].isspace() and src[j] not in "、。！？!?.,":
             if _is_ja_boundary_marker(src, j):
                 break
             j += 1
-        tokens.append(src[i:j])
-        i = j
+        leftover = src[i:j]
+        if phrase and len(phrase) > len(leftover):
+            tokens.append(phrase)
+            i += len(phrase)
+            continue
+        if leftover:
+            tokens.append(leftover)
+            i = j
+            continue
+        if phrase:
+            tokens.append(phrase)
+            i += len(phrase)
+            continue
+        tokens.append(src[i])
+        i += 1
     return tokens
 
 
@@ -247,7 +283,7 @@ def _apply_case(entry: Entry, case: str) -> str:
 
 
 def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
-    tokens = _tokenize_ja(text)
+    tokens = _tokenize_ja(text, lexicon)
     question = bool(JA_QUESTION_RE.search(text.strip())) or "か" in tokens
     vocative = "よ" in tokens
     pieces: list[str] = []
@@ -328,12 +364,14 @@ def _translate_ja_to_baronh(text: str, lexicon: Lexicon) -> TranslationResult:
         if verbish and (nxt in JA_PARTICLES or nxt in {"", "。", "！", "？", "!", "?"} or i == len(tokens) - 1 or nxt in JA_PARTICLES):
             flush_noun("nom")
             _stem, mood, voices, aspect = _verb_features_ja(tok)
-            if verbish.lemma == "ane" and pending_noun is None:
-                form = conjugate(verbish, mood=mood, aspect=aspect, voices=voices)
-            else:
-                form = conjugate(verbish, mood=mood, aspect=aspect, voices=voices)
+            form = conjugate(verbish, mood=mood, aspect=aspect, voices=voices)
             pieces.append(form)
             analysis.append(TokenGloss(tok, form, verbish.gloss_ja))
+            i += 1
+            continue
+        if interj and nxt not in JA_PARTICLES:
+            pieces.append(interj.lemma)
+            analysis.append(TokenGloss(tok, interj.lemma, interj.pos))
             i += 1
             continue
         if nounish:
