@@ -15,7 +15,7 @@ Pipeline:
 
 Usage:
     python generate_aarth_font.py [--image PATH_OR_URL]
-    python generate_aarth_font.py --write-template templates/ath_source_template.png
+    python generate_aarth_font.py --write-template templates/
 
 Requirements (install once):
     pip install opencv-python-headless pillow fonttools brotli
@@ -131,6 +131,9 @@ TRACE_SCALE = 8
 # cubic-upsample so potrace sees a dense, already-smooth 0.5 isosurface.
 TRACE_SDF_SIGMA = 1.2
 TRACE_BLACKLEVEL = 0.5   # midpoint of the SDF ramp (0-level of the field)
+# Box detection ignores light-gray template titles/guides (blank sheets
+# have no black glyphs, so Otsu would otherwise promote captions to ink).
+DETECT_INK_MAX = 110
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +162,9 @@ def binarize(gray: np.ndarray) -> np.ndarray:
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # Glyphs are dark (0) on white (255); invert so glyphs are white on black
     binary = cv2.bitwise_not(binary)
+    # Drop light-gray template captions/guides. On a blank sheet Otsu would
+    # treat those as the only "ink".
+    binary = np.where(gray < DETECT_INK_MAX, binary, 0).astype(np.uint8)
     # Do not apply morphological opening: 2×2 opening eats umlaut dots (~4×4).
     return binary
 
@@ -725,9 +731,9 @@ MARGIN_TOP = 118
 MARGIN_BOTTOM = 72
 GUIDE_FILL = (252, 252, 250)
 GUIDE_OUTLINE = (236, 236, 230)
-LABEL_FILL = (120, 120, 120)
-TITLE_FILL = (70, 70, 70)
-NOTE_FILL = (110, 110, 110)
+LABEL_FILL = (168, 168, 168)
+TITLE_FILL = (168, 168, 168)
+NOTE_FILL = (176, 176, 176)
 
 
 def _try_font(path: Path, size: int):
@@ -748,6 +754,19 @@ def _centered_text(draw, xy, text, font, fill):
         (x + (w - tw) / 2 - bbox[0], y + (h - th) / 2 - bbox[1]),
         text, font=font, fill=fill,
     )
+
+
+def _draw_corner_ticks(draw, box_xy, tick: int = 14) -> None:
+    """Light corner marks that stay below the Otsu ink threshold."""
+    x0, y0, x1, y1 = box_xy
+    draw.line((x0, y0, x0 + tick, y0), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x0, y0, x0, y0 + tick), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x1 - tick, y0, x1, y0), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x1, y0, x1, y0 + tick), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x0, y1 - tick, x0, y1), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x0, y1, x0 + tick, y1), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x1, y1 - tick, x1, y1), fill=GUIDE_OUTLINE, width=2)
+    draw.line((x1 - tick, y1, x1, y1), fill=GUIDE_OUTLINE, width=2)
 
 
 def _paste_glyph_in_cell(canvas, src_rgb: np.ndarray, box, cell_xy, padding: int = 6):
@@ -775,13 +794,20 @@ def _paste_glyph_in_cell(canvas, src_rgb: np.ndarray, box, cell_xy, padding: int
     canvas.paste(glyph, (px, py))
 
 
-def write_source_template(dest: Path, alphabet_image: Path | None = None) -> Path:
+def write_source_template(
+    dest: Path,
+    alphabet_image: Path | None = None,
+    blank: bool = False,
+) -> Path:
     """
     Write a labeled raster template: 4×7 alphabet cells + 0–9 numeral cells.
 
-    When ``alphabet_image`` is given, detected Ath letters are copied into the
-    alphabet cells so the sheet can be used as ``--image`` immediately; numeral
-    cells stay empty for the user to draw into.
+    Reading sheet (``blank=False``): when ``alphabet_image`` is given, detected
+    Ath letters are copied into the alphabet cells so the sheet can be used as
+    ``--image`` immediately; numeral cells stay empty.
+
+    Blank sheet (``blank=True``): every cell is empty (corner ticks only) so
+    all 38 glyphs can be drawn from scratch.
     """
     from PIL import ImageDraw
 
@@ -800,18 +826,32 @@ def write_source_template(dest: Path, alphabet_image: Path | None = None) -> Pat
     note_font = _try_font(_TEMPLATE_SANS, 14)
     label_font = _try_font(_TEMPLATE_SANS, 18)
     small_font = _try_font(_TEMPLATE_SANS, 13)
+    caption_font = jp_font if _TEMPLATE_JP.is_file() else note_font
 
-    draw.text((MARGIN_X, 28), "Aarth source template", font=title_font, fill=TITLE_FILL)
-    draw.text(
-        (MARGIN_X, 64),
-        "字母 4×7 ＋ 数字 0–9   /   Draw numerals in the empty cells (labels stay below).",
-        font=jp_font if _TEMPLATE_JP.is_file() else note_font,
-        fill=NOTE_FILL,
-    )
+    if blank:
+        draw.text((MARGIN_X, 28), "Aarth blank template", font=title_font, fill=TITLE_FILL)
+        draw.text(
+            (MARGIN_X, 64),
+            "全グリフ未記入  字母 4×7 ＋ 数字 0–9   /   Draw every glyph. Labels stay below.",
+            font=caption_font,
+            fill=NOTE_FILL,
+        )
+    else:
+        draw.text((MARGIN_X, 28), "Aarth source template", font=title_font, fill=TITLE_FILL)
+        draw.text(
+            (MARGIN_X, 64),
+            "読み取り用  字母埋め込み ＋ 数字空欄   /   Draw numerals in the empty cells.",
+            font=caption_font,
+            fill=NOTE_FILL,
+        )
 
     alphabet_boxes = []
     src_bgr = None
-    if alphabet_image is not None and Path(alphabet_image).is_file():
+    if (
+        not blank
+        and alphabet_image is not None
+        and Path(alphabet_image).is_file()
+    ):
         src_bgr = cv2.imread(str(alphabet_image), cv2.IMREAD_COLOR)
         gray = load_grayscale(Path(alphabet_image))
         binary = binarize(gray)
@@ -824,19 +864,11 @@ def write_source_template(dest: Path, alphabet_image: Path | None = None) -> Pat
             cy = MARGIN_TOP + r * (CELL_H + GAP_Y)
             is_digit = r >= ALPHABET_ROWS
             box_xy = (cx, cy, cx + CELL_W, cy + GLYPH_AREA_H)
-            if is_digit:
+            empty = blank or is_digit
+            if empty:
                 # Corner ticks only — a closed grey box would survive Otsu as a
                 # fake "glyph" when the cell has no ink yet.
-                tick = 14
-                x0, y0, x1, y1 = box_xy
-                draw.line((x0, y0, x0 + tick, y0), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x0, y0, x0, y0 + tick), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x1 - tick, y0, x1, y0), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x1, y0, x1, y0 + tick), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x0, y1 - tick, x0, y1), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x0, y1, x0 + tick, y1), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x1, y1 - tick, x1, y1), fill=GUIDE_OUTLINE, width=2)
-                draw.line((x1 - tick, y1, x1, y1), fill=GUIDE_OUTLINE, width=2)
+                _draw_corner_ticks(draw, box_xy)
             else:
                 draw.rounded_rectangle(
                     box_xy, radius=10, fill=GUIDE_FILL, outline=GUIDE_OUTLINE, width=1,
@@ -859,8 +891,33 @@ def write_source_template(dest: Path, alphabet_image: Path | None = None) -> Pat
     draw.text((MARGIN_X, height - 44), footer, font=small_font, fill=NOTE_FILL)
 
     canvas.save(str(dest), "PNG")
-    print(f"[output] source template → {dest}")
+    kind = "blank template" if blank else "source template"
+    print(f"[output] {kind} → {dest}")
     return dest
+
+
+def write_source_templates(
+    dest: Path,
+    alphabet_image: Path | None = None,
+) -> tuple[Path, Path]:
+    """Write the reading sheet and the all-empty blank sheet.
+
+    ``dest`` may be a directory (canonical filenames) or a ``.png`` path for
+    the reading sheet; the blank sheet is always ``ath_blank_template.png``
+    next to it.
+    """
+    dest = Path(dest)
+    image_suffixes = {".png", ".jpg", ".jpeg", ".webp"}
+    if dest.suffix.lower() in image_suffixes:
+        filled = dest
+        blank = dest.with_name("ath_blank_template.png")
+    else:
+        dest.mkdir(parents=True, exist_ok=True)
+        filled = dest / "ath_source_template.png"
+        blank = dest / "ath_blank_template.png"
+    write_source_template(filled, alphabet_image=alphabet_image, blank=False)
+    write_source_template(blank, alphabet_image=None, blank=True)
+    return filled, blank
 
 
 def _acquire_image(spec: str | None, output_dir: Path, fallback_name: str) -> Path:
@@ -915,7 +972,7 @@ def main():
     )
     parser.add_argument(
         "--write-template", default=None, metavar="PATH",
-        help="Write the labeled source-image template (letters + empty 0–9 cells) and exit",
+        help="Write reading + blank templates (PNG path or directory) and exit",
     )
     parser.add_argument("--output-dir", default=".", help="Directory for output files")
     parser.add_argument("--debug", action="store_true", help="Save debug images")
@@ -930,7 +987,7 @@ def main():
             alphabet_src = Path(args.image)
         elif (Path("Ath_alphabet.png")).is_file():
             alphabet_src = Path("Ath_alphabet.png")
-        write_source_template(Path(args.write_template), alphabet_image=alphabet_src)
+        write_source_templates(Path(args.write_template), alphabet_image=alphabet_src)
         return
 
     # --- 1. Acquire image ---

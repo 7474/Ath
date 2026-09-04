@@ -111,6 +111,30 @@ class DigitGridDetectionTest(unittest.TestCase):
         self.assertEqual(len(alphabet), 28, msg="prefilled letters must still detect")
         self.assertEqual(digits, [], msg="empty numeral cells must not be detected")
 
+    def test_blank_template_has_no_glyphs(self):
+        dest = Path(tempfile.mkdtemp(prefix="aarth-blank-")) / "blank.png"
+        aarth.write_source_template(dest, blank=True)
+        binary = aarth.load_and_binarize(dest)
+        alphabet, digits = aarth.find_alphabet_and_digit_boxes(binary)
+        self.assertEqual(alphabet, [], msg="blank sheet must not invent letters")
+        self.assertEqual(digits, [], msg="blank sheet must not invent digits")
+
+    def test_write_source_templates_emits_reading_and_blank(self):
+        dest = Path(tempfile.mkdtemp(prefix="aarth-both-"))
+        filled, blank = aarth.write_source_templates(dest, alphabet_image=SOURCE_PNG)
+        self.assertEqual(filled.name, "ath_source_template.png")
+        self.assertEqual(blank.name, "ath_blank_template.png")
+        self.assertTrue(filled.is_file())
+        self.assertTrue(blank.is_file())
+        filled_bin = aarth.load_and_binarize(filled)
+        blank_bin = aarth.load_and_binarize(blank)
+        f_alpha, f_digits = aarth.find_alphabet_and_digit_boxes(filled_bin)
+        b_alpha, b_digits = aarth.find_alphabet_and_digit_boxes(blank_bin)
+        self.assertEqual(len(f_alpha), 28)
+        self.assertEqual(f_digits, [])
+        self.assertEqual(b_alpha, [])
+        self.assertEqual(b_digits, [])
+
 
 class DigitsInFontTest(unittest.TestCase):
     def test_digits_image_lands_in_cmap(self):
