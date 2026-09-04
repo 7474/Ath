@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -57,23 +58,35 @@ class CliSmokeTest(unittest.TestCase):
             check=False,
         )
 
-    def test_translate_agent_cli(self):
-        completed = self._run(
-            "translate",
-            "星たちの光を見ます",
-            "--from",
-            "ja",
-            "--to",
-            "baronh",
-            "--engine",
-            "agent",
-            "--json",
+    def test_translate_agent_cli_requires_model(self):
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if key not in {"OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_API_BASE"}
+        }
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "baronh",
+                "translate",
+                "星たちの光を見ます",
+                "--from",
+                "ja",
+                "--to",
+                "baronh",
+                "--engine",
+                "agent",
+                "--json",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
         )
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        data = json.loads(completed.stdout)
-        self.assertEqual(data["engine"], "agent")
-        self.assertTrue(any(item["from"] == "光" for item in data["substitutions"]))
-        self.assertIn("sairiac", data["text"])
+        self.assertEqual(completed.returncode, 2, completed.stderr)
+        self.assertIn("生成 AI", completed.stderr)
 
     def test_lookup_cli(self):
         completed = self._run("lookup", "abh")

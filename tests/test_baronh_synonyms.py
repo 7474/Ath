@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from baronh.agent import dispatch_agent_tool, translate_agent
+from baronh.agent import dispatch_agent_tool
 from baronh.lexicon import load_lexicon
 from baronh.synonyms import coverage_plan, find_synonyms, paraphrase_source, uncovered_tokens
 from baronh.translate import translate
@@ -80,67 +80,6 @@ class SynonymCoverageTest(unittest.TestCase):
         rewritten, subs = paraphrase_source(local.source_text, plan, source_lang="ja")
         self.assertEqual(rewritten, local.source_text)
         self.assertEqual(subs, [])
-
-    def test_agent_without_model_uses_dictionary_synonym(self):
-        out = translate_agent(
-            "星たちの光を見ます",
-            self.lex,
-            source_lang="ja",
-            target_lang="baronh",
-            use_model=False,
-        )
-        self.assertEqual(out.engine, "agent")
-        self.assertIn("sairiac", out.text.lower() + " " + json.dumps(out.substitutions, ensure_ascii=False))
-        self.assertTrue(any(item.get("from") == "光" for item in out.substitutions))
-        self.assertNotIn("光", out.text)
-        self.assertEqual(out.source_text, "星たちの光を見ます")
-        self.assertFalse(any("未登録の語は原文のまま" in note for note in out.notes))
-        self.assertIn("mire", out.text)
-        self.assertIn("gereulac", out.text)
-
-    def test_agent_keeps_known_sentence(self):
-        out = translate_agent(
-            "私はアーヴです",
-            self.lex,
-            source_lang="ja",
-            target_lang="baronh",
-            use_model=False,
-        )
-        self.assertEqual(out.text, "F'a bale.")
-
-    def test_agent_tool_loop_with_fake_chat(self):
-        calls = {"n": 0}
-
-        def chat_once(payload):
-            calls["n"] += 1
-            if calls["n"] == 1:
-                return {
-                    "choices": [{
-                        "message": {
-                            "tool_calls": [{
-                                "id": "1",
-                                "function": {
-                                    "name": "find_synonyms",
-                                    "arguments": json.dumps({"query": "光", "extra_keys": ["輝くもの"]}),
-                                },
-                            }]
-                        }
-                    }]
-                }
-            return {"choices": [{"message": {"content": "gereulacr sairiac miree."}}]}
-
-        out = translate_agent(
-            "星たちの光を見ます",
-            self.lex,
-            source_lang="ja",
-            target_lang="baronh",
-            chat_once=chat_once,
-        )
-        self.assertEqual(out.engine, "agent")
-        self.assertIn("sairia", out.text)
-        self.assertGreaterEqual(calls["n"], 2)
-        invented = [note for note in out.notes if "辞書にない語形" in note]
-        self.assertFalse(invented)
 
 
 if __name__ == "__main__":

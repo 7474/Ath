@@ -9,12 +9,14 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
-from baronh.agent import translate_agent
+from baronh.agent import AgentModelRequired, model_configured, translate_agent
 from baronh.ingest import write_lexicon
 from baronh.lexicon import Lexicon, load_lexicon
 from baronh.paths import DATA_DIR, ROOT_DIR, WEB_DIR
 from baronh.synonyms import find_synonyms, format_hits
 from baronh.translate import translate
+from baronh.vectordb import VECTOR_DIM, get_index, hit_to_dict
+from baronh.openai_backend import DEFAULT_CHAT_MODEL
 
 MAX_BODY = 64 * 1024
 
@@ -25,6 +27,7 @@ def _cors_origin() -> str:
 
 class TranslatorHandler(SimpleHTTPRequestHandler):
     lexicon: Lexicon
+    chat_once: Any = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT_DIR), **kwargs)
@@ -75,6 +78,9 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
                     "ok": True,
                     "entries": len(self.lexicon.entries),
                     "engines": ["local", "agent", "openai"],
+                    "vector_dim": VECTOR_DIM,
+                    "model": model_configured(),
+                    "chat_model": os.environ.get("OPENAI_CHAT_MODEL") or DEFAULT_CHAT_MODEL,
                 }
             )
             return
@@ -82,6 +88,16 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
             query = (parse_qs(parsed.query).get("q") or [""])[0]
             hits = find_synonyms(query, self.lexicon)
             self._send_json({"query": query, "hits": format_hits(hits)})
+            return
+        if parsed.path == "/api/search":
+            query = (parse_qs(parsed.query).get("q") or [""])[0]
+            try:
+                limit = int((parse_qs(parsed.query).get("limit") or ["8"])[0])
+            except ValueError:
+                limit = 8
+            limit = max(1, min(limit, 16))
+            hits = get_index(self.lexicon).search(query, limit=limit)
+            self._send_json({"query": query, "hits": [hit_to_dict(hit) for hit in hits]})
             return
         super().do_GET()
 
@@ -114,7 +130,17 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": "invalid lang"}, status=400)
             return
         try:
-            result = run_translate(self.lexicon, text, source_lang=source, target_lang=target, engine=engine)
+            result = run_translate(
+                self.lexicon,
+                text,
+                source_lang=source,
+                target_lang=target,
+                engine=engine,
+                chat_once=self.chat_once,
+            )
+        except AgentModelRequired as exc:
+            self._send_json({"error": str(exc)}, status=503)
+            return
         except Exception as exc:  # noqa: BLE001 — API 境界でメッセージを返す
             self._send_json({"error": str(exc)}, status=500)
             return
@@ -136,6 +162,7 @@ def run_translate(
     source_lang: str = "auto",
     target_lang: str = "auto",
     engine: str = "agent",
+    chat_once: Any = None,
 ) -> Any:
     if engine == "local":
         return translate(text, lexicon, source_lang=source_lang, target_lang=target_lang)
@@ -143,14 +170,21 @@ def run_translate(
         from baronh.openai_backend import translate_openai
 
         return translate_openai(text, lexicon, source_lang=source_lang, target_lang=target_lang)
-    return translate_agent(text, lexicon, source_lang=source_lang, target_lang=target_lang)
+    return translate_agent(
+        text,
+        lexicon,
+        source_lang=source_lang,
+        target_lang=target_lang,
+        chat_once=chat_once,
+    )
 
 
-def make_handler(lexicon: Lexicon) -> type[TranslatorHandler]:
+def make_handler(lexicon: Lexicon, *, chat_once: Any = None) -> type[TranslatorHandler]:
     class BoundHandler(TranslatorHandler):
         pass
 
     BoundHandler.lexicon = lexicon
+    BoundHandler.chat_once = staticmethod(chat_once) if chat_once is not None else None
     return BoundHandler
 
 

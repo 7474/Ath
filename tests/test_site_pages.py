@@ -50,6 +50,7 @@ class SiteStructureTest(unittest.TestCase):
     def test_translator_mentions_server_agent(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("サーバエージェント", web)
+        self.assertIn("ベクトル検索", web)
         self.assertIn("id=\"agent-url\"", web)
         self.assertIn("/api/translate", web)
 

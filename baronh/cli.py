@@ -35,17 +35,21 @@ def cmd_translate(args: argparse.Namespace) -> int:
     text = args.text if args.text is not None else sys.stdin.read()
     engine = args.engine
     if engine == "agent":
-        from baronh.agent import translate_agent
+        from baronh.agent import AgentModelRequired, translate_agent
 
-        result = translate_agent(
-            text,
-            lexicon,
-            source_lang=args.source,
-            target_lang=args.target,
-            api_key=args.api_key,
-            api_base=getattr(args, "api_base", None),
-            model=args.model,
-        )
+        try:
+            result = translate_agent(
+                text,
+                lexicon,
+                source_lang=args.source,
+                target_lang=args.target,
+                api_key=args.api_key,
+                api_base=getattr(args, "api_base", None),
+                model=args.model,
+            )
+        except AgentModelRequired as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     elif engine in {"openai", "auto"} and (args.api_key or engine == "openai"):
         from baronh.openai_backend import translate_openai
 

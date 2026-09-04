@@ -10,7 +10,7 @@ GitHub Pages は静的ホストなのでエージェントを実行しない。�
 
 | 構成 | 向く理由 | 向かない理由 |
 |---|---|---|
-| **ローカル `python -m baronh serve`** | 依存追加なし。類義語寄せはモデル無しでも動く | 公開 URL が無い |
+| **ローカル `python -m baronh serve`** | 辞書のベクトル索引はプロセス内。モデルだけ外部 | 公開 URL が無い。生成 AI が必須 |
 | **Cloud Run + Vertex AI（Gemini の OpenAI 互換口）** | コンテナ 1 個、ゼロスケール、CORS、Secrets。いまのコードのまま | GCP プロジェクトが要る |
 | **Cloud Run + 任意の OpenAI 互換** | Vertex 以外（OpenAI / LiteLLM / 自前 vLLM）も同じ | モデル課金は別 |
 | **AWS Lambda Function URL または App Runner + Bedrock** | 同じ HTTP API を載せるだけ | コンテナよりコールドスタートが大きい場合がある |
@@ -26,10 +26,10 @@ GitHub Pages は静的ホストなのでエージェントを実行しない。�
 
 同期の短ループである。セッション記憶やブラウザ操作は使わない。
 
-1. 規則下訳
-2. 未登録の普通名詞を辞書の類義語へ寄せる（モデル無しでも実施）
-3. 任意で Chat Completions をサーバから複数往復（`find_synonyms` など）
-4. アーヴ語の語形を辞書と照合
+1. 原文を簡易ベクトル索引で検索し、文法全文をシステムプロンプトへ載せる
+2. 生成 AI が `search_lexicon` / `find_synonyms` などで辞書を追加検索する（モデル必須）
+3. 文の組み立てはモデル。規則下訳は渡さない
+4. アーヴ語の語形を辞書と照合する
 
 Memory Bank や AgentCore Memory は、この翻訳にはまだ要らない。
 
@@ -41,7 +41,7 @@ python3 -m baronh serve
 # POST http://127.0.0.1:8765/api/translate
 ```
 
-モデルを使うときだけ環境変数を付ける。
+エージェントは生成 AI が必須。環境変数を付ける。
 
 ```bash
 export OPENAI_API_KEY=...
@@ -108,6 +108,6 @@ Agent Engine は Gemini + Memory Bank 向けのランタイムである。会話
 }
 ```
 
-`engine` は `agent`（既定）/ `local` / `openai`。`GET /api/health` と `GET /api/synonyms?q=光` もある。
+`engine` は `agent`（既定）/ `local` / `openai`。`GET /api/health`、`GET /api/synonyms?q=光`、`GET /api/search?q=光`（ベクトル検索）もある。モデルが無ければ `engine=agent` は 503。
 
 環境変数: `PORT`（Cloud Run）、`OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_CHAT_MODEL`、`BARONH_CORS_ORIGIN`。

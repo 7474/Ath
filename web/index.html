@@ -29,7 +29,7 @@
       Wikipedia「アーヴ語」の文法と、ファンサイトの公開辞書を走査した語彙で動く規則ベース翻訳です。
       出典はページ末尾のスペシャルサンクスを見てください。
       辞書にない固有名詞は発音からアーヴ語ローマ字へ転記します。
-      サーバエージェントは未登録の普通名詞を辞書の類義語へ寄せます（<code>python -m baronh serve</code> または Cloud Run）。
+      サーバエージェントはベクトル検索した辞書と文法を生成 AI に渡し、類義語で意味を通します（<code>python -m baronh serve</code> または Cloud Run。生成 AI 必須）。
       ブラウザから OpenAI 互換 API を直接呼ぶ経路は実験用です。
     </p>
 
@@ -112,7 +112,7 @@
     <section class="panel" id="settings-panel" hidden>
       <h2>サーバエージェント / OpenAI 互換（任意）</h2>
       <p class="hint">
-        サーバエージェントは辞書の類義語探索とツール往復をサーバで行います。キーはサーバの環境変数に置き、ブラウザには出しません。
+        サーバエージェントは辞書のベクトル検索・文法コンテキスト・ツール往復をサーバで行います。キーはサーバの環境変数に置き、ブラウザには出しません。生成 AI が無いと動きません。
         既定の URL は同じオリジンの <code>/api/translate</code> です（<code>python -m baronh serve</code>）。
         GitHub Pages から使うときは Cloud Run などの URL を入れてください。構成の比較はリポジトリの <code>baronh/DEPLOY.md</code> にあります。
         ブラウザから Chat Completions を直接呼ぶ経路は実験用です。キーは localStorage にだけ保存します。
