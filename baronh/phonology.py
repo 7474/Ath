@@ -114,7 +114,12 @@ def fold_ascii_acute(text: str) -> str:
 
 
 def fold_fan_romanization(text: str) -> str:
-    """ファン資料のラテン転写を、Wikipedia / アース字母の綴りへ畳む。"""
+    """ファン資料のラテン転写を、Wikipedia / アース字母の綴りへ畳む。
+
+    層は二つある。辞書見出しは Wikipedia 転写（``ai`` ``au`` ``eu`` は 2 字）のまま持ち、
+    フォント入力だけ :func:`to_ath_keys` が ``A`` ``I`` ``E`` にする。取り込みと lookup
+    はこの関数で代用綴りを転写へ寄せる。詳細は README「転写とグリフの留意点」。
+    """
     return fold_to_ath_spelling(fold_latin1_oelig(fold_ascii_acute(text)))
 
 

@@ -38,7 +38,10 @@ from PIL import Image
 
 # ---------------------------------------------------------------------------
 # Mapping: glyph extraction order (row-major, L→R) → Unicode code points
-# The Ath/Ath alphabet has 28 phonemes; we map them to lowercase ASCII
+# Order matches Wikimedia Commons File:Ath_(alphabet).png labels (4×7).
+# Wikipedia notes that au↔o and p↔eu values vary by source; this cmap
+# follows the labelled image, not an alternate glyph-to-letter assignment.
+# The Ath alphabet has 28 phonemes; we map them to lowercase ASCII
 # letters plus a handful of digraph keys following the "Nine Lives" convention.
 # Optional numerals 0–9 follow the alphabet on the same sheet (or a second
 # raster passed as --digits-image) and map to ASCII digits.
