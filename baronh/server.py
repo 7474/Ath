@@ -126,6 +126,7 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
         source = str(payload.get("source_lang") or "auto")
         target = str(payload.get("target_lang") or "auto")
         engine = str(payload.get("engine") or "agent")
+        vector_search = bool(payload.get("vector_search"))
         if source not in {"auto", "ja", "en", "baronh"} or target not in {"auto", "ja", "en", "baronh"}:
             self._send_json({"error": "invalid lang"}, status=400)
             return
@@ -136,6 +137,7 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
                 source_lang=source,
                 target_lang=target,
                 engine=engine,
+                vector_search=vector_search,
                 chat_once=self.chat_once,
             )
         except AgentModelRequired as exc:
@@ -162,10 +164,11 @@ def run_translate(
     source_lang: str = "auto",
     target_lang: str = "auto",
     engine: str = "agent",
+    vector_search: bool = False,
     chat_once: Any = None,
 ) -> Any:
     if engine == "local":
-        return translate(text, lexicon, source_lang=source_lang, target_lang=target_lang)
+        return translate(text, lexicon, source_lang=source_lang, target_lang=target_lang, vector_search=vector_search)
     if engine == "openai":
         from baronh.openai_backend import translate_openai
 

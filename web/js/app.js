@@ -7,6 +7,7 @@
   var TTS_MODEL_KEY = "ath-translate.openai-tts-model";
   var AGENT_URL_KEY = "ath-translate.agent-url";
   var OVERLAY_KEY = "ath-translate.overlay";
+  var VECTOR_SEARCH_KEY = "ath-translate.local-vector";
   var EXAMPLES = [
     ["ja", "baronh", "私は移民します"],
     ["ja", "baronh", "私はアーヴです"],
@@ -179,7 +180,15 @@
   function localTranslate() {
     var src = $("source-lang").value;
     var tgt = $("target-lang").value;
-    return BaronhEngine.translate($("source-text").value, lexicon, src, tgt);
+    return BaronhEngine.translate($("source-text").value, lexicon, src, tgt, {
+      vectorSearch: !!($("local-vector-search") && $("local-vector-search").checked)
+    });
+  }
+
+  function syncLocalVectorOption() {
+    var wrap = $("local-vector-wrap");
+    if (!wrap) return;
+    wrap.hidden = $("engine").value !== "local";
   }
 
   function openaiTranslate() {
@@ -349,6 +358,12 @@
   });
   $("source-lang").addEventListener("change", syncAthScript);
   $("target-lang").addEventListener("change", syncAthScript);
+  $("engine").addEventListener("change", syncLocalVectorOption);
+  if ($("local-vector-search")) {
+    $("local-vector-search").addEventListener("change", function () {
+      localStorage.setItem(VECTOR_SEARCH_KEY, $("local-vector-search").checked ? "1" : "0");
+    });
+  }
   $("source-text").addEventListener("input", syncAthScript);
   $("lookup-btn").addEventListener("click", doLookup);
   $("lookup-q").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLookup(); });
@@ -403,6 +418,10 @@
   $("api-base").value = localStorage.getItem(BASE_KEY) || "https://api.openai.com/v1";
   $("tts-model").value = localStorage.getItem(TTS_MODEL_KEY) || "gpt-4o-mini-tts";
   if ($("agent-url")) $("agent-url").value = localStorage.getItem(AGENT_URL_KEY) || "/api/translate";
+  if ($("local-vector-search")) {
+    $("local-vector-search").checked = localStorage.getItem(VECTOR_SEARCH_KEY) === "1";
+  }
+  syncLocalVectorOption();
 
   firstJson(dataUrls("lexicon.json")).then(function (doc) {
     lexicon = new BaronhEngine.Lexicon(doc.entries || []);

@@ -105,6 +105,18 @@ h1 { font-size: 1.55rem; margin-bottom: .4rem; }
   margin-bottom: .8rem;
 }
 
+.langs label.opt {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.langs label.opt[hidden] {
+  display: none;
+}
+
 select, input[type="text"], input[type="password"], textarea, button {
   font: inherit;
 }

@@ -135,6 +135,33 @@ class TranslateWithIngestedLexiconTest(unittest.TestCase):
         self.assertEqual(out.text, "F'a ghintole.")
         self.assertTrue(any("発音から転記" in note for note in out.notes))
 
+    def test_local_vector_search_is_opt_in(self):
+        off = translate("星たちの光を見ます", self.lex, source_lang="ja", target_lang="baronh")
+        self.assertIn("光", off.text)
+        self.assertFalse(off.substitutions)
+        on = translate(
+            "星たちの光を見ます",
+            self.lex,
+            source_lang="ja",
+            target_lang="baronh",
+            vector_search=True,
+        )
+        self.assertIn("sairiac", on.text)
+        self.assertNotIn("光", on.unknown)
+        self.assertTrue(any(item.get("lemma") == "sairiac" for item in on.substitutions))
+        self.assertTrue(any("ベクトル検索" in note for note in on.notes))
+
+    def test_local_vector_search_skips_proper_nouns(self):
+        on = translate(
+            "私はジントです",
+            self.lex,
+            source_lang="ja",
+            target_lang="baronh",
+            vector_search=True,
+        )
+        self.assertEqual(on.text, "F'a ghintole.")
+        self.assertFalse(on.substitutions)
+
 
 class PhonologyTest(unittest.TestCase):
     def test_ath_keys_digraphs(self):

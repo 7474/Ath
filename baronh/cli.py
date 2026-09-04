@@ -63,11 +63,17 @@ def cmd_translate(args: argparse.Namespace) -> int:
             model=args.model,
         )
         if engine == "auto" and not result.text:
-            result = translate(text, lexicon, source_lang=args.source, target_lang=args.target)
+            result = translate(
+                text,
+                lexicon,
+                source_lang=args.source,
+                target_lang=args.target,
+                vector_search=getattr(args, "vector_search", False),
+            )
     elif engine == "auto":
-        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target)
+        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
     else:
-        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target)
+        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
     if args.json:
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0
@@ -282,6 +288,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from", dest="source", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--to", dest="target", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--engine", default="local", choices=["local", "openai", "agent", "auto"])
+    p.add_argument("--vector-search", action="store_true", help="ローカル辞書で未登録語をベクトル検索して寄せる")
     p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
     p.add_argument("--api-base", default=None, help="OpenAI 互換ベース URL（例: https://api.openai.com/v1）")
     p.add_argument("--model", default="gpt-4o-mini")

@@ -95,6 +95,16 @@ assert.ok(["mire", "bie", "bicoth"].some(function (lemma) { return seeLemmas.ind
 var syn = engine.findSynonyms("光", lexicon);
 assert.ok(syn.some(function (h) { return h.entry.lemma === "sairiac"; }));
 
+var localOff = engine.translate("星たちの光を見ます", lexicon, "ja", "baronh");
+assert.ok(localOff.text.indexOf("光") >= 0);
+assert.strictEqual((localOff.substitutions || []).length, 0);
+var localOn = engine.translate("星たちの光を見ます", lexicon, "ja", "baronh", { vectorSearch: true });
+assert.ok(localOn.text.indexOf("sairiac") >= 0);
+assert.ok(localOn.substitutions.some(function (item) { return item.lemma === "sairiac"; }));
+var proper = engine.translate("私はジントです", lexicon, "ja", "baronh", { vectorSearch: true });
+assert.ok(proper.text.indexOf("ghinto") >= 0);
+assert.strictEqual((proper.substitutions || []).length, 0);
+
 var grammar = engine.grammarContext();
 assert.ok(grammar.indexOf("主格") >= 0);
 assert.ok(grammar.indexOf("直説法") >= 0);

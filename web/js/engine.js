@@ -834,7 +834,7 @@
     return "baronh";
   }
 
-  function result(src, tgt, sourceText, text, analysis, notes, unknown) {
+  function result(src, tgt, sourceText, text, analysis, notes, unknown, substitutions) {
     return {
       source_lang: src,
       target_lang: tgt,
@@ -845,17 +845,35 @@
       reading_ja: readingJa(tgt === "baronh" ? text : (src === "baronh" ? sourceText : text)),
       analysis: analysis || [],
       notes: notes || [],
-      unknown: unknown || []
+      unknown: unknown || [],
+      substitutions: substitutions || []
     };
   }
 
-  function jaToBaronh(text, lexicon) {
+  function vectorLookup(query, lexicon) {
+    var vdb = global.BaronhVectorDB;
+    if (!vdb) return null;
+    try {
+      var hits = vdb.getIndex(lexicon).search(query, 1, 0.12);
+      return hits.length ? hits[0] : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function tryVectorHit(tok, lexicon, nxt) {
+    if (looksLikeProperNoun(tok, nxt, !!JA_COPULA[nxt])) return null;
+    return vectorLookup(tok, lexicon);
+  }
+
+  function jaToBaronh(text, lexicon, vectorSearch) {
     var tokens = tokenizeJa(text, lexicon);
     var question = /[か？?]$/.test(text.trim()) || tokens.indexOf("か") >= 0;
     var vocative = tokens.indexOf("よ") >= 0;
     var pieces = [];
     var analysis = [];
     var unknown = [];
+    var substitutions = [];
     var phoneticPairs = [];
     var pending = null;
     var pendingSrc = "";
@@ -899,6 +917,21 @@
       if (!entries.length) {
         var hon = splitHonorific(tok);
         if (hon.hon) entries = lookupJa(lexicon, hon.core);
+      }
+      if (!entries.length && vectorSearch) {
+        var vecHit = tryVectorHit(tok, lexicon, tokens[i + 1] || "");
+        if (vecHit) {
+          entries = [vecHit.entry];
+          substitutions.push({
+            from: tok,
+            to: vecHit.entry.gloss_ja,
+            lemma: vecHit.entry.lemma,
+            pos: vecHit.entry.pos,
+            gloss: vecHit.entry.gloss_ja,
+            score: String(vecHit.score),
+            via: "vector"
+          });
+        }
       }
       if (!entries.length) {
         var nxt0 = tokens[i + 1] || "";
@@ -958,16 +991,22 @@
     if (surface && !/[.!?]$/.test(surface)) surface += question ? "?" : ".";
     var notes = [];
     if (phoneticPairs.length) notes.push(PHONETIC_SUMMARY + " " + phoneticPairs.join("、") + "。");
+    if (substitutions.length) {
+      notes.push("ベクトル検索: " + substitutions.map(function (item) {
+        return (item.from || item.source) + "→" + item.lemma + "「" + (item.gloss || item.gloss_ja || "") + "」";
+      }).join("、") + "。");
+    }
     if (unknown.length) notes.push("未登録の語は原文のまま残しています。");
-    return result("ja", "baronh", text, surface, analysis, notes, unknown);
+    return result("ja", "baronh", text, surface, analysis, notes, unknown, substitutions);
   }
 
-  function enToBaronh(text, lexicon) {
+  function enToBaronh(text, lexicon, vectorSearch) {
     var tokens = tokenizeEn(text);
     var question = /\?$/.test(text.trim()) || (tokens[0] && /^(is|are|do|does|can)$/i.test(tokens[0]));
     var pieces = [];
     var analysis = [];
     var unknown = [];
+    var substitutions = [];
     var phoneticPairs = [];
     var pending = null;
     var pendingSrc = "";
@@ -987,6 +1026,21 @@
       if (EN_PREP[low]) { flush(EN_PREP[low]); continue; }
       var entries = lexicon.lookup(low, "en");
       if (!entries.length && low.endsWith("s")) entries = lexicon.lookup(low.slice(0, -1), "en");
+      if (!entries.length && vectorSearch && !isLatinName(tok, true)) {
+        var vecHit = vectorLookup(tok, lexicon) || vectorLookup(low, lexicon);
+        if (vecHit) {
+          entries = [vecHit.entry];
+          substitutions.push({
+            from: tok,
+            to: vecHit.entry.gloss_ja,
+            lemma: vecHit.entry.lemma,
+            pos: vecHit.entry.pos,
+            gloss: vecHit.entry.gloss_ja,
+            score: String(vecHit.score),
+            via: "vector"
+          });
+        }
+      }
       if (!entries.length) {
         if (isLatinName(tok, true)) {
           var transcribed = transcribeProperNoun(tok);
@@ -1021,7 +1075,12 @@
     if (surface && !/[.!?]$/.test(surface)) surface += question ? "?" : ".";
     var notes = [];
     if (phoneticPairs.length) notes.push(PHONETIC_SUMMARY + " " + phoneticPairs.join("、") + "。");
-    return result("en", "baronh", text, surface, analysis, notes, unknown);
+    if (substitutions.length) {
+      notes.push("ベクトル検索: " + substitutions.map(function (item) {
+        return (item.from || item.source) + "→" + item.lemma + "「" + (item.gloss || item.gloss_ja || "") + "」";
+      }).join("、") + "。");
+    }
+    return result("en", "baronh", text, surface, analysis, notes, unknown, substitutions);
   }
 
   function baronhOut(text, lexicon, target) {
@@ -1082,26 +1141,29 @@
     return result("baronh", target, text, surface, analysis, notes, unknown);
   }
 
-  function translate(text, lexicon, sourceLang, targetLang) {
+  function translate(text, lexicon, sourceLang, targetLang, options) {
     text = String(text || "").trim();
     var src = (!sourceLang || sourceLang === "auto") ? detectLang(text, lexicon) : sourceLang;
     var tgt = (!targetLang || targetLang === "auto") ? (src === "baronh" ? "ja" : "baronh") : targetLang;
+    var vectorSearch = !!(options && options.vectorSearch);
     if (src === tgt) return result(src, tgt, text, text, [], [], []);
-    if (src === "ja" && tgt === "baronh") return jaToBaronh(text, lexicon);
-    if (src === "en" && tgt === "baronh") return enToBaronh(text, lexicon);
+    if (src === "ja" && tgt === "baronh") return jaToBaronh(text, lexicon, vectorSearch);
+    if (src === "en" && tgt === "baronh") return enToBaronh(text, lexicon, vectorSearch);
     if (src === "baronh" && (tgt === "ja" || tgt === "en")) return baronhOut(text, lexicon, tgt);
     if (src === "ja" && tgt === "en") {
-      var mid = jaToBaronh(text, lexicon);
+      var mid = jaToBaronh(text, lexicon, vectorSearch);
       var back = baronhOut(mid.text, lexicon, "en");
       back.source_lang = "ja";
       back.source_text = text;
+      back.substitutions = mid.substitutions || [];
       return back;
     }
     if (src === "en" && tgt === "ja") {
-      mid = enToBaronh(text, lexicon);
+      mid = enToBaronh(text, lexicon, vectorSearch);
       back = baronhOut(mid.text, lexicon, "ja");
       back.source_lang = "en";
       back.source_text = text;
+      back.substitutions = mid.substitutions || [];
       return back;
     }
     throw new Error("no local route for " + src + "->" + tgt);

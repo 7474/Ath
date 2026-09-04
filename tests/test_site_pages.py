@@ -54,6 +54,8 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("js/vectordb.js", web)
         self.assertIn("id=\"agent-url\"", web)
         self.assertIn("/api/translate", web)
+        self.assertIn("id=\"local-vector-search\"", web)
+        self.assertIn("訳語をベクトル検索", web)
 
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
