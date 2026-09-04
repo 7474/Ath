@@ -44,6 +44,7 @@ def cmd_translate(args: argparse.Namespace) -> int:
             source_lang=args.source,
             target_lang=args.target,
             api_key=args.api_key,
+            api_base=getattr(args, "api_base", None),
             model=args.model,
         )
         if engine == "auto" and not result.text:
@@ -154,7 +155,14 @@ def cmd_speak(args: argparse.Namespace) -> int:
         from baronh.openai_backend import synthesize_openai
 
         out = Path(args.out) if args.out else Path("speech.mp3")
-        path = synthesize_openai(text, lang=lang, api_key=args.api_key, output=out)
+        path = synthesize_openai(
+            text,
+            lang=lang,
+            api_key=args.api_key,
+            api_base=getattr(args, "api_base", None),
+            model=getattr(args, "tts_model", None) or "gpt-4o-mini-tts",
+            output=out,
+        )
         print(path)
         return 0
     result = synthesize_local(
@@ -287,7 +295,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from", dest="source", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--to", dest="target", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--engine", default="local", choices=["local", "openai", "auto"])
-    p.add_argument("--api-key", default=None)
+    p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
+    p.add_argument("--api-base", default=None, help="OpenAI 互換ベース URL（例: https://api.openai.com/v1）")
     p.add_argument("--model", default="gpt-4o-mini")
     p.add_argument("--json", action="store_true")
     p.add_argument("--show-analysis", action="store_true")
@@ -324,7 +333,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("text")
     p.add_argument("--lang", default="auto", choices=["auto", "baronh", "ja", "en"])
     p.add_argument("--engine", default="local", choices=["local", "openai"])
-    p.add_argument("--api-key", default=None)
+    p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
+    p.add_argument("--api-base", default=None, help="OpenAI 互換ベース URL")
+    p.add_argument("--tts-model", default="gpt-4o-mini-tts")
     p.add_argument("--out", default=None)
     p.add_argument("--play", action="store_true")
     p.set_defaults(func=cmd_speak)

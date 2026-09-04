@@ -3,6 +3,8 @@
 
   var KEY = "ath-translate.openai-key";
   var MODEL_KEY = "ath-translate.openai-model";
+  var BASE_KEY = "ath-translate.openai-base";
+  var TTS_MODEL_KEY = "ath-translate.openai-tts-model";
   var OVERLAY_KEY = "ath-translate.overlay";
   var EXAMPLES = [
     ["ja", "baronh", "私は移民します"],
@@ -86,6 +88,17 @@
     });
   }
 
+  function apiBase() {
+    var raw = (localStorage.getItem(BASE_KEY) || ($("api-base") && $("api-base").value) || "https://api.openai.com/v1").trim().replace(/\/+$/, "");
+    if (!raw) raw = "https://api.openai.com/v1";
+    if (/^https?:\/\/[^/]+$/i.test(raw)) raw += "/v1";
+    return raw;
+  }
+
+  function apiUrl(path) {
+    return apiBase() + "/" + String(path || "").replace(/^\//, "");
+  }
+
   function localTranslate() {
     var src = $("source-lang").value;
     var tgt = $("target-lang").value;
@@ -93,37 +106,80 @@
   }
 
   function openaiTranslate() {
+    var base = apiBase();
     var key = localStorage.getItem(KEY) || $("api-key").value.trim();
-    if (!key) throw new Error("OpenAI API キーが未設定です。設定から保存してください。");
+    if (!key && /api\.openai\.com/.test(base)) {
+      throw new Error("API キーが未設定です。設定から保存してください。");
+    }
     var model = localStorage.getItem(MODEL_KEY) || $("chat-model").value || "gpt-4o-mini";
     var local = localTranslate();
-    var body = {
-      model: model,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: "あなたはアーヴ語 (Baronh) の翻訳者です。与えた下訳と辞書を優先します。普通名詞など辞書にない語は造語せず残してください。辞書にない固有名詞は発音転記して構いません。訳文だけを返します。" },
-        { role: "user", content: "方向: " + local.source_lang + " → " + ($("target-lang").value) + "\n原文:\n" + $("source-text").value + "\n下訳:\n" + local.text }
-      ]
-    };
-    return fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + key,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
-        var text = data.choices[0].message.content.trim();
-        local.text = text;
-        local.engine = "openai";
-        if (local.target_lang === "baronh") {
-          local.ath_keys = BaronhEngine.toAthKeys(text);
-          local.reading_ja = BaronhEngine.readingJa(text);
-        }
-        return local;
+    var retrieved = BaronhEngine.retrieveLexiconContext($("source-text").value, lexicon, local);
+    var messages = [
+      { role: "system", content: BaronhEngine.GRAMMAR_BRIEF },
+      {
+        role: "user",
+        content: "方向: " + local.source_lang + " → " + ($("target-lang").value) +
+          "\n原文:\n" + $("source-text").value +
+          "\n下訳:\n" + local.text +
+          "\n関連辞書（自動検索、全文ではない）:\n" + retrieved +
+          "\n訳文だけを返してください。足りない語は lookup_lexicon / grammar_note で引いてください。"
+      }
+    ];
+    function chat(useTools) {
+      var body = { model: model, temperature: 0.2, messages: messages };
+      if (useTools) {
+        body.tools = BaronhEngine.CHAT_TOOLS;
+        body.tool_choice = "auto";
+      }
+      return fetch(apiUrl("chat/completions"), {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + (key || "no-key"),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error((data.error && data.error.message) || res.statusText);
+          return data;
+        });
       });
+    }
+    function loop(useTools, round) {
+      if (round > 6) return Promise.resolve(local.text);
+      return chat(useTools).then(function (data) {
+        var message = (((data.choices || [])[0]) || {}).message || {};
+        var calls = message.tool_calls || [];
+        if (!calls.length) return String(message.content || "").trim() || local.text;
+        messages.push(message);
+        calls.forEach(function (call) {
+          var fn = call.function || {};
+          var args = {};
+          try { args = JSON.parse(fn.arguments || "{}"); } catch (err) { args = {}; }
+          messages.push({
+            role: "tool",
+            tool_call_id: call.id || fn.name,
+            content: BaronhEngine.dispatchTool(fn.name, args, lexicon)
+          });
+        });
+        return loop(useTools, round + 1);
+      });
+    }
+    return loop(true, 1).catch(function (err) {
+      if (/tool/i.test(err.message || "") || /400/.test(err.message || "")) {
+        messages = messages.slice(0, 2);
+        return loop(false, 1);
+      }
+      throw err;
+    }).then(function (text) {
+      local.text = text;
+      local.engine = "openai";
+      local.notes = (local.notes || []).concat(["OpenAI 互換 API（" + base + "）。辞書全文は送っていません。"]);
+      if (local.target_lang === "baronh") {
+        local.ath_keys = BaronhEngine.toAthKeys(text);
+        local.reading_ja = BaronhEngine.readingJa(text);
+      }
+      return local;
     });
   }
 
@@ -146,23 +202,24 @@
     var target = $("target-lang").value;
     var lang = target === "auto" ? (BaronhEngine.detectLang(resultText, lexicon)) : target;
     var spoken = lang === "baronh" ? BaronhEngine.readingJa(resultText) : resultText;
-    var key = localStorage.getItem(KEY);
-    if ($("engine").value === "openai" && key) {
-      setStatus("OpenAI TTS を呼び出しています…");
-      return fetch("https://api.openai.com/v1/audio/speech", {
+    var key = localStorage.getItem(KEY) || ($("api-key") && $("api-key").value.trim());
+    var ttsModel = localStorage.getItem(TTS_MODEL_KEY) || ($("tts-model") && $("tts-model").value) || "gpt-4o-mini-tts";
+    if ($("engine").value === "openai" && ttsModel) {
+      setStatus("互換 TTS（/audio/speech）を呼び出しています…");
+      return fetch(apiUrl("audio/speech"), {
         method: "POST",
         headers: {
-          "Authorization": "Bearer " + key,
+          "Authorization": "Bearer " + (key || "no-key"),
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: "alloy", input: spoken, format: "mp3" })
+        body: JSON.stringify({ model: ttsModel, voice: "alloy", input: spoken, format: "mp3" })
       }).then(function (res) {
-        if (!res.ok) throw new Error("TTS に失敗しました");
+        if (!res.ok) throw new Error("TTS に失敗しました（この互換 API は /audio/speech 未対応のことがあります）");
         return res.blob();
       }).then(function (blob) {
         var audio = new Audio(URL.createObjectURL(blob));
         audio.play();
-        setStatus("読み: " + spoken);
+        setStatus("読み: " + spoken + "（クラウド TTS）");
       }).catch(function (err) {
         setStatus(err.message);
         speakBrowser(spoken, lang);
@@ -252,12 +309,20 @@
   $("save-key").addEventListener("click", function () {
     localStorage.setItem(KEY, $("api-key").value.trim());
     localStorage.setItem(MODEL_KEY, $("chat-model").value.trim() || "gpt-4o-mini");
-    setStatus("API キーをこのブラウザに保存しました");
+    localStorage.setItem(BASE_KEY, $("api-base").value.trim() || "https://api.openai.com/v1");
+    localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
+    setStatus("API 設定をこのブラウザに保存しました（送信先: " + apiBase() + "）");
   });
   $("clear-key").addEventListener("click", function () {
     localStorage.removeItem(KEY);
+    localStorage.removeItem(BASE_KEY);
+    localStorage.removeItem(MODEL_KEY);
+    localStorage.removeItem(TTS_MODEL_KEY);
     $("api-key").value = "";
-    setStatus("API キーを消去しました");
+    $("api-base").value = "https://api.openai.com/v1";
+    $("chat-model").value = "gpt-4o-mini";
+    $("tts-model").value = "gpt-4o-mini-tts";
+    setStatus("API 設定を消去しました");
   });
   $("import-file").addEventListener("change", function (ev) {
     var file = ev.target.files && ev.target.files[0];
@@ -282,6 +347,8 @@
 
   $("api-key").value = localStorage.getItem(KEY) || "";
   $("chat-model").value = localStorage.getItem(MODEL_KEY) || "gpt-4o-mini";
+  $("api-base").value = localStorage.getItem(BASE_KEY) || "https://api.openai.com/v1";
+  $("tts-model").value = localStorage.getItem(TTS_MODEL_KEY) || "gpt-4o-mini-tts";
 
   firstJson(dataUrls()).then(function (doc) {
     lexicon = new BaronhEngine.Lexicon(doc.entries || []);

@@ -221,6 +221,17 @@ pre.forms {
   margin-top: .5rem;
 }
 
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem .8rem;
+  margin-top: .5rem;
+}
+.settings-grid input { width: 100%; box-sizing: border-box; }
+@media (max-width: 760px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
+
 .hint { font-size: .82rem; color: var(--muted); line-height: 1.5; margin-top: .4rem; }
 
 footer {

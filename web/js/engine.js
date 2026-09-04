@@ -895,6 +895,70 @@
     throw new Error("no local route for " + src + "->" + tgt);
   }
 
+  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法を根拠にします。普通名詞など辞書にない語は造語せず残します。辞書にない固有名詞は発音転記して構いません。辞書と文法の全文は渡しません。必要な語は lookup_lexicon、文法の詳細は grammar_note で引いてください。";
+
+  var GRAMMAR_TOPICS = {
+    cases: "7格: 主格 nom（が）対格 acc（を）生格 gen（の）与格 dat（に）向格 all（へ）奪格 abl（から）具格 ins（で）。第1型 abh/abe/bar/bari/baré/abhar/bale。第2型 -h: lamh/lame/lamr/lami/lamé/lamhar/lamhle。第3型 -c。第4型 -iac。主題は代名詞で F'a。普通名詞は lemma a。",
+    verbs: "動詞は語幹+態+語尾。直説法: 不定 -e, 完了 -le, 進行 -lér, 未然 -to。仮定法: -éme -lar -lérm -dar。命令 -é。態は -as- -ar- -ad-。",
+    pronouns: "fe 私, de あなた, se 彼/彼女, farh 私たち, darh あなたたち, cnac 彼ら, so これ, re それ, ai あれ。fe の格: fe/fal/far/feri/feré/fasar/fale。主題 F'a。",
+    syntax: "語順は SOV または SVO。修飾語は被修飾語の後ろ。後置詞: a は, éü よ, sa か, te と。AはBだ は主題+具格。疑問は sa。",
+    phonology: "c は /k/。Ath キー: ai→A, au→I, eu→E。辞書にない固有名詞は発音転記。読み上げはローマ字を仮名に落として日本語 TTS に渡す。"
+  };
+
+  var CHAT_TOOLS = [
+    { type: "function", function: { name: "lookup_lexicon", description: "ローカル辞書を引く。名詞なら7格も返す。", parameters: { type: "object", properties: { query: { type: "string" }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["query"] } } },
+    { type: "function", function: { name: "grammar_note", description: "文法トピックを取り出す。", parameters: { type: "object", properties: { topic: { type: "string", enum: ["cases", "verbs", "pronouns", "syntax", "phonology"] } }, required: ["topic"] } } }
+  ];
+
+  function formatEntry(entry) {
+    var line = "- " + entry.lemma + " [" + entry.pos + "] ja:" + entry.gloss_ja + " en:" + (entry.gloss_en || "");
+    if (entry.pos === "noun" || entry.pos === "pronoun") {
+      var forms = decline(entry);
+      line += " " + CASES.map(function (c) { return forms[c]; }).join("/");
+    }
+    return line;
+  }
+
+  function retrieveLexiconContext(text, lexicon, local, limit) {
+    limit = limit || 36;
+    var queries = tokenizeJa(text, lexicon).concat(tokenizeBaronh(text)).concat(tokenizeEn(text));
+    String(text || "").replace(/[、,]/g, " ").split(/\s+/).forEach(function (w) { if (w) queries.push(w); });
+    if (local && local.analysis) {
+      local.analysis.forEach(function (row) {
+        if (row.source) queries.push(row.source);
+        if (row.target) queries.push(row.target);
+      });
+      if (local.text) queries.push(local.text);
+    }
+    var picked = [];
+    var seen = {};
+    queries.forEach(function (word) {
+      if (picked.length >= limit) return;
+      word = String(word || "").replace(/[.,!?;:。]/g, "");
+      if (!word) return;
+      lexicon.lookup(word, "auto").forEach(function (entry) {
+        if (picked.length >= limit || seen[entry.lemma]) return;
+        seen[entry.lemma] = true;
+        picked.push(formatEntry(entry));
+      });
+    });
+    return picked.length ? picked.join("\n") : "(該当なし。lookup_lexicon で追加検索してください)";
+  }
+
+  function dispatchTool(name, args, lexicon) {
+    args = args || {};
+    if (name === "lookup_lexicon") {
+      var hits = lexicon.lookup(args.query || "", args.lang || "auto").slice(0, 8);
+      return JSON.stringify({ query: args.query || "", hits: hits.map(formatEntry) });
+    }
+    if (name === "grammar_note") {
+      var note = GRAMMAR_TOPICS[args.topic];
+      if (!note) return JSON.stringify({ error: "unknown topic", topics: Object.keys(GRAMMAR_TOPICS) });
+      return JSON.stringify({ topic: args.topic, note: note });
+    }
+    return JSON.stringify({ error: "unknown tool: " + name });
+  }
+
   function parseImported(text, filename) {
     var name = (filename || "").toLowerCase();
     if (name.endsWith(".json") || text.trim().charAt(0) === "{") {
@@ -926,6 +990,11 @@
     readingJa: readingJa,
     toAthKeys: toAthKeys,
     parseImported: parseImported,
-    topicContract: topicContract
+    topicContract: topicContract,
+    GRAMMAR_BRIEF: GRAMMAR_BRIEF,
+    GRAMMAR_TOPICS: GRAMMAR_TOPICS,
+    CHAT_TOOLS: CHAT_TOOLS,
+    retrieveLexiconContext: retrieveLexiconContext,
+    dispatchTool: dispatchTool
   };
 })(typeof window !== "undefined" ? window : globalThis);

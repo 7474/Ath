@@ -24,7 +24,7 @@
       Wikipedia「アーヴ語」の文法と、ファンサイトの公開辞書を走査した語彙で動く規則ベース翻訳です。
       ブラウザ内で完結します。出典はページ末尾のスペシャルサンクスを見てください。
       辞書にない固有名詞は発音からアーヴ語ローマ字へ転記し、その旨を表示します。
-      任意で OpenAI API キーを使うと、同じ辞書を根拠にした生成翻訳と音声合成もできます。
+      任意で OpenAI 互換 API を指定すると、下訳と検索した辞書を渡して生成翻訳できます。音声合成は別呼び出しです。
     </p>
 
     <section class="panel">
@@ -49,7 +49,7 @@
         <label>エンジン
           <select id="engine">
             <option value="local">ローカル辞書</option>
-            <option value="openai">OpenAI API</option>
+            <option value="openai">生成AI（OpenAI 互換）</option>
           </select>
         </label>
         <span class="badge" id="dict-count">辞書 …</span>
@@ -104,11 +104,28 @@
     </section>
 
     <section class="panel" id="settings-panel" hidden>
-      <h2>OpenAI API（任意）</h2>
-      <p class="hint">キーは localStorage にだけ保存し、api.openai.com 以外には送りません。未設定ならローカル辞書のみで動きます。</p>
+      <h2>生成AI / OpenAI 互換 API（任意）</h2>
+      <p class="hint">
+        キーとベース URL は localStorage にだけ保存し、指定したエンドポイントへだけ送ります。
+        既定は <code>https://api.openai.com/v1</code> です。LM Studio / vLLM / LiteLLM / Ollama（OpenAI 互換）なども同じ形で指定できます。
+        未設定ならローカル辞書のみで動きます。辞書全文は送りません。モデルは <code>lookup_lexicon</code> と <code>grammar_note</code> で追加検索できます。
+        音声合成は翻訳とは別の <code>/audio/speech</code> です。未対応の互換実装ではブラウザ読み上げに戻ります。
+      </p>
+      <div class="settings-grid">
+        <label class="block">ベース URL
+          <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
+        </label>
+        <label class="block">API キー
+          <input type="password" id="api-key" placeholder="sk-...（ローカル互換なら空でも可）" autocomplete="off" />
+        </label>
+        <label class="block">チャットモデル
+          <input type="text" id="chat-model" value="gpt-4o-mini" />
+        </label>
+        <label class="block">TTS モデル
+          <input type="text" id="tts-model" value="gpt-4o-mini-tts" />
+        </label>
+      </div>
       <div class="settings-row">
-        <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" style="min-width:16rem" />
-        <input type="text" id="chat-model" value="gpt-4o-mini" />
         <button type="button" class="ghost" id="save-key">保存</button>
         <button type="button" class="ghost" id="clear-key">消去</button>
       </div>

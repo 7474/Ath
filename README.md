@@ -309,8 +309,10 @@ python3 -m baronh ingest https://ja.wikipedia.org/wiki/アーヴ語
 python3 -m baronh reading "F'a usere." --ath
 python3 -m baronh speak "F'a usere." --out /tmp/baronh.wav
 
-# 任意: OpenAI API（OPENAI_API_KEY または --api-key）
+# 任意: OpenAI 互換 API（OPENAI_API_KEY / OPENAI_BASE_URL または --api-key / --api-base）
 python3 -m baronh translate "I am Abh." --from en --to baronh --engine openai
+python3 -m baronh translate "私はアーヴです" --engine openai \
+  --api-base http://127.0.0.1:1234/v1 --api-key local --model llama3
 python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
 
 # Web UI（既定 http://127.0.0.1:8765/）
@@ -328,7 +330,7 @@ python3 -m baronh serve
 
 ### Web
 
-`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。OpenAI を使うときだけ `api.openai.com` にアクセスし、API キーは `localStorage` のみです。
+`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・アース表示・読み上げまでブラウザ内で完結します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。チャットは関連語の検索結果と、必要なら `lookup_lexicon` / `grammar_note` のツール呼び出しで足します。音声合成は翻訳とは別の `/v1/audio/speech` です。
 
 ルートで `python3 -m http.server 8000` した場合の URL は `http://127.0.0.1:8000/web/` です。
 
