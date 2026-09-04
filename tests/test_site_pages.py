@@ -47,6 +47,31 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
 
+    def test_ath_demo_sets_empire_anthem_in_ath_keys(self):
+        demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="frybarec"', demo)
+        self.assertIn("frybarec gloer gor bari", demo)
+        self.assertIn("bar frybarec", demo)
+        self.assertIn("gerElacr", demo)
+        self.assertIn("nahAnlace", demo)
+        self.assertIn("sIsnée", demo)
+        self.assertIn("tymbAdel", demo)
+        self.assertIn("alsAma", demo)
+        self.assertIn("üAponéra", demo)
+        self.assertIn("farh a lomi zacsantto loréïl.", demo)
+        self.assertIn("class=\"ath-keys", demo)
+        self.assertIn("text-transform: none", demo)
+        self.assertIn("chikyukotobamura.org/muse/wr_fiction_5.html", demo)
+        self.assertIn("我ら、ともに永遠を抱かん", demo)
+        self.assertIn("Frybarec Gloer Gor Bari", demo)
+        self.assertIn("Sausnée surepuce", demo)
+        self.assertNotIn("lotr atosr nea rhoibhe", demo)
+
+    def test_hub_shows_empire_name_in_ath(self):
+        hub = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("frybarec gloer gor bari", hub)
+        self.assertIn("国歌をアースで組版", hub)
+
     def test_translator_mentions_server_agent(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("サーバエージェント", web)

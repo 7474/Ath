@@ -67,8 +67,34 @@
     body.translated .aarth-hero,
     body.translated .alpha-cell .glyph,
     body.translated .size-scale p,
-    body.translated .aarth-para {
+    body.translated .aarth-para,
+    body.translated .ath-keys {
       font-family: 'Aarth', serif;
+    }
+
+    /* A / I / E are digraph keys (ai / au / eu). Never lowercase them. */
+    .ath-keys {
+      font-family: 'Aarth', serif;
+      letter-spacing: .04em;
+    }
+
+    body:not(.translated) .page-content .ath-keys {
+      text-transform: none;
+    }
+
+    body:not(.translated) .page-content .source-note,
+    body:not(.translated) .page-content .empire-gloss,
+    body.translated .source-note,
+    body.translated .empire-gloss {
+      font-family: system-ui, sans-serif;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    body:not(.translated) .page-content .source-note code,
+    body.translated .source-note code {
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+      text-transform: none;
     }
 
     body.translated .alpha-cell .label,
@@ -239,6 +265,78 @@
       line-height: 1.6;
       letter-spacing: .04em;
     }
+
+    .empire-official {
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      line-height: 1.35;
+      margin-bottom: .35rem;
+    }
+
+    .empire-short {
+      font-size: 1.35rem;
+      color: #333;
+      margin-bottom: 1.2rem;
+    }
+
+    .anthem {
+      font-size: 1.45rem;
+      line-height: 1.75;
+    }
+
+    .anthem .stanza {
+      margin: 0;
+    }
+
+    .anthem .stanza + .stanza {
+      margin-top: 1.15rem;
+    }
+
+    .anthem p {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .empire-gloss {
+      display: none;
+      margin-top: 1.1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-family: system-ui, sans-serif;
+      text-transform: none;
+      letter-spacing: normal;
+      line-height: 1.75;
+      color: #333;
+    }
+
+    body.translated .empire-gloss {
+      display: block;
+    }
+
+    .empire-gloss h3 {
+      font-size: 1rem;
+      color: #555;
+      margin: 1rem 0 .4rem;
+    }
+
+    .empire-gloss h3:first-child { margin-top: 0; }
+
+    .empire-gloss .roman {
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+      font-size: .92rem;
+      white-space: pre-wrap;
+    }
+
+    .source-note {
+      margin-top: .9rem;
+      font-size: .9rem;
+      line-height: 1.6;
+      color: #555;
+      font-family: system-ui, sans-serif;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .source-note a { color: #1a5fb4; }
 
     code {
       background: #f0f0f0;
@@ -470,12 +568,89 @@
     </div>
   </section>
 
-  <!-- Sample sentence -->
-  <section>
-    <h2>Sample text (romanised Ath phonetics)</h2>
+  <!-- Humankind Empire of Abh: official name + imperial anthem in Ath keys -->
+  <section id="frybarec">
+    <h2>Humankind Empire of Abh</h2>
     <div class="demo-block">
-      <p class="aarth-para">lotr atosr nea rhoibhe</p>
-      <p class="aarth-para" style="margin-top:.8rem">fhemainr tlaicr suanaer</p>
+      <p class="ath-keys empire-official" lang="ath">frybarec gloer gor bari</p>
+      <p class="ath-keys empire-short" lang="ath">bar frybarec</p>
+      <h3>Imperial anthem</h3>
+      <div class="ath-keys anthem" lang="ath">
+        <div class="stanza">
+          <p>f'a rume catmé gerElacr,</p>
+          <p>ullote izomél,</p>
+          <p>lanote dige césati,</p>
+          <p>lüamse nahAnlace.</p>
+          <p>f'a bale, scuréle frybarer.</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü,</p>
+          <p>sicé léssote dar scurér alsAma.</p>
+          <p>farer léssoth,</p>
+          <p>r'a sotle botnasa dari éïrace lona.</p>
+        </div>
+        <div class="stanza">
+          <p>f'a flare rycmal gerElacr,</p>
+          <p>sIsnée surepuce,</p>
+          <p>issae dade lo fade,</p>
+          <p>froce tymbAdel gol.</p>
+          <p>f'a bale, carsarh gerElacr.</p>
+        </div>
+        <div class="stanza">
+          <p>gerElach éü,</p>
+          <p>sicé dozzote dar carsarr factina.</p>
+          <p>farer dozzoth,</p>
+          <p>r'a sotle nilora rÿal dar üAponéra.</p>
+        </div>
+        <div class="stanza">
+          <p>frybarec éü, gerElach éü,</p>
+          <p>farh a lomi zacsantto loréïl.</p>
+        </div>
+      </div>
+      <div class="empire-gloss">
+        <h3>Official name</h3>
+        <p><em>Frybarec Gloer Gor Bari</em>（フリューバル・グレール・ゴル・バーリ）— アーヴによる人類帝国。通称 <em>Bar Frybarec</em>（バール・フリューバル、アーヴ帝国）。</p>
+        <h3>Anthem (Baronh romanization)</h3>
+        <p class="roman">F'a rume catmé gereulacr,
+Ullote izomél,
+Lanote dige césati,
+Lüamse nahainlace.
+F'a Bale, scuréle Frybarer.
+
+Frybarec éü,
+Sicé léssote dar scurér alsaima.
+Farer Léssoth,
+R'a sotle botnasa dari éïrace lona.
+
+F'a flare rycmal gereulacr,
+Sausnée surepuce,
+Issae dade lo fade,
+Froce tymbaidel gol.
+F'a Bale, carsarh gereulacr.
+
+Gereulach éü,
+Sicé dozzote dar carsarr factina.
+Farer dozzoth,
+R'a sotle nilora rÿal dar üaiponéra.
+
+Frybarec éü, gereulach éü,
+Farh a lomi zacsantto loréïl.</p>
+        <h3>日本語</h3>
+        <p>国歌の題は「我ら、ともに永遠を抱かん」。訳は次のとおりです。</p>
+        <p>
+          我は星々の狭間に住み、挑む者を打ち倒し、真空世界に平和を保ち、諸々の地上世界を富ます。我はアーヴ、帝国の創り手。<br>
+          帝国よ──汝の髪青き創り手の誓いを聞きたまえ。我らの誓い、それは──汝に永久の繁栄をもたらすこと。<br>
+          我は星々の狭間を渡り、事象の地平線をかすめ、通常宇宙と平面宇宙を行き交い、時空をくまなく空識覚でとらえる。我はアーヴ、星たちの眷族。<br>
+          星たちよ──汝の命短き眷族の望みを聞きたまえ。我らの望み、それは──汝の老いゆきを看取ること。<br>
+          帝国よ、星たちよ──我ら、ともに永遠を抱かん。
+        </p>
+      </div>
+      <p class="source-note">
+        アース本文は帝国国歌のアース写本（行分け・二重字）を最大の典拠とし、
+        <a href="https://www.chikyukotobamura.org/muse/wr_fiction_5.html">地球ことば村「アース（文字）」</a>
+        と Wikipedia「<a href="https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E">アーヴ語</a>」のラテン転写で照合しています。
+        フォント入力では <code>ai au eu</code> を <code>A I E</code> にします。Translate でラテン転写と日本語を出します。
+      </p>
     </div>
   </section>
 

@@ -171,6 +171,18 @@ class PhonologyTest(unittest.TestCase):
         self.assertEqual(to_ath_keys("bœrh"), "bœrh")
         self.assertNotEqual(to_ath_keys("boerh"), "bœrh")
 
+    def test_ath_keys_anthem_lines(self):
+        """国歌は先に小文字化してから二重字を A/I/E にする（行頭の I は au ではない）。"""
+        self.assertEqual(to_ath_keys("gereulacr"), "gerElacr")
+        self.assertEqual(to_ath_keys("nahainlace"), "nahAnlace")
+        self.assertEqual(to_ath_keys("sausnée"), "sIsnée")
+        self.assertEqual(to_ath_keys("issae"), "issae")
+        self.assertEqual(to_ath_keys("Issae"), "Issae")
+        self.assertEqual(to_ath_keys("üaiponéra"), "üAponéra")
+        self.assertEqual(to_ath_keys("tymbaidel"), "tymbAdel")
+        self.assertEqual(to_ath_keys("alsaima"), "alsAma")
+        self.assertEqual(to_ath_keys("gereulach"), "gerElach")
+
     def test_reading_abh(self):
         reading = reading_ja("abh")
         self.assertTrue(reading)
