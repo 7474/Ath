@@ -51,6 +51,18 @@ class VectorIndexTest(unittest.TestCase):
         self.assertTrue(any(hit["lemma"] == "sairiac" for hit in data["hits"]))
         self.assertFalse(any("凝集光銃" in (hit.get("gloss_ja") or "") for hit in data["hits"]))
 
+    def test_search_lexicon_batches_queries(self):
+        from baronh.agent import AGENT_TOOLS
+
+        search = next(tool["function"] for tool in AGENT_TOOLS if tool["function"]["name"] == "search_lexicon")
+        self.assertEqual(search["parameters"]["required"], ["queries"])
+        self.assertNotIn("query", search["parameters"]["properties"])
+        raw = dispatch_agent_tool("search_lexicon", {"queries": ["光", "見る"], "limit": 6}, self.lex)
+        data = json.loads(raw)
+        self.assertEqual([row["query"] for row in data["results"]], ["光", "見る"])
+        self.assertTrue(any(hit["lemma"] == "sairiac" for hit in data["results"][0]["hits"]))
+
+
 
 class VectorExportTest(unittest.TestCase):
     def test_write_and_load_roundtrip(self):
@@ -179,6 +191,8 @@ class AgentFakeChatTest(unittest.TestCase):
         self.assertIn("sairia", out.text)
         self.assertIn("mire", out.text)
         self.assertGreaterEqual(calls["n"], 2)
+        self.assertEqual(calls["payloads"][0]["tool_choice"], "auto")
+        self.assertEqual(calls["payloads"][1]["tool_choice"], "none")
         first = calls["payloads"][0]
         system = first["messages"][0]["content"]
         user = first["messages"][1]["content"]

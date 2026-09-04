@@ -19,12 +19,15 @@ from baronh.openai_backend import (
     GRAMMAR_TOPICS,
     api_url,
     clean_model_text,
+    collect_lookup_queries,
+    collect_tool_strings,
     dispatch_tool as openai_dispatch_tool,
     invented_baronh_forms,
     normalize_api_base,
     resolve_api_key,
     run_chat_tool_loop,
     system_prompt as openai_system_prompt,
+    _json_single_or_results,
 )
 from baronh.phonology import looks_like_proper_noun, reading_ja, to_ath_keys, transcribe_proper_noun
 from baronh.synonyms import find_synonyms, format_hits
@@ -50,7 +53,10 @@ AGENT_BRIEF = """
 意味がややずれても、未登録語を残すより辞書の類義語を使います。
 固有名詞は transcribe_name でアーヴ語正書法へ発音転記します
 （ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。
-文法は下のコンテキストに全文があります。grammar_note は確認用です。
+文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。
+足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。
+1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。
+validate_baronh は訳文が書けてから1回だけ。
 訳文だけを出力し、解説や引用符は付けないでください。
 """
 
@@ -66,14 +72,21 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "search_lexicon",
-            "description": "アーヴ語辞書のベクトル検索。日本語・英語・アーヴ語の意味に近い見出しを返す。",
+            "description": (
+                "アーヴ語辞書のベクトル検索。足りない語はすべて queries に入れて1回だけ呼ぶ。"
+                "1語ずつの連続呼び出しは禁止。"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "原文の語、言い換え、または短い句"},
-                    "limit": {"type": "integer", "description": "返す件数。既定 8"},
+                    "queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "原文の語・言い換え・短い句をすべて入れる",
+                    },
+                    "limit": {"type": "integer", "description": "各語の返す件数。既定 8"},
                 },
-                "required": ["query"],
+                "required": ["queries"],
             },
         },
     },
@@ -83,21 +96,22 @@ AGENT_TOOLS: list[dict[str, Any]] = [
             "name": "lookup_lexicon",
             "description": (
                 "辞書の厳密検索。lemma / gloss / alias の近い一致。"
-                "ベクトル検索で候補が出たあとに定義を確定する。"
+                "足りない語はすべて queries に入れて1回だけ呼ぶ。"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "検索語。アーヴ語・日本語・英語・カナなど。",
+                    "queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "検索語をすべて入れる",
                     },
                     "lang": {
                         "type": "string",
                         "enum": ["auto", "baronh", "ja", "en"],
                     },
                 },
-                "required": ["query"],
+                "required": ["queries"],
             },
         },
     },
@@ -106,15 +120,16 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "function": {
             "name": "find_synonyms",
             "description": (
-                "日本語・英語の概念を、辞書に載っているアーヴ語の意味へ寄せる。"
-                "「近いアーヴ語」または「固有名詞として音写」を返す。"
+                "未登録の普通名詞を辞書語釈の類義語へ寄せる。固有名詞には使わない。"
+                "足りない語はすべて queries に入れて1回だけ呼ぶ。"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "寄せたい概念。例: 光、見る、戦争、ジント",
+                    "queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "寄せたい概念をすべて入れる。例: 光、見る",
                     },
                     "extra_keys": {
                         "type": "array",
@@ -122,7 +137,7 @@ AGENT_TOOLS: list[dict[str, Any]] = [
                         "description": "モデルが考えた類義語・言い換え。辞書照合に使う",
                     },
                 },
-                "required": ["query"],
+                "required": ["queries"],
             },
         },
     },
@@ -131,20 +146,24 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "function": {
             "name": "transcribe_name",
             "description": (
-                "固有名詞をアーヴ語音写する。"
-                "ジ行は gh、カ行は c、ヴは bh。主格語尾 -c/-h/-n。"
+                "固有名詞をアーヴ語音写する。ジ行は gh、カ行は c、ヴは bh。"
+                "複数なら names にまとめて1回だけ呼ぶ。"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string", "description": "カタカナ・欧文などの固有名詞"},
+                    "names": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "カタカナ・欧文などの固有名詞をすべて入れる",
+                    },
                     "kind": {
                         "type": "string",
                         "enum": ["person", "place", "other"],
                         "description": "人名なら person、地名なら place",
                     },
                 },
-                "required": ["name"],
+                "required": ["names"],
             },
         },
     },
@@ -152,20 +171,16 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "grammar_note",
-            "description": (
-                "システムプロンプトの文法要約から、指定トピックだけ抜き出す。"
-                "格・動詞語尾・代名詞など。"
-            ),
+            "description": "文法トピックを取り出す。要点は既出なので原則不要。使うなら topics にまとめて1回だけ。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "topic": {
-                        "type": "string",
-                        "enum": list(GRAMMAR_TOPICS.keys()),
-                        "description": "cases / verbs / pronouns / syntax / phonology",
+                    "topics": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(GRAMMAR_TOPICS.keys())},
                     }
                 },
-                "required": ["topic"],
+                "required": ["topics"],
             },
         },
     },
@@ -173,9 +188,7 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "validate_baronh",
-            "description": (
-                "訳文の各語が辞書 lemma か、許容する固有名詞音写かを検査する。"
-            ),
+            "description": "訳文の各語が辞書 lemma か、許容する固有名詞音写かを検査する。訳文が書けてから1回だけ。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -277,60 +290,67 @@ def dispatch_agent_tool(
     trace: AgentTrace | None = None,
 ) -> str:
     if name == "search_lexicon":
-        query = str(arguments.get("query") or "").strip()
+        queries = collect_lookup_queries(arguments)
         try:
             limit = int(arguments.get("limit") or 8)
         except (TypeError, ValueError):
             limit = 8
         limit = max(1, min(limit, 16))
-        hits = get_index(lexicon).search(query, limit=limit)
-        return json.dumps(
-            {"query": query, "hits": [hit_to_dict(hit) for hit in hits]},
-            ensure_ascii=False,
-        )
+        packed = []
+        for query in queries:
+            hits = get_index(lexicon).search(query, limit=limit)
+            packed.append({"query": query, "hits": [hit_to_dict(hit) for hit in hits]})
+        return _json_single_or_results(packed)
     if name == "find_synonyms":
-        query = str(arguments.get("query") or "").strip()
+        queries = collect_lookup_queries(arguments)
         extra = arguments.get("extra_keys") or []
         if not isinstance(extra, list):
             extra = [str(extra)]
         extra_keys = [str(item).strip() for item in extra if str(item).strip()]
-        hits = find_synonyms(query, lexicon, extra_keys=extra_keys)
-        if trace is not None and hits:
-            top = hits[0]
-            if not any(item.get("from") == query for item in trace.substitutions):
-                trace.substitutions.append(
-                    {
-                        "from": query,
-                        "to": top.via,
-                        "lemma": top.entry.lemma,
-                        "gloss": top.entry.gloss_ja,
-                        "relation": top.relation,
-                        "via": top.via,
-                    }
-                )
-        return json.dumps(
-            {"query": query, "hits": format_hits(hits)},
-            ensure_ascii=False,
-        )
+        packed = []
+        for query in queries:
+            hits = find_synonyms(query, lexicon, extra_keys=extra_keys)
+            if trace is not None and hits:
+                top = hits[0]
+                if not any(item.get("from") == query for item in trace.substitutions):
+                    trace.substitutions.append(
+                        {
+                            "from": query,
+                            "to": top.via,
+                            "lemma": top.entry.lemma,
+                            "gloss": top.entry.gloss_ja,
+                            "relation": top.relation,
+                            "via": top.via,
+                        }
+                    )
+            packed.append({"query": query, "hits": format_hits(hits)})
+        return _json_single_or_results(packed)
     if name == "transcribe_name":
-        raw_name = str(arguments.get("name") or "").strip()
-        lemma, kind = transcribe_proper_noun(raw_name)
-        if not lemma:
+        names = collect_tool_strings(arguments, "names", "name")
+        packed = []
+        for raw_name in names:
+            lemma, kind = transcribe_proper_noun(raw_name)
+            if not lemma:
+                packed.append({"name": raw_name, "error": "empty name"})
+                continue
+            entry = Entry(lemma=lemma, pos="noun", gloss_ja=raw_name, declension=kind or "")
+            forms = decline(entry) if entry.pos == "noun" else {}
+            if trace is not None:
+                trace.names.append((raw_name, lemma))
+            packed.append(
+                {
+                    "name": raw_name,
+                    "lemma": lemma,
+                    "declension": kind,
+                    "forms": forms,
+                    "note": "固有名詞の発音転記。辞書の見出しではない。",
+                }
+            )
+        if not packed:
             return json.dumps({"error": "empty name"}, ensure_ascii=False)
-        entry = Entry(lemma=lemma, pos="noun", gloss_ja=raw_name, declension=kind or "")
-        forms = decline(entry) if entry.pos == "noun" else {}
-        if trace is not None:
-            trace.names.append((raw_name, lemma))
-        return json.dumps(
-            {
-                "name": raw_name,
-                "lemma": lemma,
-                "declension": kind,
-                "forms": forms,
-                "note": "固有名詞の発音転記。辞書の見出しではない。",
-            },
-            ensure_ascii=False,
-        )
+        if len(packed) == 1:
+            return json.dumps(packed[0], ensure_ascii=False)
+        return json.dumps({"results": packed}, ensure_ascii=False)
     if name == "validate_baronh":
         text = str(arguments.get("text") or "")
         invented = invented_baronh_forms(text, lexicon, local=local)
@@ -361,9 +381,9 @@ def build_agent_user_prompt(
         f"辞書ヒント（文ではない。訳は自分で組む）:\n{hints}\n\n"
         f"ベクトル検索した関連辞書（全文ではない）:\n{retrieved}\n\n"
         "訳文だけを出力してください。規則ベースの下訳はありません。"
-        "足りない普通名詞は search_lexicon または find_synonyms、見出しは lookup_lexicon、"
-        "固有名詞は transcribe_name、格はシステムプロンプトの文法か grammar_note、"
-        "書き上がったら validate_baronh を使ってください。"
+        "足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries にまとめて1回で引く。"
+        "1語ずつの連続呼び出しは禁止。固有名詞は transcribe_name の names にまとめる。"
+        "文法はシステムプロンプトにある。validate_baronh は訳文が書けてから1回だけ。"
     )
 
 
@@ -413,7 +433,7 @@ def translate_agent(
     api_base: str | None = None,
     model: str | None = None,
     chat_once: Any = None,
-    max_rounds: int = 10,
+    max_rounds: int = 3,
 ) -> TranslationResult:
     """生成 AI が辞書ツールで訳す。モデルが無ければ AgentModelRequired。"""
     if not model_configured(api_key=api_key, api_base=api_base, chat_once=chat_once):
@@ -483,7 +503,7 @@ def translate_agent(
         if invented:
             critique = (
                 f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
-                "造語せず、search_lexicon / find_synonyms で辞書の類義語に寄せて書き直してください。"
+                "造語せず、search_lexicon / find_synonyms の queries にまとめて辞書の類義語へ寄せて書き直してください。"
                 "規則ベースの下訳は無いので、自分で訳してください。訳文だけを出力してください。"
             )
             retry_messages = list(messages) + [

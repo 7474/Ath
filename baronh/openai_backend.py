@@ -41,7 +41,9 @@ GRAMMAR_BRIEF = """
 原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは、辞書の近い見出しに寄せてよい。
 普通名詞など辞書にない語は造語せず、原文の語を残します。
 辞書にない固有名詞はアーヴ語の正書法で発音転記して構いません（ジ行は gh、カ行は c、主格は -c/-h/-n。j/k/w/v は使わない）。ただし辞書に近い見出しがあるなら転記より辞書を優先します。
-必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。
+関連辞書で足りるならツールは使わず訳文だけを出す。
+足りない語は lookup_lexicon を1回だけ呼び、queries にすべて入れる。1語ずつの連続呼び出しは禁止。
+文法は下記にあるので grammar_note は原則不要。使うなら topics にまとめて1回だけ呼ぶ。
 訳文だけを出力し、解説や引用符は付けないでください。
 
 文法の要点:
@@ -76,6 +78,15 @@ FEW_SHOT_FROM_BARONH = """
 """
 
 CLOSED_BARONH = frozenset({"a", "éü", "sa", "te", "le", "lo", "f'a", "d'a", "s'a"})
+
+LOOKUP_QUERY_LIMIT = 24
+TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、訳文だけを出力してください。"
+TOOL_BATCH_RULE = (
+    "足りない語は各ツールの queries（固有名詞は names）にまとめて1回で引く。"
+    "1語ずつの連続呼び出しは禁止。"
+    "文法は既出なので grammar_note は原則不要。使うなら topics にまとめる。"
+    "validate_baronh は訳文が書けてから1回だけ。"
+)
 
 GRAMMAR_TOPICS: dict[str, str] = {
     "cases": (
@@ -118,18 +129,25 @@ CHAT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "lookup_lexicon",
-            "description": "アーヴ語・日本語・英語でローカル辞書を引く。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。",
+            "description": (
+                "ローカル辞書を一度に複数語引く。足りない語はすべて queries に入れて1回だけ呼ぶ。"
+                "1語ずつの連続呼び出しは禁止。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "見出し、語形、日本語または英語"},
+                    "queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "引きたい語をすべて入れる",
+                    },
                     "lang": {
                         "type": "string",
                         "enum": ["auto", "baronh", "ja", "en"],
                         "description": "検索言語。不明なら auto",
                     },
                 },
-                "required": ["query"],
+                "required": ["queries"],
             },
         },
     },
@@ -137,17 +155,17 @@ CHAT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "grammar_note",
-            "description": "アーヴ語文法の詳細トピックを取り出す。",
+            "description": "文法トピックを取り出す。要点は既出なので原則不要。使うなら topics にまとめて1回だけ呼ぶ。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "topic": {
-                        "type": "string",
-                        "enum": list(GRAMMAR_TOPICS.keys()),
-                        "description": "cases / verbs / pronouns / syntax / phonology",
+                    "topics": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(GRAMMAR_TOPICS.keys())},
+                        "description": "cases / verbs / pronouns / syntax / phonology のうち必要なものをすべて入れる",
                     },
                 },
-                "required": ["topic"],
+                "required": ["topics"],
             },
         },
     },
@@ -299,7 +317,7 @@ def retrieve_lexicon_context(
 ) -> str:
     """原文と下訳から関連語だけを拾う。辞書全文は渡さない。"""
     picked = [_format_entry(entry) for entry in retrieve_lexicon_entries(text, lexicon, local=local, limit=limit)]
-    return "\n".join(picked) if picked else "(該当なし。lookup_lexicon で追加検索してください)"
+    return "\n".join(picked) if picked else "(該当なし。lookup_lexicon の queries に必要な語をまとめて追加検索してください)"
 
 
 def describe_gaps(local: TranslationResult | None, lexicon: Lexicon | None = None) -> str:
@@ -363,7 +381,7 @@ def build_user_prompt(
         f"関連辞書（全文スキャンの上位。全文ではない）:\n{retrieved}"
         f"{gap_block}\n\n"
         "訳文だけを出力してください。解説は不要です。"
-        "足りない語や格は lookup_lexicon / grammar_note で引いてから訳してください。"
+        + TOOL_BATCH_RULE
     )
 
 
@@ -435,25 +453,69 @@ def clean_model_text(text: str) -> str:
     return out.strip().strip('"').strip("「」")
 
 
+def collect_tool_strings(
+    arguments: dict[str, Any] | None,
+    *keys: str,
+    limit: int = LOOKUP_QUERY_LIMIT,
+) -> list[str]:
+    """ツール引数から文字列リストを集める。配列フィールドを正規とし、単一フィールドも受け付ける。"""
+    arguments = arguments or {}
+    raw_items: list[Any] = []
+    for key in keys:
+        val = arguments.get(key)
+        if isinstance(val, str):
+            raw_items.append(val)
+        elif isinstance(val, list):
+            raw_items.extend(val)
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw_items:
+        for part in re.split(r"[,、]+", str(item or "")):
+            word = part.strip()
+            if not word or word in seen:
+                continue
+            seen.add(word)
+            out.append(word)
+            if len(out) >= limit:
+                return out
+    return out
+
+
+def collect_lookup_queries(arguments: dict[str, Any] | None, *, limit: int = LOOKUP_QUERY_LIMIT) -> list[str]:
+    return collect_tool_strings(arguments, "queries", "query", limit=limit)
+
+
+def collect_grammar_topics(arguments: dict[str, Any] | None) -> list[str]:
+    return [topic for topic in collect_tool_strings(arguments, "topics", "topic", limit=8) if topic in GRAMMAR_TOPICS]
+
+
+def _json_single_or_results(items: list[dict[str, Any]], empty_key: str = "query") -> str:
+    if not items:
+        return json.dumps({empty_key: "", "hits": []}, ensure_ascii=False)
+    if len(items) == 1:
+        return json.dumps(items[0], ensure_ascii=False)
+    return json.dumps({"results": items}, ensure_ascii=False)
+
+
 def dispatch_tool(name: str, arguments: dict[str, Any], lexicon: Lexicon) -> str:
     if name == "lookup_lexicon":
-        query = str(arguments.get("query") or "").strip()
+        queries = collect_lookup_queries(arguments)
         lang = str(arguments.get("lang") or "auto")
         if lang not in {"auto", "baronh", "ja", "en"}:
             lang = "auto"
-        hits = lexicon.search(query, lang=lang, limit=8)
-        if not hits:
-            return json.dumps({"query": query, "hits": []}, ensure_ascii=False)
-        return json.dumps(
-            {"query": query, "hits": [_format_entry(entry) for entry in hits]},
-            ensure_ascii=False,
-        )
+        packed = []
+        for query in queries:
+            hits = lexicon.search(query, lang=lang, limit=8)
+            packed.append({"query": query, "hits": [_format_entry(entry) for entry in hits]})
+        return _json_single_or_results(packed)
     if name == "grammar_note":
-        topic = str(arguments.get("topic") or "").strip()
-        note = GRAMMAR_TOPICS.get(topic)
-        if not note:
+        topics = collect_grammar_topics(arguments)
+        if not topics:
             return json.dumps({"error": "unknown topic", "topics": list(GRAMMAR_TOPICS)}, ensure_ascii=False)
-        return json.dumps({"topic": topic, "note": note}, ensure_ascii=False)
+        packed = [{"topic": topic, "note": GRAMMAR_TOPICS[topic]} for topic in topics]
+        if len(packed) == 1:
+            return json.dumps(packed[0], ensure_ascii=False)
+        return json.dumps({"notes": packed}, ensure_ascii=False)
     return json.dumps({"error": f"unknown tool: {name}"}, ensure_ascii=False)
 
 
@@ -475,15 +537,17 @@ def run_chat_tool_loop(
     messages: list[dict[str, Any]],
     lexicon: Lexicon,
     use_tools: bool,
-    max_rounds: int = 6,
+    max_rounds: int = 3,
     tools: list[dict[str, Any]] | None = None,
     dispatch: Any = None,
     chat_once: Any = None,
 ) -> tuple[str, int]:
-    """Chat Completions のツール往復。エージェント側から tools / dispatch を差し替えられる。"""
+    """Chat Completions のツール往復。1回のツール応答のあと tool_choice=none で訳文へ進む。"""
     rounds = 0
     dispatch_fn = dispatch or dispatch_tool
     chat_fn = chat_once or (lambda payload: _chat_once(url, api_key, payload))
+    allow_tools = use_tools
+    saw_tools = False
     for _ in range(max_rounds):
         rounds += 1
         payload: dict[str, Any] = {
@@ -491,14 +555,27 @@ def run_chat_tool_loop(
             "temperature": 0.2,
             "messages": messages,
         }
-        if use_tools:
+        if allow_tools:
             payload["tools"] = tools if tools is not None else CHAT_TOOLS
-            payload["tool_choice"] = "auto"
-        data = chat_fn(payload)
+            payload["tool_choice"] = "none" if saw_tools else "auto"
+        try:
+            data = chat_fn(payload)
+        except RuntimeError as exc:
+            if allow_tools and saw_tools and ("tool" in str(exc).lower() or "400" in str(exc)):
+                allow_tools = False
+                data = chat_fn({"model": model, "temperature": 0.2, "messages": messages})
+            else:
+                raise
         message = (data.get("choices") or [{}])[0].get("message") or {}
         tool_calls = message.get("tool_calls") or []
+        content = (message.get("content") or "").strip()
         if not tool_calls:
-            return (message.get("content") or "").strip(), rounds
+            return content, rounds
+        if saw_tools:
+            if content:
+                return content, rounds
+            allow_tools = False
+            continue
         messages.append(message)
         for call in tool_calls:
             fn = call.get("function") or {}
@@ -515,6 +592,8 @@ def run_chat_tool_loop(
                     "content": result,
                 }
             )
+        messages.append({"role": "user", "content": TOOL_ANSWER_NOW})
+        saw_tools = True
     return "", rounds
 
 
@@ -526,7 +605,7 @@ def _run_tool_loop(
     messages: list[dict[str, Any]],
     lexicon: Lexicon,
     use_tools: bool,
-    max_rounds: int = 6,
+    max_rounds: int = 3,
 ) -> tuple[str, int]:
     return run_chat_tool_loop(
         url=url,
@@ -590,6 +669,7 @@ def translate_openai(
             critique = (
                 f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
                 "造語せず、関連辞書または lookup_lexicon の見出し・活用形だけで書き直してください。"
+                "必要なら queries にまとめて1回で引く。"
                 "普通名詞が見つからなければ原文の語を残してください。訳文だけを出力してください。"
             )
             retry_messages = list(messages) + [
