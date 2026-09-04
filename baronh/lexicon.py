@@ -309,7 +309,7 @@ class Lexicon:
             take(self._by_gloss_ja.get(key, []))
         if lang in ("auto", "en"):
             take(self._by_gloss_en.get(key, []))
-        if not found:
+        if not found and len(key) >= 2:
             for entry in self.entries:
                 blob = " ".join([entry.lemma, entry.gloss_ja, entry.gloss_en, entry.notes])
                 if key in _normalize_key(blob):

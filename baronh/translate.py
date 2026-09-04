@@ -28,6 +28,13 @@ JA_PARTICLES = {
     "も": "also",
 }
 
+# 先に食べる複音節。で/か より先に です/ます を切る。
+JA_ATOMIC = (
+    "から", "まで", "より", "である", "であります", "でした", "だった",
+    "です", "だ",
+)
+JA_FINAL_ONLY = {"か", "よ", "ね"}
+
 EN_PREP = {
     "of": "gen",
     "to": "dat",
@@ -109,8 +116,26 @@ def _tokenize_en(text: str) -> list[str]:
     return re.findall(r"[A-Za-z']+|[0-9]+|[^\s\w]", text)
 
 
+def _is_ja_boundary_marker(src: str, index: int) -> str | None:
+    if index >= len(src):
+        return None
+    for atom in JA_ATOMIC:
+        if src.startswith(atom, index):
+            return atom
+    for particle in sorted(JA_PARTICLES, key=len, reverse=True):
+        if not src.startswith(particle, index):
+            continue
+        after = index + len(particle)
+        if particle in JA_FINAL_ONLY:
+            rest = src[after:]
+            if rest == "" or rest[0] in "、。！？!?., \t":
+                return particle
+            continue
+        return particle
+    return None
+
+
 def _tokenize_ja(text: str) -> list[str]:
-    keys = sorted(JA_PARTICLES, key=len, reverse=True)
     tokens: list[str] = []
     i = 0
     src = text.strip()
@@ -123,19 +148,14 @@ def _tokenize_ja(text: str) -> list[str]:
             tokens.append(ch)
             i += 1
             continue
-        matched = None
-        for particle in keys:
-            if src.startswith(particle, i):
-                # 漢字語の一部ではない助詞だけ切る
-                matched = particle
-                break
+        matched = _is_ja_boundary_marker(src, i)
         if matched:
             tokens.append(matched)
             i += len(matched)
             continue
         j = i + 1
         while j < len(src) and not src[j].isspace() and src[j] not in "、。！？!?.,":
-            if any(src.startswith(p, j) for p in keys):
+            if _is_ja_boundary_marker(src, j):
                 break
             j += 1
         tokens.append(src[i:j])
@@ -204,7 +224,8 @@ def _lookup_ja(lexicon: Lexicon, word: str) -> list[Entry]:
     candidates = [word]
     if word.endswith("ます") and len(word) > 2:
         i_stem = word[:-2]
-        candidates.extend([i_stem + "る", i_stem])
+        godan = i_stem[:-1] + i_stem[-1].translate(str.maketrans("きぎしちにびみり", "くぐすつぬぶむる")) if i_stem else i_stem
+        candidates.extend([i_stem + "る", godan, i_stem])
     for suffix in ("します", "しました", "する", "した", "です", "だ", "たち"):
         if word.endswith(suffix) and len(word) > len(suffix):
             candidates.append(word[: -len(suffix)])

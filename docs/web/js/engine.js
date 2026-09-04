@@ -27,6 +27,8 @@
     "を": "acc", "の": "gen", "に": "dat", "へ": "all", "で": "ins",
     "と": "cite", "よ": "vocative", "か": "question", "も": "also"
   };
+  var JA_ATOMIC = ["から", "まで", "より", "である", "であります", "でした", "だった", "です", "だ"];
+  var JA_FINAL_ONLY = { "か": 1, "よ": 1, "ね": 1 };
   var EN_PREP = { of: "gen", to: "dat", toward: "all", towards: "all", into: "all", from: "abl", with: "ins", by: "ins", at: "all", in: "all" };
 
   function norm(s) {
@@ -247,12 +249,10 @@
     if (lang === "auto" || lang === "baronh") take(this.byLemma[key]);
     if (lang === "auto" || lang === "ja") take(this.byJa[key]);
     if (lang === "auto" || lang === "en") take(this.byEn[key]);
-    if (!found.length) {
-      var self = this;
+    if (!found.length && key.length >= 2) {
       this.entries.forEach(function (e) {
         if ((e.lemma + " " + e.gloss_ja + " " + e.gloss_en).toLowerCase().indexOf(query.toLowerCase()) >= 0) take([e]);
       });
-      void self;
     }
     return found;
   };
@@ -294,26 +294,39 @@
     return String(text || "").match(/[A-Za-z']+|[0-9]+|[^\s\w]/g) || [];
   }
 
+  function jaBoundary(src, index) {
+    if (index >= src.length) return null;
+    var a, p, after, rest;
+    for (a = 0; a < JA_ATOMIC.length; a++) {
+      if (src.slice(index, index + JA_ATOMIC[a].length) === JA_ATOMIC[a]) return JA_ATOMIC[a];
+    }
+    var keys = Object.keys(JA_PARTICLES).sort(function (x, y) { return y.length - x.length; });
+    for (a = 0; a < keys.length; a++) {
+      p = keys[a];
+      if (src.slice(index, index + p.length) !== p) continue;
+      after = index + p.length;
+      if (JA_FINAL_ONLY[p]) {
+        rest = src.slice(after);
+        if (rest === "" || "、。！？!?., \t".indexOf(rest.charAt(0)) >= 0) return p;
+        continue;
+      }
+      return p;
+    }
+    return null;
+  }
+
   function tokenizeJa(text) {
-    var keys = Object.keys(JA_PARTICLES).sort(function (a, b) { return b.length - a.length; });
     var tokens = [];
     var src = String(text || "").trim();
     var i = 0;
     while (i < src.length) {
       if (/\s/.test(src[i])) { i++; continue; }
       if ("、。！？!?.,".indexOf(src[i]) >= 0) { tokens.push(src[i]); i++; continue; }
-      var matched = null;
-      for (var k = 0; k < keys.length; k++) {
-        if (src.slice(i, i + keys[k].length) === keys[k]) { matched = keys[k]; break; }
-      }
+      var matched = jaBoundary(src, i);
       if (matched) { tokens.push(matched); i += matched.length; continue; }
       var j = i + 1;
       while (j < src.length && !/\s/.test(src[j]) && "、。！？!?.,".indexOf(src[j]) < 0) {
-        var hit = false;
-        for (k = 0; k < keys.length; k++) {
-          if (src.slice(j, j + keys[k].length) === keys[k]) { hit = true; break; }
-        }
-        if (hit) break;
+        if (jaBoundary(src, j)) break;
         j++;
       }
       tokens.push(src.slice(i, j));
@@ -369,7 +382,9 @@
     var cands = [word];
     if (word.endsWith("ます") && word.length > 2) {
       var iStem = word.slice(0, -2);
-      cands.push(iStem + "る", iStem);
+      var map = { "き": "く", "ぎ": "ぐ", "し": "す", "ち": "つ", "に": "ぬ", "び": "ぶ", "み": "む", "り": "る" };
+      var godan = iStem ? iStem.slice(0, -1) + (map[iStem.slice(-1)] || iStem.slice(-1)) : iStem;
+      cands.push(iStem + "る", godan, iStem);
     }
     ["します", "しました", "する", "した", "です", "だ", "たち"].forEach(function (suf) {
       if (word.endsWith(suf) && word.length > suf.length) cands.push(word.slice(0, -suf.length));

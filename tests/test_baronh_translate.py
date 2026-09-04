@@ -21,13 +21,12 @@ class TranslateJaBaronhTest(unittest.TestCase):
 
     def test_i_immigrate(self):
         out = translate("私は移民します", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertIn("F'a", out.text)
-        self.assertIn("usere", out.text)
+        self.assertEqual(out.text, "F'a usere.")
 
     def test_i_am_abh(self):
         out = translate("私はアーヴです", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertIn("F'a", out.text)
-        self.assertIn("bale", out.text)
+        self.assertEqual(out.text, "F'a bale.")
+        self.assertNotIn("usere", out.text)
 
     def test_your_family(self):
         out = translate("あなたの家族は？", self.lex, source_lang="ja", target_lang="baronh")
@@ -42,8 +41,9 @@ class TranslateJaBaronhTest(unittest.TestCase):
 
     def test_do_you_understand(self):
         out = translate("分かりますか", self.lex, source_lang="ja", target_lang="baronh")
-        self.assertIn("fac", out.text.lower())
+        self.assertRegex(out.text, r"face")
         self.assertIn("sa", out.text)
+        self.assertNotIn("ります", out.text)
 
     def test_fa_usere_to_ja(self):
         out = translate("F'a usere.", self.lex, source_lang="baronh", target_lang="ja")
