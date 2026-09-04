@@ -36,7 +36,14 @@ from baronh.openai_backend import (
     _json_single_or_results,
 )
 from baronh.phonology import looks_like_proper_noun, reading_ja, to_ath_keys, transcribe_proper_noun
-from baronh.synonyms import find_synonyms, format_hits
+from baronh.synonyms import (
+    expand_hint_queries,
+    find_synonyms,
+    format_hits,
+    format_resolved_context,
+    name_for_transcription,
+    resolve_lexicon_hits,
+)
 from baronh.translate import (
     JA_PARTICLES,
     TokenGloss,
@@ -46,15 +53,14 @@ from baronh.translate import (
     _tokenize_ja,
     detect_lang,
 )
-from baronh.vectordb import get_index, hit_to_dict, search_context
 
 AGENT_BRIEF = """
 あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、
-与えられた文法コンテキストと、ベクトル検索した辞書だけを根拠に、自分で訳文を組み立てます。
+与えられた文法コンテキストと、辞書の一致・類義語・確度の高いベクトル検索だけを根拠に、自分で訳文を組み立てます。
 規則ベースの下訳は渡しません。なぞらないでください。
 
 目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。
-辞書にない普通名詞は造語せず、search_lexicon（ベクトル検索）や find_synonyms で
+辞書にない普通名詞は造語せず、search_lexicon や find_synonyms で
 語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。
 意味がややずれても、未登録語を残すより辞書の類義語を使います。
 固有名詞は transcribe_name でアーヴ語正書法へ発音転記します
@@ -70,6 +76,7 @@ validate_baronh は訳文が書けてから1回だけ。
 FEW_SHOT_SYNONYM = """
 例（類義語で辞書に寄せる。文はモデルが組む）:
 - 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.
+- 翻訳機 → 機械通訳 (catorac)。喋る → 話す。俺ら → 私たち (farh)。完璧 → 完全 (batta)。
 - 私はアーヴです → F'a bale.
 - ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）
 - 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?
@@ -81,8 +88,8 @@ AGENT_TOOLS: list[dict[str, Any]] = [
         "function": {
             "name": "search_lexicon",
             "description": (
-                "アーヴ語辞書のベクトル検索。足りない語はすべて queries に入れて1回だけ呼ぶ。"
-                "1語ずつの連続呼び出しは禁止。"
+                "アーヴ語辞書の検索。一致と類義語を優先し、弱いベクトル類似は返さない。"
+                "足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。"
             ),
             "parameters": {
                 "type": "object",
@@ -265,10 +272,14 @@ def dictionary_hints(text: str, lexicon: Lexicon, source_lang: str) -> str:
     """原文トークンを辞書・類義語で注記する。アーヴ語の文は組まない。"""
     lines: list[str] = []
     seen: set[str] = set()
-    for tok in _source_tokens(text, lexicon, source_lang):
+    raw = [
+        tok.strip(".,!?;:。？！")
+        for tok in _source_tokens(text, lexicon, source_lang)
+        if tok.strip(".,!?;:。？！") and tok not in JA_PARTICLES and tok not in "、。！？!?.:"
+    ]
+    for word in expand_hint_queries(raw, lexicon):
         if len(lines) >= HINT_LINE_LIMIT:
             break
-        word = tok.strip(".,!?;:。？！")
         if not word or word in seen or word in JA_PARTICLES:
             continue
         if word in "、。！？!?.":
@@ -306,14 +317,14 @@ def dispatch_agent_tool(
     if name == "search_lexicon":
         queries = collect_lookup_queries(arguments)
         try:
-            limit = int(arguments.get("limit") or 8)
+            limit = int(arguments.get("limit") or 6)
         except (TypeError, ValueError):
-            limit = 8
-        limit = max(1, min(limit, 16))
+            limit = 6
+        limit = max(1, min(limit, 8))
         packed = []
         for query in queries:
-            hits = get_index(lexicon).search(query, limit=limit)
-            packed.append({"query": query, "hits": [hit_to_dict(hit) for hit in hits]})
+            hits = resolve_lexicon_hits(query, lexicon, limit=limit)
+            packed.append({"query": query, "hits": hits})
         return _json_single_or_results(packed)
     if name == "find_synonyms":
         queries = collect_lookup_queries(arguments)
@@ -343,7 +354,7 @@ def dispatch_agent_tool(
         names = collect_tool_strings(arguments, "names", "name")
         packed = []
         for raw_name in names:
-            lemma, kind = transcribe_proper_noun(raw_name)
+            lemma, kind = transcribe_proper_noun(name_for_transcription(raw_name))
             if not lemma:
                 packed.append({"name": raw_name, "error": "empty name"})
                 continue
@@ -388,13 +399,16 @@ def build_agent_user_prompt(
 ) -> str:
     units = split_source_units(text)
     numbered = format_numbered_source(units)
-    token_queries = [
-        tok.strip(".,!?;:。？！")
-        for tok in _source_tokens(text, lexicon, source_lang)
-        if tok.strip(".,!?;:。？！") and tok not in JA_PARTICLES and len(tok.strip(".,!?;:。？！")) <= HINT_TOKEN_MAX
-    ]
-    queries = [*units, *token_queries]
-    retrieved = search_context(queries, lexicon, limit=16)
+    token_queries = expand_hint_queries(
+        [
+            tok.strip(".,!?;:。？！")
+            for tok in _source_tokens(text, lexicon, source_lang)
+            if tok.strip(".,!?;:。？！") and tok not in JA_PARTICLES
+        ],
+        lexicon,
+    )
+    queries = [*units, *[q for q in token_queries if len(q) <= HINT_TOKEN_MAX]]
+    retrieved = format_resolved_context(queries, lexicon, limit=16)
     hints = dictionary_hints(text, lexicon, source_lang)
     coverage = (
         "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
@@ -405,7 +419,7 @@ def build_agent_user_prompt(
         f"翻訳方向: {source_lang} → {target_lang}\n"
         f"原文（番号順に省略せず全文を訳す。要約禁止）:\n{numbered}\n\n"
         f"辞書ヒント（文ではない。訳は自分で組む）:\n{hints}\n\n"
-        f"ベクトル検索した関連辞書（全文ではない）:\n{retrieved}\n\n"
+        f"関連辞書（一致・類義語。弱いベクトル類似は載せていない）:\n{retrieved}\n\n"
         f"{coverage}規則ベースの下訳はありません。"
         "足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries にまとめて1回で引く。"
         "1語ずつの連続呼び出しは禁止。固有名詞は transcribe_name の names にまとめる。"

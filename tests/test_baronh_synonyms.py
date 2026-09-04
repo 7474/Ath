@@ -10,9 +10,20 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from baronh.agent import dispatch_agent_tool
+from baronh.agent import dictionary_hints, dispatch_agent_tool
+from baronh.grammar import FormIndex
 from baronh.lexicon import load_lexicon
-from baronh.synonyms import coverage_plan, find_synonyms, paraphrase_source, uncovered_tokens
+from baronh.openai_backend import invented_baronh_forms
+from baronh.phonology import transcribe_proper_noun
+from baronh.synonyms import (
+    coverage_plan,
+    find_synonyms,
+    hint_query_pieces,
+    name_for_transcription,
+    paraphrase_source,
+    resolve_lexicon_hits,
+    uncovered_tokens,
+)
 from baronh.translate import translate
 
 
@@ -80,6 +91,64 @@ class SynonymCoverageTest(unittest.TestCase):
         rewritten, subs = paraphrase_source(local.source_text, plan, source_lang="ja")
         self.assertEqual(rewritten, local.source_text)
         self.assertEqual(subs, [])
+
+
+class ColloquialLexiconTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lex = load_lexicon()
+
+    def test_spoken_bridges(self):
+        talk = {hit.entry.lemma for hit in find_synonyms("喋る", self.lex)}
+        self.assertTrue({"cadase", "canse", "banas", "clare", "ie"} & talk)
+        self.assertTrue(any(hit.entry.lemma == "farh" for hit in find_synonyms("俺ら", self.lex)))
+        self.assertTrue(any(hit.entry.lemma in {"batta", "bata"} for hit in find_synonyms("完璧", self.lex)))
+        self.assertTrue(any(hit.entry.lemma == "éni" for hit in find_synonyms("いい", self.lex)))
+        machine = {hit.entry.lemma for hit in find_synonyms("翻訳機", self.lex)}
+        self.assertIn("catorac", machine)
+        self.assertTrue(any(hit.entry.lemma == "rire" for hit in find_synonyms("覚える", self.lex)))
+
+    def test_hint_peels_katakana_name(self):
+        self.assertEqual(hint_query_pieces("リン・ジントって奴"), ["リン・ジント"])
+        self.assertEqual(name_for_transcription("リン・ジントって奴"), "リン・ジント")
+        lemma, _kind = transcribe_proper_noun(name_for_transcription("リン・ジントって奴"))
+        self.assertIn("rin", lemma)
+        self.assertIn("ghint", lemma)
+        self.assertNotIn("linghinth", lemma.replace(" ", ""))
+        raw = dispatch_agent_tool("transcribe_name", {"name": "リン・ジントって奴"}, self.lex)
+        data = json.loads(raw)
+        self.assertIn("rin", data["lemma"])
+        self.assertIn("ghint", data["lemma"])
+
+    def test_search_prefers_dictionary_over_weak_vector(self):
+        hits = resolve_lexicon_hits("頭の出来がいい", self.lex)
+        lemmas = {hit["lemma"] for hit in hits}
+        glosses = " ".join(str(hit.get("gloss_ja") or "") for hit in hits)
+        self.assertTrue({"almec", "éni"} & lemmas)
+        self.assertNotIn("領民", glosses)
+        raw = dispatch_agent_tool("search_lexicon", {"query": "頭の出来がいい"}, self.lex)
+        data = json.loads(raw)
+        tool_lemmas = {hit["lemma"] for hit in data["hits"]}
+        self.assertTrue({"almec", "éni"} & tool_lemmas)
+        self.assertFalse(any("領民" in (hit.get("gloss_ja") or "") for hit in data["hits"]))
+        light = json.loads(dispatch_agent_tool("search_lexicon", {"query": "光"}, self.lex))
+        self.assertTrue(any(hit["lemma"] == "sairiac" for hit in light["hits"]))
+        bother = resolve_lexicon_hits("困る", self.lex)
+        self.assertFalse(any(hit["lemma"] == "cigamh" for hit in bother))
+
+    def test_hints_expose_name_and_lexicon_not_leftover_chunk(self):
+        hints = dictionary_hints("リン・ジントって奴はあれでなかなか頭の出来がいい。", self.lex, "ja")
+        self.assertIn("リン・ジント", hints)
+        self.assertNotIn("リン・ジントって奴", hints)
+        self.assertIn("almec", hints)
+        self.assertIn("éni", hints)
+
+    def test_grammar_affixes_are_not_invented(self):
+        self.assertNotIn("lér", invented_baronh_forms("cadase lér.", self.lex))
+        self.assertNotIn("ad", invented_baronh_forms("fac ad e.", self.lex))
+        self.assertNotIn("iri", invented_baronh_forms("iri sacre.", self.lex))
+        self.assertTrue(FormIndex(self.lex).lookup("iri"))
+        self.assertIn("xyzzy", invented_baronh_forms("F'a xyzzy.", self.lex))
 
 
 if __name__ == "__main__":

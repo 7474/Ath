@@ -113,9 +113,10 @@ assert.ok(sys.indexOf(grammar) >= 0);
 assert.ok(sys.indexOf("ベクトル検索") >= 0);
 
 var user = engine.buildAgentUserPrompt("星たちの光を見ます", lexicon, "ja", "baronh");
-assert.ok(user.indexOf("sairiac") >= 0);
-assert.ok(user.indexOf("規則ベースの下訳（誤り") < 0);
-assert.ok(user.indexOf("search_lexicon") >= 0);
+  assert.ok(user.indexOf("sairiac") >= 0);
+  assert.ok(user.indexOf("規則ベースの下訳（誤り") < 0);
+  assert.ok(user.indexOf("search_lexicon") >= 0);
+  assert.ok(user.indexOf("関連辞書") >= 0);
 
 var calls = 0;
 engine.translateAgent("星たちの光を見ます", lexicon, {
@@ -204,6 +205,38 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
     assert.ok(longOut.text.indexOf("face") >= 0);
     assert.ok(longCalls >= 3, "longCalls " + longCalls);
     console.log("OK coverage=" + longOut.text.replace(/\n/g, " / "));
+
+    var talk = engine.findSynonyms("喋る", lexicon);
+    assert.ok(talk.some(function (h) {
+      return ["cadase", "canse", "banas", "clare", "ie"].indexOf(h.entry.lemma) >= 0;
+    }));
+    assert.ok(engine.findSynonyms("俺ら", lexicon).some(function (h) { return h.entry.lemma === "farh"; }));
+    assert.ok(engine.findSynonyms("完璧", lexicon).some(function (h) {
+      return h.entry.lemma === "batta" || h.entry.lemma === "bata";
+    }));
+    assert.ok(engine.findSynonyms("翻訳機", lexicon).some(function (h) { return h.entry.lemma === "catorac"; }));
+    assert.strictEqual(engine.hintQueryPieces("リン・ジントって奴").join("|"), "リン・ジント");
+    assert.strictEqual(engine.nameForTranscription("リン・ジントって奴"), "リン・ジント");
+    var name = JSON.parse(engine.dispatchAgentTool("transcribe_name", { name: "リン・ジントって奴" }, lexicon));
+    assert.ok(name.lemma.indexOf("rin") >= 0);
+    assert.ok(name.lemma.indexOf("ghint") >= 0);
+    var smart = engine.resolveLexiconHits("頭の出来がいい", lexicon);
+    var smartLemmas = smart.map(function (h) { return h.lemma; });
+    assert.ok(smartLemmas.indexOf("almec") >= 0 || smartLemmas.indexOf("éni") >= 0);
+    assert.ok(smart.every(function (h) { return (h.gloss_ja || "").indexOf("領民") < 0; }));
+    var searchLight = JSON.parse(engine.dispatchAgentTool("search_lexicon", { query: "光" }, lexicon));
+    assert.ok(searchLight.hits.some(function (h) { return h.lemma === "sairiac"; }));
+    var searchSmart = JSON.parse(engine.dispatchAgentTool("search_lexicon", { query: "頭の出来がいい" }, lexicon));
+    assert.ok(searchSmart.hits.every(function (h) { return (h.gloss_ja || "").indexOf("領民") < 0; }));
+    var invented = engine.inventedBaronhForms("cadase lér. iri sacre. fac ad e.", lexicon);
+    assert.ok(invented.indexOf("lér") < 0, "lér " + invented);
+    assert.ok(invented.indexOf("iri") < 0, "iri " + invented);
+    assert.ok(invented.indexOf("ad") < 0, "ad " + invented);
+    var sampleHints = engine.buildAgentUserPrompt(sample, lexicon, "ja", "baronh");
+    assert.ok(sampleHints.indexOf("リン・ジント") >= 0);
+    assert.ok(sampleHints.indexOf("- リン・ジントって奴") < 0);
+    assert.ok(sampleHints.indexOf("catorac") >= 0 || sampleHints.indexOf("機械通訳") >= 0);
+    console.log("OK lexicon-plausible");
   });
 }).catch(function (err) {
   console.error(err);

@@ -688,6 +688,13 @@
     var k = norm(form);
     this.map[k] = this.map[k] || [];
     this.map[k].push(info);
+    var self = this;
+    String(form || "").replace(/-/g, " ").split(/\s+/).forEach(function (part) {
+      if (!part || norm(part) === k) return;
+      var pk = norm(part);
+      self.map[pk] = self.map[pk] || [];
+      self.map[pk].push(info);
+    });
   };
 
   FormIndex.prototype.lookup = function (form) {
@@ -1204,6 +1211,8 @@
   var FEW_SHOT_TO_BARONH = "例（ja/en → baronh）:\n- 私は移民します → F'a usere.\n- 私はアーヴです → F'a bale.\n- 分かりますか → face sa?\n- ありがとう → zom.\n- ジントはアーヴです → ghintoc a bale.";
   var FEW_SHOT_FROM_BARONH = "例（baronh → ja/en）:\n- F'a usere. → 私は移民する / I immigrate.\n- F'a bale. → 私はアーヴだ / I am Abh.\n- face sa? → 分かりますか / Do you understand?\n- zom. → ありがとう / Thanks.";
   var CLOSED_BARONH = { a: 1, "éü": 1, sa: 1, te: 1, le: 1, lo: 1, "f'a": 1, "d'a": 1, "s'a": 1 };
+  Object.keys(VERB_ENDINGS).forEach(function (key) { CLOSED_BARONH[VERB_ENDINGS[key]] = 1; });
+  Object.keys(VOICE_SUFFIX).forEach(function (key) { CLOSED_BARONH[VOICE_SUFFIX[key]] = 1; });
 
   var GRAMMAR_TOPICS = {
     cases: "7格: 主格 nom（が）対格 acc（を）生格 gen（の）与格 dat（に）向格 all（へ）奪格 abl（から）具格 ins（で）。第1型 abh/abe/bar/bari/baré/abhar/bale。第2型 -h: lamh/lame/lamr/lami/lamé/lamhar/lamhle。第3型 -c。第4型 -iac。主題は代名詞で F'a。普通名詞は lemma a。",
@@ -1250,9 +1259,9 @@
     ]).join("\n");
   }
 
-  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、ベクトル検索した辞書だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon（ベクトル検索）や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。\n訳文だけを出力し、解説や引用符は付けないでください。";
+  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、辞書の一致・類義語・確度の高いベクトル検索だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。\n訳文だけを出力し、解説や引用符は付けないでください。";
 
-  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）\n- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?";
+  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 翻訳機 → 機械通訳 (catorac)。喋る → 話す。俺ら → 私たち (farh)。完璧 → 完全 (batta)。\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）\n- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?";
 
   var LOOKUP_QUERY_LIMIT = 24;
   var HINT_TOKEN_MAX = 20;
@@ -1261,7 +1270,7 @@
   var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。訳文だけを出力してください。";
 
   var AGENT_TOOLS = [
-    { type: "function", function: { name: "search_lexicon", description: "アーヴ語辞書のベクトル検索。足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" }, description: "原文の語・言い換えをすべて入れる" }, limit: { type: "integer" } }, required: ["queries"] } } },
+    { type: "function", function: { name: "search_lexicon", description: "アーヴ語辞書の検索。一致と類義語を優先し、弱いベクトル類似は返さない。足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" }, description: "原文の語・言い換えをすべて入れる" }, limit: { type: "integer" } }, required: ["queries"] } } },
     { type: "function", function: { name: "lookup_lexicon", description: "辞書の厳密検索。足りない語はすべて queries に入れて1回だけ呼ぶ。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" } }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["queries"] } } },
     { type: "function", function: { name: "find_synonyms", description: "未登録の普通名詞を辞書語釈の類義語へ寄せる。queries にまとめて1回だけ呼ぶ。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" } }, extra_keys: { type: "array", items: { type: "string" } } }, required: ["queries"] } } },
     { type: "function", function: { name: "transcribe_name", description: "固有名詞をアーヴ語音写する。複数なら names にまとめて1回だけ呼ぶ。", parameters: { type: "object", properties: { names: { type: "array", items: { type: "string" } }, kind: { type: "string", enum: ["person", "place", "other"] } }, required: ["names"] } } },
@@ -1554,6 +1563,170 @@
     return hits.slice(0, limit);
   }
 
+  var HINT_SPLIT_RE = /(?:って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)/;
+  var KATAKANA_NAME_RE = /[ァ-ヶー]+(?:[・＝][ァ-ヶー]+)+/g;
+  var HINT_STOP = { "奴": 1, "やつ": 1, "ぜ": 1, "だ": 1, "って": 1, "な": 1, "ん": 1, "こ": 1, "よ": 1, "ね": 1 };
+  var VECTOR_RETRIEVE_MIN_SCORE = 0.42;
+  var RESOLVE_HIT_LIMIT = 6;
+
+  function hintQueryPieces(token) {
+    var word = String(token || "").replace(/^[.,!?;:。？！ \t]+|[.,!?;:。？！ \t]+$/g, "");
+    if (!word) return [];
+    var pieces = [];
+    var seen = {};
+    function add(item) {
+      item = String(item || "").replace(/^[.,!?;:。？！ \t]+|[.,!?;:。？！ \t]+$/g, "");
+      if (!item || HINT_STOP[item] || seen[item] || JA_PARTICLES[item]) return;
+      seen[item] = 1;
+      pieces.push(item);
+    }
+    KATAKANA_NAME_RE.lastIndex = 0;
+    var names = word.match(KATAKANA_NAME_RE) || [];
+    names.forEach(add);
+    KATAKANA_NAME_RE.lastIndex = 0;
+    var rest = word.replace(KATAKANA_NAME_RE, " ");
+    rest.split(HINT_SPLIT_RE).forEach(add);
+    if (pieces.length) return pieces;
+    return HINT_STOP[word] ? [] : [word];
+  }
+
+  function knownPiece(text, lexicon) {
+    if (!text || JA_PARTICLES[text] || HINT_STOP[text]) return false;
+    if (lexicon.lookup(text, "auto").length) return true;
+    var keysMap = global.BaronhVectorDB && global.BaronhVectorDB.PARAPHRASE_KEYS || {};
+    if (keysMap[text] || keysMap[String(text).toLowerCase()]) return true;
+    var morph = morphKeys(text).slice(0, 12);
+    var i;
+    for (i = 0; i < morph.length; i++) {
+      if (morph[i] !== text && lexicon.lookup(morph[i], "auto").length) return true;
+    }
+    return false;
+  }
+
+  function peelKnownPieces(text, lexicon) {
+    var word = String(text || "").trim();
+    if (!word) return [];
+    if (knownPiece(word, lexicon) || looksLikeProperNoun(word)) return [word];
+    var out = [];
+    var i = 0;
+    var n = word.length;
+    while (i < n) {
+      var matched = "";
+      var j;
+      for (j = n; j > i; j--) {
+        var chunk = word.slice(i, j);
+        if (knownPiece(chunk, lexicon)) {
+          matched = chunk;
+          break;
+        }
+      }
+      if (matched) {
+        out.push(matched);
+        i += matched.length;
+      } else {
+        i += 1;
+      }
+    }
+    return out.length ? out : hintQueryPieces(word);
+  }
+
+  function expandHintQueries(tokens, lexicon) {
+    var out = [];
+    var seen = {};
+    (tokens || []).forEach(function (tok) {
+      hintQueryPieces(String(tok)).forEach(function (piece) {
+        var peeled = peelKnownPieces(piece, lexicon);
+        (peeled.length ? peeled : [piece]).forEach(function (item) {
+          if (!item || seen[item]) return;
+          seen[item] = 1;
+          out.push(item);
+        });
+      });
+    });
+    return out;
+  }
+
+  function nameForTranscription(raw) {
+    var word = String(raw || "").trim();
+    if (!word) return word;
+    var pieces = hintQueryPieces(word);
+    var i;
+    for (i = 0; i < pieces.length; i++) {
+      if (looksLikeProperNoun(pieces[i])) return pieces[i];
+    }
+    return word;
+  }
+
+  function compactEntryHit(entry, via, score, relation) {
+    var row = {
+      lemma: entry.lemma,
+      pos: entry.pos,
+      gloss_ja: entry.gloss_ja,
+      gloss_en: entry.gloss_en,
+      via: via,
+      score: Math.round(Number(score) * 1000) / 1000
+    };
+    if (relation) row.relation = relation;
+    return row;
+  }
+
+  function resolveLexiconHits(query, lexicon, limit, vector) {
+    var text = String(query || "").trim();
+    limit = limit || RESOLVE_HIT_LIMIT;
+    if (vector == null) vector = true;
+    if (!text) return [];
+    var rows = [];
+    var seen = {};
+    function take(entry, via, score, relation) {
+      var key = norm(entry.lemma) + "|" + entry.pos;
+      if (seen[key]) return;
+      seen[key] = 1;
+      rows.push(compactEntryHit(entry, via, score, relation || ""));
+    }
+    lexicon.lookup(text, "auto").forEach(function (entry) { take(entry, "exact", 1, "exact"); });
+    findSynonyms(text, lexicon, [], limit).forEach(function (hit) {
+      take(hit.entry, hit.via, hit.score / 1000, hit.relation);
+    });
+    if (!rows.length) {
+      expandHintQueries([text], lexicon).forEach(function (piece) {
+        if (piece === text) return;
+        lexicon.lookup(piece, "auto").forEach(function (entry) { take(entry, piece, 0.9, "piece"); });
+        findSynonyms(piece, lexicon, [], 3).forEach(function (hit) {
+          take(hit.entry, hit.via, hit.score / 1000, hit.relation);
+        });
+      });
+    }
+    if (vector && !rows.length) {
+      var vdb = global.BaronhVectorDB;
+      if (vdb) {
+        try {
+          vdb.getIndex(lexicon).search(text, 3, VECTOR_RETRIEVE_MIN_SCORE).forEach(function (hit) {
+            take(hit.entry, "vector", hit.score, "vector");
+          });
+        } catch (err) {}
+      }
+    }
+    return rows.slice(0, limit);
+  }
+
+  function formatResolvedContext(queries, lexicon, limit) {
+    var best = {};
+    (queries || []).forEach(function (query) {
+      resolveLexiconHits(String(query), lexicon, 4, true).forEach(function (row) {
+        var key = String(row.lemma || "") + "|" + String(row.pos || "");
+        if (!best[key] || Number(row.score || 0) > Number(best[key].score || 0)) best[key] = row;
+      });
+    });
+    var ranked = Object.keys(best).map(function (key) { return best[key]; })
+      .sort(function (a, b) { return Number(b.score || 0) - Number(a.score || 0); })
+      .slice(0, limit || 16);
+    if (!ranked.length) return "(ヒットなし。search_lexicon で追加検索してください)";
+    return ranked.map(function (row) {
+      return "- " + row.lemma + " [" + row.pos + "] ja:" + row.gloss_ja +
+        " en:" + (row.gloss_en || "") + " via:" + row.via + " score=" + row.score;
+    }).join("\n");
+  }
+
   function sourceTokens(text, lexicon, sourceLang) {
     if (sourceLang === "en") return tokenizeEn(text);
     if (sourceLang === "baronh") return tokenizeBaronh(text);
@@ -1563,9 +1736,13 @@
   function dictionaryHints(text, lexicon, sourceLang) {
     var lines = [];
     var seen = {};
-    sourceTokens(text, lexicon, sourceLang).forEach(function (tok) {
+    var raw = sourceTokens(text, lexicon, sourceLang).map(function (tok) {
+      return String(tok).replace(/[.,!?;:。？！]/g, "");
+    }).filter(function (word) {
+      return word && !JA_PARTICLES[word] && "、。！？!?:.".indexOf(word) < 0;
+    });
+    expandHintQueries(raw, lexicon).forEach(function (word) {
       if (lines.length >= HINT_LINE_LIMIT) return;
-      var word = String(tok).replace(/[.,!?;:。？！]/g, "");
       if (!word || seen[word] || JA_PARTICLES[word] || "、。！？!?:.".indexOf(word) >= 0) return;
       seen[word] = 1;
       var exact = lexicon.lookup(word, "auto");
@@ -1695,22 +1872,18 @@
   }
 
   function buildAgentUserPrompt(text, lexicon, sourceLang, targetLang) {
-    var vdb = global.BaronhVectorDB;
     var units = splitSourceUnits(text);
     var numbered = formatNumberedSource(units);
-    var tokenQueries = sourceTokens(text, lexicon, sourceLang).map(function (tok) {
-      return String(tok).replace(/[.,!?;:。？！]/g, "");
-    }).filter(function (tok) {
-      return tok && !JA_PARTICLES[tok] && tok.length <= HINT_TOKEN_MAX;
-    });
+    var tokenQueries = expandHintQueries(
+      sourceTokens(text, lexicon, sourceLang).map(function (tok) {
+        return String(tok).replace(/[.,!?;:。？！]/g, "");
+      }).filter(function (tok) {
+        return tok && !JA_PARTICLES[tok];
+      }),
+      lexicon
+    ).filter(function (tok) { return tok.length <= HINT_TOKEN_MAX; });
     var queries = units.concat(tokenQueries);
-    var retrieved = "(ヒットなし。search_lexicon で追加検索してください)";
-    if (vdb) {
-      var hits = vdb.getIndex(lexicon).searchMany(queries, 16);
-      if (hits.length) {
-        retrieved = hits.map(function (hit) { return formatEntryLine(hit.entry, hit.score); }).join("\n");
-      }
-    }
+    var retrieved = formatResolvedContext(queries, lexicon, 16);
     var hints = dictionaryHints(text, lexicon, sourceLang);
     var coverage = units.length > 1
       ? "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
@@ -1718,7 +1891,7 @@
     return "翻訳方向: " + sourceLang + " → " + targetLang +
       "\n原文（番号順に省略せず全文を訳す。要約禁止）:\n" + numbered +
       "\n\n辞書ヒント（文ではない。訳は自分で組む）:\n" + hints +
-      "\n\nベクトル検索した関連辞書（全文ではない）:\n" + retrieved +
+      "\n\n関連辞書（一致・類義語。弱いベクトル類似は載せていない）:\n" + retrieved +
       "\n\n" + coverage + "規則ベースの下訳はありません。" +
       "足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries にまとめて1回で引く。" +
       "1語ずつの連続呼び出しは禁止。固有名詞は transcribe_name の names にまとめる。" +
@@ -1819,22 +1992,13 @@
   function dispatchAgentTool(name, args, lexicon, trace, local) {
     args = args || {};
     trace = trace || { substitutions: [], names: [] };
-    var vdb = global.BaronhVectorDB;
     if (name === "search_lexicon") {
       var limit = parseInt(args.limit, 10);
-      if (!isFinite(limit) || limit < 1) limit = 8;
-      if (limit > 16) limit = 16;
+      if (!isFinite(limit) || limit < 1) limit = 6;
+      if (limit > 8) limit = 8;
       var queries = collectToolStrings(args, ["queries", "query"]);
       var packed = queries.map(function (query) {
-        var found = vdb ? vdb.getIndex(lexicon).search(query, limit) : [];
-        return {
-          query: query,
-          hits: found.map(function (hit) {
-            var row = vdb.hitToDict(hit);
-            row.line = formatEntryLine(hit.entry, hit.score);
-            return row;
-          })
-        };
+        return { query: query, hits: resolveLexiconHits(query, lexicon, limit, true) };
       });
       return jsonSingleOrResults(packed);
     }
@@ -1875,7 +2039,7 @@
     if (name === "transcribe_name") {
       var names = collectToolStrings(args, ["names", "name"]);
       packed = names.map(function (rawName) {
-        var transcribed = transcribeProperNoun(rawName);
+        var transcribed = transcribeProperNoun(nameForTranscription(rawName));
         if (!transcribed.lemma) return { name: rawName, error: "empty name" };
         var entry = { lemma: transcribed.lemma, pos: "noun", gloss_ja: rawName, declension: transcribed.declension || "" };
         trace.names.push([rawName, transcribed.lemma]);
@@ -2172,6 +2336,10 @@
     dispatchTool: dispatchTool,
     dispatchAgentTool: dispatchAgentTool,
     findSynonyms: findSynonyms,
+    hintQueryPieces: hintQueryPieces,
+    expandHintQueries: expandHintQueries,
+    resolveLexiconHits: resolveLexiconHits,
+    nameForTranscription: nameForTranscription,
     translateAgent: translateAgent,
     inventedBaronhForms: inventedBaronhForms,
     buildUserPrompt: buildUserPrompt,
