@@ -327,7 +327,7 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
 ```bash
 # 翻訳
 python3 -m baronh translate "私は移民します" --from ja --to baronh
-python3 -m baronh translate "F'a usere." --from baronh --to ja --show-analysis
+python3 -m baronh translate "星たちの光を見ます" --from ja --to baronh --vector-search
 
 # 辞書・変化
 python3 -m baronh lookup アーヴ
