@@ -465,7 +465,46 @@
 
   var EN_STOP = { a: 1, an: 1, the: 1, of: 1, to: 1, from: 1, with: 1, by: 1, in: 1, on: 1, at: 1, is: 1, are: 1, was: 1, were: 1, be: 1, and: 1, or: 1, i: 1, you: 1, we: 1, they: 1 };
 
-  function scoreEntry(entry, haystack, tokens) {
+  function foldForMatch(text) {
+    var s = hiraToKata(String(text || "").normalize("NFKC"));
+    s = s.replace(/ヴ/g, "ブ").replace(/ヷ/g, "バ").replace(/ヺ/g, "ボ");
+    return s.replace(/[ーｰ〜~・･\s]/g, "").toLowerCase();
+  }
+
+  function withinEditDistance(left, right, limit) {
+    limit = limit || 1;
+    if (left === right) return true;
+    if (Math.abs(left.length - right.length) > limit) return false;
+    if (left.length > right.length) { var tmp = left; left = right; right = tmp; }
+    var prev = [];
+    var i, j;
+    for (j = 0; j <= right.length; j++) prev[j] = j;
+    for (i = 1; i <= left.length; i++) {
+      var curr = [i];
+      var rowMin = i;
+      for (j = 1; j <= right.length; j++) {
+        var val = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + (left.charAt(i - 1) === right.charAt(j - 1) ? 0 : 1));
+        curr[j] = val;
+        if (val < rowMin) rowMin = val;
+      }
+      if (rowMin > limit) return false;
+      prev = curr;
+    }
+    return prev[right.length] <= limit;
+  }
+
+  function fuzzyPoints(token, alias) {
+    if (!token || !alias || token === alias) return 0;
+    var a = foldForMatch(token);
+    var b = foldForMatch(alias);
+    if (!a || !b) return 0;
+    if (a === b) return 300;
+    if (Math.min(a.length, b.length) < 4) return 0;
+    if (/[\u3040-\u30ff\u4e00-\u9fff]/.test(a + b)) return 0;
+    return withinEditDistance(a, b, 1) ? 170 : 0;
+  }
+
+  function scoreEntry(entry, haystack, tokens, fuzzyTokens) {
     var tokenSet = {};
     var tokenCf = {};
     (tokens || []).forEach(function (token) {
@@ -473,6 +512,7 @@
       tokenCf[String(token).toLowerCase()] = 1;
     });
     var hay = haystack || "";
+    var fuzzy = fuzzyTokens || tokens || [];
     var best = 0;
     var lemma = entry.lemma || "";
     if (lemma) {
@@ -488,26 +528,31 @@
       if (n < 2 && alias !== primary) return;
       if (tokenSet[alias]) best = Math.max(best, 450 + n * 10);
       else if (n >= 2 && hay.indexOf(alias) >= 0) best = Math.max(best, 200 + n * 10);
-      else if (n >= 2) {
+      else {
         (tokens || []).forEach(function (token) {
           if (String(token).length < 2) return;
-          if (String(token).indexOf(alias) === 0 || alias.indexOf(token) === 0) {
+          if (n >= 2 && (String(token).indexOf(alias) === 0 || alias.indexOf(token) === 0)) {
             best = Math.max(best, 90 + Math.min(n, String(token).length) * 6);
           }
         });
+        fuzzy.forEach(function (token) { best = Math.max(best, fuzzyPoints(token, alias)); });
       }
     });
+    if (lemma) {
+      fuzzy.forEach(function (token) { best = Math.max(best, fuzzyPoints(token, lemma)); });
+    }
     String(entry.gloss_en || "").replace(/\//g, ",").split(",").forEach(function (alias) {
       alias = alias.trim();
       var low = alias.toLowerCase();
       if (!low || EN_STOP[low]) return;
       if (tokenSet[alias] || tokenCf[low]) best = Math.max(best, 400 + alias.length * 4);
       else if (low.length >= 3 && hay.toLowerCase().indexOf(low) >= 0) best = Math.max(best, 180 + alias.length * 4);
+      else fuzzy.forEach(function (token) { best = Math.max(best, fuzzyPoints(token, alias)); });
     });
     return best;
   }
 
-  Lexicon.prototype.rank = function (haystack, tokens, limit) {
+  Lexicon.prototype.rank = function (haystack, tokens, limit, fuzzyTokens) {
     limit = limit || 40;
     var expanded = [];
     var seenTok = {};
@@ -516,9 +561,19 @@
         if (variant && !seenTok[variant]) { seenTok[variant] = 1; expanded.push(variant); }
       });
     });
+    var fuzzyExpanded = expanded;
+    if (fuzzyTokens) {
+      fuzzyExpanded = [];
+      var seenF = {};
+      fuzzyTokens.forEach(function (token) {
+        jaQueryVariants(token).concat(enQueryVariants(token), [token]).forEach(function (variant) {
+          if (variant && !seenF[variant]) { seenF[variant] = 1; fuzzyExpanded.push(variant); }
+        });
+      });
+    }
     var scored = [];
     this.entries.forEach(function (entry) {
-      var points = scoreEntry(entry, haystack, expanded);
+      var points = scoreEntry(entry, haystack, expanded, fuzzyExpanded);
       if (points >= 150) scored.push({ points: points, lemma: entry.lemma, entry: entry });
     });
     scored.sort(function (a, b) {
@@ -1014,7 +1069,7 @@
     throw new Error("no local route for " + src + "->" + tgt);
   }
 
-  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞は発音転記して構いません。必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。訳文だけを出力してください。";
+  var GRAMMAR_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、与えられた辞書・文法だけを根拠にします。下訳は規則ベースで抜けや誤りがあります。辞書と文法で直してください。原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは辞書の近い見出しに寄せてよい。普通名詞など辞書にない語は造語せず原文の語を残します。辞書にない固有名詞は発音転記して構いません。ただし辞書に近い見出しがあるなら転記より辞書を優先します。必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。訳文だけを出力してください。";
   var FEW_SHOT_TO_BARONH = "例（ja/en → baronh）:\n- 私は移民します → F'a usere.\n- 私はアーヴです → F'a bale.\n- 分かりますか → face sa?\n- ありがとう → zom.\n- ジントはアーヴです → jinto a bale.";
   var FEW_SHOT_FROM_BARONH = "例（baronh → ja/en）:\n- F'a usere. → 私は移民する / I immigrate.\n- F'a bale. → 私はアーヴだ / I am Abh.\n- face sa? → 分かりますか / Do you understand?\n- zom. → ありがとう / Thanks.";
   var CLOSED_BARONH = { a: 1, "éü": 1, sa: 1, te: 1, le: 1, lo: 1, "f'a": 1, "d'a": 1, "s'a": 1 };
@@ -1028,7 +1083,7 @@
   };
 
   var CHAT_TOOLS = [
-    { type: "function", function: { name: "lookup_lexicon", description: "ローカル辞書を引く。名詞なら7格も返す。", parameters: { type: "object", properties: { query: { type: "string" }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["query"] } } },
+    { type: "function", function: { name: "lookup_lexicon", description: "ローカル辞書を引く。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。", parameters: { type: "object", properties: { query: { type: "string" }, lang: { type: "string", enum: ["auto", "baronh", "ja", "en"] } }, required: ["query"] } } },
     { type: "function", function: { name: "grammar_note", description: "文法トピックを取り出す。", parameters: { type: "object", properties: { topic: { type: "string", enum: ["cases", "verbs", "pronouns", "syntax", "phonology"] } }, required: ["topic"] } } }
   ];
 
@@ -1088,7 +1143,7 @@
       parts.push(local.text);
       (local.analysis || []).forEach(function (row) { if (isSearchableNote(row.note)) parts.push(row.note); });
     }
-    return lexicon.rank(parts.join("\n"), tokens, limit || 36);
+    return lexicon.rank(parts.join("\n"), tokens, limit || 36, promptTokens(text, lexicon, null));
   }
 
   function retrieveLexiconContext(text, lexicon, local, limit) {
@@ -1096,13 +1151,23 @@
     return picked.length ? picked.join("\n") : "(該当なし。lookup_lexicon で追加検索してください)";
   }
 
-  function describeGaps(local) {
+  function describeGaps(local, lexicon) {
     if (!local) return "";
     var lines = [];
     var seen = {};
+    function closeHits(query) {
+      return lexicon && query ? lexicon.search(query, "auto", 3) : [];
+    }
     (local.analysis || []).forEach(function (item) {
       if (seen[item.source]) return;
       var note = item.note || "";
+      var close = closeHits(item.source);
+      if (close.length && (/発音転記/.test(note) || /未登録/.test(note))) {
+        seen[item.source] = 1;
+        lines.push("- " + item.source + " は表記ゆれの可能性。辞書の " + close[0].lemma + "「" + close[0].gloss_ja + "」を優先" +
+          (/発音転記/.test(note) ? "（発音転記 " + item.target + " より）" : ""));
+        return;
+      }
       if (/発音転記/.test(note)) {
         seen[item.source] = 1;
         lines.push("- " + item.source + " → " + item.target + "（固有名詞の発音転記。この語形は使ってよい）");
@@ -1112,8 +1177,12 @@
       }
     });
     (local.unknown || []).forEach(function (word) {
-      if (!seen[word]) {
-        seen[word] = 1;
+      if (seen[word]) return;
+      seen[word] = 1;
+      var close = closeHits(word);
+      if (close.length) {
+        lines.push("- " + word + " は表記ゆれの可能性。辞書の " + close[0].lemma + "「" + close[0].gloss_ja + "」を優先");
+      } else {
         lines.push("- " + word + "（辞書にない。造語せず原文の語を残す）");
       }
     });
@@ -1130,7 +1199,7 @@
 
   function buildUserPrompt(text, lexicon, local, targetLang) {
     var retrieved = retrieveLexiconContext(text, lexicon, local);
-    var gaps = describeGaps(local);
+    var gaps = describeGaps(local, lexicon);
     var gapBlock = gaps ? "\n\n辞書にない語:\n" + gaps : "";
     return "翻訳方向: " + local.source_lang + " → " + targetLang +
       "\n原文:\n" + text +

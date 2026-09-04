@@ -92,6 +92,38 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertIn("user", lemmas)
         self.assertIn("fe", lemmas)
 
+    def test_typo_vu_bu_retrieves_abh(self):
+        from baronh.lexicon import fold_for_match, fuzzy_points
+
+        self.assertEqual(fold_for_match("アーブ"), fold_for_match("アーヴ"))
+        self.assertGreaterEqual(fuzzy_points("アーブ", "アーヴ"), 300)
+        self.assertEqual(fuzzy_points("ジント", "サイ・ジント様"), 0)
+        src = "私はアーブです"
+        local = translate(src, self.lex, source_lang="ja", target_lang="baronh")
+        lemmas = {entry.lemma for entry in retrieve_lexicon_entries(src, self.lex, local=local)}
+        self.assertIn("abh", lemmas)
+        gaps = describe_gaps(local, self.lex)
+        self.assertIn("abh", gaps)
+        self.assertIn("優先", gaps)
+
+    def test_kana_long_vowel_retrieves_abh(self):
+        src = "私はあーヴです"
+        local = translate(src, self.lex, source_lang="ja", target_lang="baronh")
+        lemmas = {entry.lemma for entry in retrieve_lexicon_entries(src, self.lex, local=local)}
+        self.assertIn("abh", lemmas)
+
+    def test_jinto_still_not_a_dictionary_substring(self):
+        src = "ジントはアーヴです"
+        local = translate(src, self.lex, source_lang="ja", target_lang="baronh")
+        lemmas = [entry.lemma for entry in retrieve_lexicon_entries(src, self.lex, local=local)]
+        self.assertIn("abh", lemmas)
+        self.assertNotIn("saïc ramh ghinter", lemmas)
+        self.assertNotIn("bate", lemmas)
+        self.assertEqual(local.text, "jinto a bale.")
+        gaps = describe_gaps(local, self.lex)
+        self.assertNotIn("サイ・ジント", gaps)
+        self.assertIn("発音転記", gaps)
+
     def test_full_scan_ranks_abh(self):
         local = translate("私はアーヴです", self.lex, source_lang="ja", target_lang="baronh")
         lemmas = {entry.lemma for entry in retrieve_lexicon_entries("私はアーヴです", self.lex, local=local)}
@@ -108,7 +140,7 @@ class RetrieveContextTest(unittest.TestCase):
         self.assertNotIn("clanh", lemmas)
         self.assertNotIn("sacochoth", lemmas)
         self.assertNotIn("slona", lemmas)
-        gaps = describe_gaps(local)
+        gaps = describe_gaps(local, self.lex)
         self.assertIn("光", gaps)
         self.assertIn("造語せず", gaps)
 

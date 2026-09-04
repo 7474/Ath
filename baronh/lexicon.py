@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 from baronh.paths import SEED_LEXICON_PATH, default_lexicon_paths
+from baronh.phonology import hira_to_kata
 
 CASES = ("nom", "acc", "gen", "dat", "all", "abl", "ins")
 CASE_JA = {
@@ -351,7 +353,15 @@ class Lexicon:
         tokens = list(dict.fromkeys(ja_query_variants(query) + en_query_variants(query)))
         return self.rank(query, tokens=tokens, limit=limit)
 
-    def rank(self, haystack: str, *, tokens: Iterable[str] | None = None, limit: int = 40, min_score: int = 150) -> list[Entry]:
+    def rank(
+        self,
+        haystack: str,
+        *,
+        tokens: Iterable[str] | None = None,
+        fuzzy_tokens: Iterable[str] | None = None,
+        limit: int = 40,
+        min_score: int = 150,
+    ) -> list[Entry]:
         """文や下訳に対して辞書を全件スキャンし、関連する見出しだけを返す。"""
         token_list = [part.strip() for part in (tokens or []) if part and str(part).strip()]
         expanded: list[str] = []
@@ -361,9 +371,24 @@ class Lexicon:
                 if variant and variant not in seen_tok:
                     seen_tok.add(variant)
                     expanded.append(variant)
+        fuzzy_src = [part.strip() for part in (fuzzy_tokens if fuzzy_tokens is not None else token_list) if part and str(part).strip()]
+        fuzzy_expanded: list[str] = []
+        seen_fuzzy: set[str] = set()
+        for token in fuzzy_src:
+            for variant in (*ja_query_variants(token), *en_query_variants(token), token):
+                if variant and variant not in seen_fuzzy:
+                    seen_fuzzy.add(variant)
+                    fuzzy_expanded.append(variant)
+        folded = {tok: fold_for_match(tok) for tok in set(expanded) | set(fuzzy_expanded)}
         scored: list[tuple[int, str, Entry]] = []
         for entry in self.entries:
-            points = score_entry(entry, haystack=haystack, tokens=expanded)
+            points = score_entry(
+                entry,
+                haystack=haystack,
+                tokens=expanded,
+                folded_tokens=folded,
+                fuzzy_tokens=fuzzy_expanded,
+            )
             if points >= min_score:
                 scored.append((points, entry.lemma, entry))
         scored.sort(key=lambda item: (-item[0], item[1]))
@@ -475,6 +500,63 @@ def en_query_variants(query: str) -> list[str]:
     return uniq
 
 
+def fold_for_match(text: str) -> str:
+    """誤字検索用。ひらがな/カタカナ・ヴ/ブ・長音・全角を畳む。部分文字列検索には使わない。"""
+    s = hira_to_kata(unicodedata.normalize("NFKC", text or ""))
+    s = s.replace("ヴ", "ブ").replace("ヷ", "バ").replace("ヺ", "ボ")
+    for mark in ("ー", "ｰ", "〜", "~", "・", "･", " ", "\u3000"):
+        s = s.replace(mark, "")
+    return s.casefold()
+
+
+def within_edit_distance(left: str, right: str, limit: int = 1) -> bool:
+    if left == right:
+        return True
+    if abs(len(left) - len(right)) > limit:
+        return False
+    if len(left) > len(right):
+        left, right = right, left
+    prev = list(range(len(right) + 1))
+    for i, ca in enumerate(left, 1):
+        curr = [i]
+        row_min = i
+        for j, cb in enumerate(right, 1):
+            val = min(curr[-1] + 1, prev[j] + 1, prev[j - 1] + (ca != cb))
+            curr.append(val)
+            if val < row_min:
+                row_min = val
+        if row_min > limit:
+            return False
+        prev = curr
+    return prev[-1] <= limit
+
+
+def fuzzy_points_folded(folded_token: str, folded_alias: str) -> int:
+    if not folded_token or not folded_alias:
+        return 0
+    if folded_token == folded_alias:
+        return 300
+    if min(len(folded_token), len(folded_alias)) < 4:
+        return 0
+    # 日本語の1文字差は「ジントは」と「ジント様」を結んでしまうので、ラテン綴りだけに限る
+    if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", folded_token + folded_alias):
+        return 0
+    if within_edit_distance(folded_token, folded_alias, 1):
+        return 170
+    return 0
+
+
+def fuzzy_points(token: str, alias: str) -> int:
+    """表記ゆれ・1文字タイポ。意味の近い別語や部分一致は採らない。"""
+    if not token or not alias or token == alias:
+        return 0
+    folded_a = fold_for_match(token)
+    folded_b = fold_for_match(alias)
+    if folded_a == folded_b:
+        return 300
+    return fuzzy_points_folded(folded_a, folded_b)
+
+
 def _en_aliases(gloss: str) -> list[str]:
     aliases: list[str] = []
     for part in (gloss or "").replace("/", ",").split(","):
@@ -484,11 +566,20 @@ def _en_aliases(gloss: str) -> list[str]:
     return aliases
 
 
-def score_entry(entry: Entry, *, haystack: str, tokens: Iterable[str]) -> int:
+def score_entry(
+    entry: Entry,
+    *,
+    haystack: str,
+    tokens: Iterable[str],
+    folded_tokens: dict[str, str] | None = None,
+    fuzzy_tokens: Iterable[str] | None = None,
+) -> int:
     """完全一致の語釈・見出しを強く、1文字の部分一致は採らない。"""
     token_list = [str(token) for token in tokens if token]
     token_set = set(token_list)
     token_cf = {token.casefold() for token in token_list}
+    folds = folded_tokens or {token: fold_for_match(token) for token in token_list}
+    fuzzy_list = [str(token) for token in (fuzzy_tokens if fuzzy_tokens is not None else token_list) if token]
     hay = haystack or ""
     best = 0
     lemma = entry.lemma
@@ -500,6 +591,11 @@ def score_entry(entry: Entry, *, haystack: str, tokens: Iterable[str]) -> int:
             hay,
         ):
             best = max(best, 280)
+        folded_lemma = fold_for_match(lemma)
+        for token in fuzzy_list:
+            if token == lemma:
+                continue
+            best = max(best, fuzzy_points_folded(folds.get(token, ""), folded_lemma))
     aliases = _split_ja_aliases(entry.gloss_ja)
     primary = (aliases[0] if aliases else entry.gloss_ja).strip()
     for alias in aliases:
@@ -513,12 +609,16 @@ def score_entry(entry: Entry, *, haystack: str, tokens: Iterable[str]) -> int:
             best = max(best, 450 + n * 10)
         elif n >= 2 and alias in hay:
             best = max(best, 200 + n * 10)
-        elif n >= 2:
+        else:
+            folded_alias = fold_for_match(alias)
             for token in token_list:
                 if len(token) < 2:
                     continue
-                if token.startswith(alias) or alias.startswith(token):
+                if n >= 2 and (token.startswith(alias) or alias.startswith(token)):
                     best = max(best, 90 + min(n, len(token)) * 6)
+            for token in fuzzy_list:
+                if token != alias:
+                    best = max(best, fuzzy_points_folded(folds.get(token, ""), folded_alias))
     for alias in _en_aliases(entry.gloss_en):
         low = alias.casefold()
         if not low or low in _EN_STOP:
@@ -527,6 +627,11 @@ def score_entry(entry: Entry, *, haystack: str, tokens: Iterable[str]) -> int:
             best = max(best, 400 + len(alias) * 4)
         elif len(low) >= 3 and re.search(rf"(?i)\b{re.escape(alias)}\b", hay):
             best = max(best, 180 + len(alias) * 4)
+        else:
+            folded_alias = fold_for_match(alias)
+            for token in fuzzy_list:
+                if token != alias:
+                    best = max(best, fuzzy_points_folded(folds.get(token, ""), folded_alias))
     return best
 
 

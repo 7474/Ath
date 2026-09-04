@@ -32,8 +32,9 @@ GRAMMAR_BRIEF = """
 あなたはアーヴ語 (Baronh) の翻訳者です。公式の完全辞書は公開されていないため、
 与えられた辞書・文法だけを根拠にします。
 下訳は規則ベースで、抜けや誤りがあります。辞書と文法で直してください。
+原文の誤字・仮名漢字・ヴ/ブ・長音の表記ゆれは、辞書の近い見出しに寄せてよい。
 普通名詞など辞書にない語は造語せず、原文の語を残します。
-辞書にない固有名詞は発音に基づいてローマ字転記して構いません。
+辞書にない固有名詞は発音転記して構いません。ただし辞書に近い見出しがあるなら転記より辞書を優先します。
 必要な語は lookup_lexicon、文法の確認は grammar_note で追加検索できます。
 訳文だけを出力し、解説や引用符は付けないでください。
 
@@ -109,7 +110,7 @@ CHAT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "lookup_lexicon",
-            "description": "アーヴ語・日本語・英語でローカル辞書を引く。名詞なら7格も返す。",
+            "description": "アーヴ語・日本語・英語でローカル辞書を引く。誤字や表記ゆれでも近い見出しを返す。名詞なら7格も返す。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -247,33 +248,6 @@ def _prompt_tokens(text: str, lexicon: Lexicon, local: TranslationResult | None)
         seen.add(word)
         cleaned.append(word)
     return cleaned
-    tokens: list[str] = []
-    tokens.extend(_tokenize_ja(text, lexicon))
-    tokens.extend(_tokenize_en(text))
-    if re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ']", text):
-        tokens.extend(_tokenize_baronh(text))
-    if local:
-        tokens.extend(_tokenize_baronh(local.text))
-        if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", local.text):
-            tokens.extend(_tokenize_ja(local.text, lexicon))
-        for item in local.analysis:
-            tokens.append(item.source)
-            tokens.append(item.target)
-            if item.note:
-                tokens.extend(part.strip() for part in item.note.replace("/", " ").split() if part.strip())
-        tokens.extend(local.unknown)
-    cleaned: list[str] = []
-    seen: set[str] = set()
-    for token in tokens:
-        word = str(token or "").strip(".,!?;:。？！")
-        if not word or word in seen:
-            continue
-        if len(word) == 1 and word not in JA_PARTICLES and word not in {"a", "I"}:
-            if not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", word):
-                continue
-        seen.add(word)
-        cleaned.append(word)
-    return cleaned
 
 
 def retrieve_lexicon_entries(
@@ -285,12 +259,13 @@ def retrieve_lexicon_entries(
 ) -> list:
     """辞書を全件スキャンして関連語だけを返す。ベクトルは使わない。"""
     tokens = _prompt_tokens(text, lexicon, local)
+    source_tokens = _prompt_tokens(text, lexicon, None)
     parts = [text]
     if local:
         parts.append(local.text)
         parts.extend(item.note for item in local.analysis if _is_searchable_note(item.note))
     haystack = "\n".join(parts)
-    return lexicon.rank(haystack, tokens=tokens, limit=limit)
+    return lexicon.rank(haystack, tokens=tokens, fuzzy_tokens=source_tokens, limit=limit)
 
 
 def retrieve_lexicon_context(
@@ -305,7 +280,7 @@ def retrieve_lexicon_context(
     return "\n".join(picked) if picked else "(該当なし。lookup_lexicon で追加検索してください)"
 
 
-def describe_gaps(local: TranslationResult | None) -> str:
+def describe_gaps(local: TranslationResult | None, lexicon: Lexicon | None = None) -> str:
     if local is None:
         return ""
     lines: list[str] = []
@@ -315,6 +290,15 @@ def describe_gaps(local: TranslationResult | None) -> str:
         if src in seen:
             continue
         note = item.note or ""
+        close = lexicon.search(src, limit=3) if lexicon is not None else []
+        if close and ("発音転記" in note or "未登録" in note):
+            seen.add(src)
+            top = close[0]
+            lines.append(
+                f"- {src} は表記ゆれの可能性。辞書の {top.lemma}「{top.gloss_ja}」を優先"
+                + (f"（発音転記 {item.target} より）" if "発音転記" in note else "")
+            )
+            continue
         if "発音転記" in note:
             seen.add(src)
             lines.append(f"- {src} → {item.target}（固有名詞の発音転記。この語形は使ってよい）")
@@ -322,8 +306,14 @@ def describe_gaps(local: TranslationResult | None) -> str:
             seen.add(src)
             lines.append(f"- {src}（辞書にない。造語せず原文の語を残す）")
     for word in local.unknown:
-        if word not in seen:
-            seen.add(word)
+        if word in seen:
+            continue
+        close = lexicon.search(word, limit=3) if lexicon is not None else []
+        seen.add(word)
+        if close:
+            top = close[0]
+            lines.append(f"- {word} は表記ゆれの可能性。辞書の {top.lemma}「{top.gloss_ja}」を優先")
+        else:
             lines.append(f"- {word}（辞書にない。造語せず原文の語を残す）")
     return "\n".join(lines)
 
@@ -342,7 +332,7 @@ def build_user_prompt(
     target_lang: str,
 ) -> str:
     retrieved = retrieve_lexicon_context(text, lexicon, local=local)
-    gaps = describe_gaps(local)
+    gaps = describe_gaps(local, lexicon)
     gap_block = f"\n\n辞書にない語:\n{gaps}" if gaps else ""
     return (
         f"翻訳方向: {local.source_lang} → {target_lang}\n"
