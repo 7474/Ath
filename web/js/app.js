@@ -29,6 +29,31 @@
 
   function setStatus(text) { $("status").textContent = text || ""; }
 
+  function setSettingsStatus(text) {
+    var el = $("settings-status");
+    if (el) el.textContent = text || "";
+  }
+
+  function settingsDialog() { return $("settings-panel"); }
+
+  function openSettings() {
+    var dlg = settingsDialog();
+    if (!dlg) return;
+    setSettingsStatus("");
+    if (typeof dlg.showModal === "function") {
+      if (!dlg.open) dlg.showModal();
+    } else {
+      dlg.setAttribute("open", "");
+    }
+  }
+
+  function closeSettings() {
+    var dlg = settingsDialog();
+    if (!dlg) return;
+    if (typeof dlg.close === "function" && dlg.open) dlg.close();
+    else dlg.removeAttribute("open");
+  }
+
   function dataUrls(name) {
     name = name || "lexicon.json";
     return [
@@ -217,7 +242,7 @@
         if (!res.ok) {
           var msg = (data && data.error) || res.statusText;
           if (res.status === 404) {
-            msg = "エージェント API がありません。python -m baronh serve を使うか、設定に Cloud Run の URL を入れてください。";
+            msg = "エージェント API がありません。python -m baronh serve を使うか、生成AI設定に Cloud Run の URL を入れてください。";
           }
           throw new Error(msg);
         }
@@ -246,7 +271,7 @@
     var base = apiBase();
     var key = localStorage.getItem(KEY) || $("api-key").value.trim();
     if (!key && /api\.openai\.com/.test(base)) {
-      throw new Error("API キーが未設定です。設定から保存してください。");
+      throw new Error("API キーが未設定です。生成AI設定から保存してください。");
     }
     var model = localStorage.getItem(MODEL_KEY) || $("chat-model").value || "gpt-4o-mini";
     return BaronhEngine.translateAgent($("source-text").value, lexicon, {
@@ -419,16 +444,27 @@
   $("lookup-btn").addEventListener("click", doLookup);
   $("lookup-q").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLookup(); });
   $("conj-btn").addEventListener("click", doConj);
-  $("open-settings").addEventListener("click", function () {
-    $("settings-panel").hidden = !$("settings-panel").hidden;
-  });
+  $("open-settings").addEventListener("click", openSettings);
+  if ($("close-settings")) $("close-settings").addEventListener("click", closeSettings);
+  (function bindSettingsDismiss() {
+    var dlg = settingsDialog();
+    if (!dlg) return;
+    dlg.addEventListener("click", function (ev) {
+      var rect = dlg.getBoundingClientRect();
+      var inside = ev.clientX >= rect.left && ev.clientX <= rect.right &&
+        ev.clientY >= rect.top && ev.clientY <= rect.bottom;
+      if (!inside) closeSettings();
+    });
+  })();
   $("save-key").addEventListener("click", function () {
     localStorage.setItem(KEY, $("api-key").value.trim());
     localStorage.setItem(MODEL_KEY, $("chat-model").value.trim() || "gpt-4o-mini");
     localStorage.setItem(BASE_KEY, $("api-base").value.trim() || "https://api.openai.com/v1");
     localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
     if ($("agent-url")) localStorage.setItem(AGENT_URL_KEY, $("agent-url").value.trim());
-    setStatus("設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）");
+    var msg = "設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）";
+    setSettingsStatus(msg);
+    setStatus(msg);
     probeAgentConfigured();
   });
   $("clear-key").addEventListener("click", function () {
@@ -442,6 +478,7 @@
     $("chat-model").value = "gpt-4o-mini";
     $("tts-model").value = "gpt-4o-mini-tts";
     if ($("agent-url")) $("agent-url").value = "/api/translate";
+    setSettingsStatus("API 設定を消去しました");
     setStatus("API 設定を消去しました");
   });
   $("import-file").addEventListener("change", function (ev) {

@@ -19,7 +19,6 @@
       <a href="../">概要</a>
       <a href="../ath/">アース</a>
       <a href="./" aria-current="page">翻訳</a>
-      <button type="button" class="linkish" id="open-settings">設定</button>
     </nav>
   </header>
 
@@ -75,6 +74,7 @@
         <button type="button" class="ghost" id="speak-btn">読み上げ</button>
         <button type="button" class="ghost" id="copy-btn">コピー</button>
         <button type="button" class="ghost" id="examples-btn">例文</button>
+        <button type="button" class="ghost" id="open-settings" aria-haspopup="dialog" aria-controls="settings-panel">生成AI設定</button>
       </div>
       <p class="reading" id="reading"></p>
       <p class="status" id="status"></p>
@@ -106,33 +106,39 @@
       </div>
     </section>
 
-    <section class="panel" id="settings-panel" hidden>
-      <h2>サーバエージェント / OpenAI 互換（任意）</h2>
-      <p class="hint">
-        キーはこのブラウザにだけ残ります。サーバエージェントは、使えるときだけエンジンに出ます。
-      </p>
-      <div class="settings-grid">
-        <label class="block">エージェント URL
-          <input type="text" id="agent-url" placeholder="/api/translate または https://…/api/translate" autocomplete="off" />
-        </label>
-        <label class="block">ベース URL（ブラウザ生成AI）
-          <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
-        </label>
-        <label class="block">API キー（ブラウザ生成AI）
-          <input type="password" id="api-key" placeholder="sk-...（ローカル互換なら空でも可）" autocomplete="off" />
-        </label>
-        <label class="block">チャットモデル
-          <input type="text" id="chat-model" value="gpt-4o-mini" />
-        </label>
-        <label class="block">TTS モデル
-          <input type="text" id="tts-model" value="gpt-4o-mini-tts" />
-        </label>
+    <dialog class="settings-modal" id="settings-panel" aria-labelledby="settings-title" closedby="any">
+      <div class="settings-modal-body">
+        <div class="settings-modal-head">
+          <h2 id="settings-title">生成AI設定</h2>
+          <button type="button" class="ghost" id="close-settings">閉じる</button>
+        </div>
+        <p class="hint">
+          サーバエージェントとブラウザ生成AIの接続先です。キーはこのブラウザにだけ残ります。サーバエージェントは、使えるときだけエンジンに出ます。
+        </p>
+        <div class="settings-grid">
+          <label class="block">エージェント URL
+            <input type="text" id="agent-url" placeholder="/api/translate または https://…/api/translate" autocomplete="off" />
+          </label>
+          <label class="block">ベース URL（ブラウザ生成AI）
+            <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
+          </label>
+          <label class="block">API キー（ブラウザ生成AI）
+            <input type="password" id="api-key" placeholder="sk-...（ローカル互換なら空でも可）" autocomplete="off" />
+          </label>
+          <label class="block">チャットモデル
+            <input type="text" id="chat-model" value="gpt-4o-mini" />
+          </label>
+          <label class="block">TTS モデル
+            <input type="text" id="tts-model" value="gpt-4o-mini-tts" />
+          </label>
+        </div>
+        <div class="settings-row">
+          <button type="button" class="ghost" id="save-key">保存</button>
+          <button type="button" class="ghost" id="clear-key">消去</button>
+        </div>
+        <p class="status" id="settings-status"></p>
       </div>
-      <div class="settings-row">
-        <button type="button" class="ghost" id="save-key">保存</button>
-        <button type="button" class="ghost" id="clear-key">消去</button>
-      </div>
-    </section>
+    </dialog>
   </main>
 
   <footer>
