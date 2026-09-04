@@ -1,0 +1,27 @@
+# Imperial anthem (Rueoll) — Baronh romanization, 20 lines / 5 stanzas.
+# Ath keys: lowercase then to_ath_keys (ai/au/eu → A/I/E).
+# Manuscript: data/examples/rueoll_ath.png
+F'a rume catmé gereulacr,
+Ullote izomél,
+Lanote dige césati,
+Lüamse nahainlace.
+F'a Bale, scuréle Frybarer.
+
+Frybarec éü,
+Sicé léssote dar scurér alsaima.
+Farer Léssoth,
+R'a sotle botnasa dari éïrace lona.
+
+F'a flare rycmal gereulacr,
+Sausnée surepuce,
+Issae dade lo fade,
+Froce tymbaidel gol.
+F'a Bale, carsarh gereulacr.
+
+Gereulach éü,
+Sicé dozzote dar carsarr factina.
+Farer dozzoth,
+R'a sotle nilora rÿal dar üaiponéra.
+
+Frybarec éü, gereulach éü,
+Farh a lomi zacsantto loréïl.
