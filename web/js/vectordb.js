@@ -262,9 +262,10 @@
 
   function bridgeTerms(entry) {
     var aliases = {};
-    splitJaAliases(entry.gloss_ja).concat(splitJaAliases(entry.gloss_en || ""), [entry.lemma, entry.gloss_ja]).forEach(function (alias) {
+    splitJaAliases(entry.gloss_ja).concat(splitJaAliases(entry.gloss_en || ""), [entry.lemma, entry.gloss_ja], splitJaAliases(entry.notes || "")).forEach(function (alias) {
       if (alias) aliases[alias] = 1;
     });
+    if (entry.notes) aliases[entry.notes] = 1;
     var terms = [];
     Object.keys(PARAPHRASE_KEYS).forEach(function (query) {
       var keys = PARAPHRASE_KEYS[query];
@@ -279,6 +280,13 @@
     return terms;
   }
 
+  function noteSnippet(text, limit) {
+    var note = String(text || "").replace(/\s+/g, " ").trim();
+    limit = limit || 80;
+    if (note.length > limit) return note.slice(0, limit - 1) + "…";
+    return note;
+  }
+
   function entryDocument(entry) {
     return [
       entry.lemma,
@@ -286,6 +294,7 @@
       entry.gloss_ja,
       entry.gloss_en || "",
       splitJaAliases(entry.gloss_ja).join(" "),
+      entry.notes || "",
       bridgeTerms(entry).join(" ")
     ].filter(Boolean).join(" ");
   }
@@ -422,7 +431,9 @@
     if (!hits.length) return "(ヒットなし。search_lexicon で追加検索してください)";
     return hits.map(function (hit) {
       var line = "- " + hit.entry.lemma + " [" + hit.entry.pos + "] ja:" + hit.entry.gloss_ja +
-        " en:" + (hit.entry.gloss_en || "") + " score=" + hit.score.toFixed(3);
+        " en:" + (hit.entry.gloss_en || "");
+      if (hit.entry.notes) line += " notes:" + noteSnippet(hit.entry.notes);
+      line += " score=" + hit.score.toFixed(3);
       return line;
     }).join("\n");
   }
@@ -433,6 +444,7 @@
       pos: hit.entry.pos,
       gloss_ja: hit.entry.gloss_ja,
       gloss_en: hit.entry.gloss_en,
+      notes: hit.entry.notes || "",
       score: Math.round(hit.score * 1000) / 1000,
       document: hit.document
     };

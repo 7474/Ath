@@ -1434,6 +1434,11 @@
         conjugate(entry, "imperative", "indefinite", [])
       ].join("/");
     }
+    if (entry.notes) {
+      var note = String(entry.notes).replace(/\s+/g, " ").trim();
+      if (note.length > 80) note = note.slice(0, 79) + "…";
+      line += " notes:" + note;
+    }
     return line;
   }
 

@@ -78,7 +78,7 @@
 3. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` を使うときは `queries` / `names` にまとめて **1 往復**する。ツール実行後は `tool_choice=none` で訳文へ進む。1 語ずつの連続呼び出しは切る。文の組み立てはモデル。
 4. 生成したアーヴ語を辞書語形と照合する。造語なら書き直す。なお残っても規則下訳には戻さない。
 
-例: 「光」→ ベクトル検索と類義語で `sairiac`「輝くもの」。「光」⊂「凝集光銃」のような複合語へは結ばない（長い語の 1 文字 n-gram は索引しない）。
+例: 「光」→ ベクトル検索と類義語で `sairiac`「輝くもの」。「光」⊂「凝集光銃」のような複合語へは結ばない（長い語の 1 文字 n-gram は索引しない）。語釈から分けた補足 (`notes`) は厳密 lookup のキーにはしないが、ベクトル文書には載せて参考ヒットにする（「ラクファカール」→ `lacmhacarh` に加え、故郷 `murrautec` の用法注）。
 
 GitHub Pages の静的ホストはエージェントを実行しない。翻訳ページは同じオリジンの `/api/translate`、または設定した Cloud Run 等の URL へ POST する。載せ方は [DEPLOY.md](DEPLOY.md)。
 
