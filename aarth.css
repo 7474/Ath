@@ -5,8 +5,8 @@
    for @font-face (GitHub Pages and jsDelivr do). */
 @font-face {
   font-family: 'Aarth';
-  src: url('aarth.woff2') format('woff2'),
-       url('aarth.ttf')   format('truetype');
+  src: url('aarth.woff2?v=2') format('woff2'),
+       url('aarth.ttf?v=2')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
