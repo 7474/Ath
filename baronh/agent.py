@@ -239,7 +239,10 @@ def _local_synonym_translate(
     paraphrased, substitutions = paraphrase_source(text, plan, source_lang=local.source_lang)
     if paraphrased != text and substitutions:
         rewritten = translate(paraphrased, lexicon, source_lang=local.source_lang, target_lang=target_lang)
-        rewritten.notes = list(local.notes) + [
+        rewritten.source_text = text
+        rewritten.notes = [
+            note for note in rewritten.notes if "未登録の語は原文のまま" not in note
+        ] + [
             "未登録の普通名詞を辞書の類義語・言い換えに寄せてから規則翻訳しました。"
         ]
         rewritten.unknown = [word for word in rewritten.unknown if word not in {item["from"] for item in substitutions}]

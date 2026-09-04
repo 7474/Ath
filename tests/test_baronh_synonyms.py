@@ -93,6 +93,8 @@ class SynonymCoverageTest(unittest.TestCase):
         self.assertIn("sairiac", out.text.lower() + " " + json.dumps(out.substitutions, ensure_ascii=False))
         self.assertTrue(any(item.get("from") == "光" for item in out.substitutions))
         self.assertNotIn("光", out.text)
+        self.assertEqual(out.source_text, "星たちの光を見ます")
+        self.assertFalse(any("未登録の語は原文のまま" in note for note in out.notes))
         self.assertIn("mire", out.text)
         self.assertIn("gereulac", out.text)
 
