@@ -25,13 +25,19 @@
 
   <main>
     <h1>アーヴ語と日本語・英語</h1>
-    <p class="lead">
-      Wikipedia「アーヴ語」の文法と、ファンサイトの公開辞書を走査した語彙で動く規則ベース翻訳です。
-      出典はページ末尾のスペシャルサンクスを見てください。
-      辞書にない固有名詞は発音からアーヴ語ローマ字へ転記します。
-      サーバエージェントとブラウザの生成AIは、いずれもベクトル検索した辞書と文法全文をコンテキストに渡します。ベクトル索引は GitHub Actions の <code>export-web</code> が事前構築し、ブラウザはそれを読みます。
-      サーバエージェントは <code>python -m baronh serve</code> または Cloud Run です。生成 AI 必須。
-    </p>
+    <p class="lead">日本語・英語とアーヴ語を、このページで翻訳します。</p>
+
+    <section class="panel how-to">
+      <h2>使い方</h2>
+      <ol>
+        <li>入力と出力の言語を選びます。「自動」のままでも構いません。</li>
+        <li>原文を入れて「翻訳」を押します（<kbd>Ctrl</kbd>+<kbd>Enter</kbd> でも可）。</li>
+        <li>「読み上げ」で音声、「コピー」で訳文のコピー、「例文」で試し訳です。アーヴ語を選んだ欄はアース文字で表示します。</li>
+        <li>エンジンの既定はローカル辞書です。使える環境では「サーバエージェント」も出ます。ブラウザの生成AIを使うときは、右上の設定にベース URL と API キーを保存してから切り替えてください。</li>
+        <li>ローカル辞書のとき「訳語をベクトル検索」を入れると、意味の近い辞書の語で訳します。</li>
+        <li>語釈や格変化は下の辞書検索、動詞の変化は活用表です。</li>
+      </ol>
+    </section>
 
     <section class="panel">
       <div class="langs">
@@ -100,7 +106,7 @@
           <input type="file" id="import-file" accept=".json,.csv,.tsv,.txt" />
           <button type="button" class="ghost" id="clear-overlay">追加分を消す</button>
         </div>
-        <p class="hint">CSV/JSON を読むとこのブラウザにだけ上乗せされます。サイト全体への取り込みは <code>python -m baronh ingest</code> を使います。</p>
+        <p class="hint">CSV / JSON を選ぶと、このブラウザだけに語彙が上乗せされます。消すときは「追加分を消す」です。</p>
       </div>
 
       <div class="panel">
@@ -116,10 +122,10 @@
     <section class="panel" id="settings-panel" hidden>
       <h2>サーバエージェント / OpenAI 互換（任意）</h2>
       <p class="hint">
-        サーバエージェントは辞書のベクトル検索・文法コンテキスト・ツール往復をサーバで行います。キーはサーバの環境変数に置き、ブラウザには出しません。生成 AI が無いと動きません。
-        既定の URL は同じオリジンの <code>/api/translate</code> です（<code>python -m baronh serve</code>）。
-        GitHub Pages から使うときは Cloud Run などの URL を入れてください。構成の比較はリポジトリの <code>baronh/DEPLOY.md</code> にあります。
-        ブラウザの生成AI（Chat Completions を直接呼ぶ経路）も同じハーネスです。辞書はページ内のベクトルDB、文法はシステムプロンプトに全文を載せます。キーは localStorage にだけ保存します。
+        生成AIやサーバエージェントを使うときだけ設定します。未設定のままでもローカル辞書で翻訳できます。
+        ブラウザの生成AIは、ベース URL と API キーを入れて「保存」し、エンジンを「生成AI（ブラウザ）」にしてください。キーはこのブラウザにだけ残ります。
+        サーバエージェントは、使えるときだけエンジンの選択肢に出ます。別の翻訳サーバを使うときは、その翻訳 URL を「エージェント URL」に入れて保存します。
+        読み上げは、生成AIを選んでいて音声に対応していればそれを使い、なければブラウザの読み上げです。
       </p>
       <div class="settings-grid">
         <label class="block">エージェント URL

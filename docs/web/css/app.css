@@ -89,6 +89,22 @@ main {
 h1 { font-size: 1.55rem; margin-bottom: .4rem; }
 .lead { color: #444; line-height: 1.6; margin-bottom: 1.2rem; }
 
+.how-to h2 { font-size: 1.05rem; margin-bottom: .5rem; }
+.how-to ol {
+  padding-left: 1.35rem;
+  color: #444;
+  line-height: 1.7;
+}
+.how-to li + li { margin-top: .35rem; }
+.how-to kbd {
+  font: 600 .85em/1.2 ui-monospace, monospace;
+  border: 1px solid #ccc;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: .05rem .35rem;
+  background: #fff;
+}
+
 .panel {
   background: var(--card);
   border: 1px solid var(--line);
