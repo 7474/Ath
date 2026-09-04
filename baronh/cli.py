@@ -237,11 +237,16 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_export_web(args: argparse.Namespace) -> int:
+    from baronh.vectordb import write_index
+
     lexicon = _lexicon(args)
     dest = Path(args.out) if args.out else WEB_DIR / "data"
     dest.mkdir(parents=True, exist_ok=True)
     write_lexicon(lexicon, dest / "lexicon.json")
+    write_index(lexicon, dest)
     print(dest / "lexicon.json")
+    print(dest / "vectors.json")
+    print(dest / "vectors.bin")
     return 0
 
 
@@ -334,7 +339,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=None, help="既定 8765。PORT 環境変数があればそれを使う（Cloud Run）")
     p.set_defaults(func=cmd_serve)
 
-    p = sub.add_parser("export-web", help="Web 用 lexicon.json を書き出す", parents=[shared])
+    p = sub.add_parser("export-web", help="Web 用 lexicon.json とベクトル索引を書き出す", parents=[shared])
     p.add_argument("--out", default=None)
     p.set_defaults(func=cmd_export_web)
 

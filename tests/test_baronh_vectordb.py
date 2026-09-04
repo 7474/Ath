@@ -20,7 +20,7 @@ from baronh.agent import (
 )
 from baronh.grammar import grammar_context
 from baronh.lexicon import load_lexicon
-from baronh.vectordb import get_index
+from baronh.vectordb import get_index, load_index, write_index
 
 
 class VectorIndexTest(unittest.TestCase):
@@ -50,6 +50,49 @@ class VectorIndexTest(unittest.TestCase):
         self.assertEqual(data["query"], "光")
         self.assertTrue(any(hit["lemma"] == "sairiac" for hit in data["hits"]))
         self.assertFalse(any("凝集光銃" in (hit.get("gloss_ja") or "") for hit in data["hits"]))
+
+
+class VectorExportTest(unittest.TestCase):
+    def test_write_and_load_roundtrip(self):
+        import tempfile
+
+        import numpy as np
+
+        from baronh.vectordb import INDEX_HASH
+
+        lex = load_lexicon()
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp)
+            meta = write_index(lex, dest)
+            self.assertEqual(meta["hash"], INDEX_HASH)
+            self.assertGreater(meta["count"], 1000)
+            bin_path = dest / "vectors.bin"
+            self.assertEqual(bin_path.stat().st_size, meta["count"] * meta["dim"] * 4)
+            self.assertTrue((dest / "vectors.json").is_file())
+            loaded = load_index(lex, dest)
+            hits = loaded.search("光", limit=8)
+            self.assertTrue(hits)
+            self.assertEqual(hits[0].entry.lemma, "sairiac")
+            live = get_index(lex)
+            self.assertTrue(np.allclose(loaded.matrix, live.matrix))
+
+    def test_export_web_cli_writes_vectors(self):
+        import subprocess
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            completed = subprocess.run(
+                [sys.executable, "-m", "baronh", "export-web", "--out", tmp],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            dest = Path(tmp)
+            self.assertTrue((dest / "lexicon.json").is_file())
+            self.assertTrue((dest / "vectors.json").is_file())
+            self.assertGreater((dest / "vectors.bin").stat().st_size, 100_000)
 
 
 class AgentPromptTest(unittest.TestCase):

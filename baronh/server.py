@@ -12,11 +12,11 @@ from urllib.parse import parse_qs, unquote, urlparse
 from baronh.agent import AgentModelRequired, model_configured, translate_agent
 from baronh.ingest import write_lexicon
 from baronh.lexicon import Lexicon, load_lexicon
+from baronh.openai_backend import DEFAULT_CHAT_MODEL
 from baronh.paths import DATA_DIR, ROOT_DIR, WEB_DIR
 from baronh.synonyms import find_synonyms, format_hits
 from baronh.translate import translate
-from baronh.vectordb import VECTOR_DIM, get_index, hit_to_dict
-from baronh.openai_backend import DEFAULT_CHAT_MODEL
+from baronh.vectordb import VECTOR_DIM, get_index, hit_to_dict, write_index
 
 MAX_BODY = 64 * 1024
 
@@ -191,7 +191,9 @@ def make_handler(lexicon: Lexicon, *, chat_once: Any = None) -> type[TranslatorH
 def serve(host: str = "127.0.0.1", port: int = 8765, *, lexicon: Lexicon | None = None) -> None:
     WEB_DIR.mkdir(parents=True, exist_ok=True)
     loaded = lexicon or load_lexicon()
-    write_lexicon(loaded, WEB_DIR / "data" / "lexicon.json")
+    dest = WEB_DIR / "data"
+    write_lexicon(loaded, dest / "lexicon.json")
+    write_index(loaded, dest)
     handler = make_handler(loaded)
     server = ThreadingHTTPServer((host, port), handler)
     url = f"http://{host}:{port}/"

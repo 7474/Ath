@@ -45,7 +45,7 @@ jobs:
             --output-dir docs \
             --debug
 
-      - name: Copy site pages and stylesheet into docs
+      - name: Copy site pages and export vector index
         run: |
           cp index.html docs/index.html
           cp site.css docs/site.css
@@ -57,6 +57,10 @@ jobs:
           cp -f web/aarth.woff2 web/aarth.ttf docs/web/
           python3 -m baronh export-web --out docs/web/data
           cp docs/web/data/lexicon.json docs/data/lexicon.json
+          cp docs/web/data/vectors.json docs/data/vectors.json
+          cp docs/web/data/vectors.bin docs/data/vectors.bin
+          test -s docs/web/data/vectors.bin
+          test -s docs/web/data/vectors.json
           touch docs/.nojekyll
 
       - name: Commit generated files

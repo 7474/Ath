@@ -7,8 +7,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -17,6 +19,9 @@ from baronh.lexicon import Entry, Lexicon, _split_ja_aliases
 from baronh.synonyms import PARAPHRASE_KEYS
 
 VECTOR_DIM = 512
+INDEX_HASH = "blake2b-8"
+VECTORS_BIN = "vectors.bin"
+VECTORS_JSON = "vectors.json"
 _INDEX_CACHE: dict[int, "LexiconIndex"] = {}
 
 
@@ -175,6 +180,66 @@ class LexiconIndex:
                     best[key] = hit
         ranked = sorted(best.values(), key=lambda item: -item.score)
         return ranked[:limit]
+
+
+def _entry_key(entry: Entry) -> str:
+    return f"{entry.lemma}|{entry.pos}"
+
+
+def write_index(lexicon: Lexicon, dest_dir: Path | str, *, dim: int = VECTOR_DIM) -> dict:
+    """GitHub Actions / export-web がブラウザへ配る Flat 索引を書く。"""
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    index = LexiconIndex(lexicon, dim=dim)
+    matrix = np.ascontiguousarray(index.matrix, dtype=np.float32)
+    (dest / VECTORS_BIN).write_bytes(matrix.tobytes())
+    meta = {
+        "dim": int(index.dim),
+        "count": int(matrix.shape[0]),
+        "hash": INDEX_HASH,
+        "endian": "little",
+        "keys": [_entry_key(entry) for entry in index.entries],
+        "documents": index.documents,
+    }
+    (dest / VECTORS_JSON).write_text(json.dumps(meta, ensure_ascii=False) + "\n", encoding="utf-8")
+    return meta
+
+
+def load_index(lexicon: Lexicon, dest_dir: Path | str) -> LexiconIndex:
+    """write_index の成果物を読み、辞書の現在のエントリに合わせて載せる。"""
+    dest = Path(dest_dir)
+    meta = json.loads((dest / VECTORS_JSON).read_text(encoding="utf-8"))
+    dim = int(meta["dim"])
+    count = int(meta["count"])
+    raw = np.frombuffer((dest / VECTORS_BIN).read_bytes(), dtype=np.float32).copy()
+    if raw.size != count * dim:
+        raise ValueError(f"{VECTORS_BIN} の要素数 {raw.size} が count*dim={count * dim} と違う")
+    if meta.get("hash") not in (None, INDEX_HASH):
+        raise ValueError(f"未対応の埋め込み hash: {meta.get('hash')}")
+    matrix_src = raw.reshape(count, dim)
+    by_pre: dict[str, tuple[str, np.ndarray]] = {}
+    for i, key in enumerate(meta["keys"]):
+        by_pre[key] = (meta["documents"][i], matrix_src[i])
+    entries = list(lexicon.entries)
+    documents: list[str] = []
+    rows: list[np.ndarray] = []
+    for entry in entries:
+        key = _entry_key(entry)
+        doc = entry_document(entry)
+        pre = by_pre.get(key)
+        if pre is not None and pre[0] == doc:
+            documents.append(pre[0])
+            rows.append(pre[1])
+        else:
+            documents.append(doc)
+            rows.append(embed_text(doc, dim=dim))
+    index = LexiconIndex.__new__(LexiconIndex)
+    index.lexicon = lexicon
+    index.dim = dim
+    index.entries = entries
+    index.documents = documents
+    index.matrix = np.stack(rows, axis=0).astype(np.float32) if rows else np.zeros((0, dim), dtype=np.float32)
+    return index
 
 
 def get_index(lexicon: Lexicon) -> LexiconIndex:

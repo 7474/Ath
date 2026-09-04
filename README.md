@@ -302,7 +302,7 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
         ├──▶ サーバエージェント（推奨の生成経路。生成 AI 必須）
         │      ベクトル検索した辞書 + 文法コンテキストでモデルが文を組む
         │      POST /api/translate （python -m baronh serve / Cloud Run）
-        └──▶ 任意: ブラウザから OpenAI 互換 API を直接呼ぶ実験経路
+        └──▶ ブラウザ生成AI: ページ内ベクトルDB + 文法コンテキストで Chat Completions
         │
         ▼
   読み仮名 → Web Speech / espeak-ng / OpenAI TTS
@@ -355,6 +355,9 @@ python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
 
 # Web UI（既定 http://127.0.0.1:8765/ が概要、翻訳は /web/、エージェントは POST /api/translate）
 python3 -m baronh serve
+
+# GitHub Pages / ブラウザ用に辞書 JSON とベクトル索引を書き出す（CI でも実行）
+python3 -m baronh export-web --out web/data
 ```
 
 `ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。
@@ -370,7 +373,7 @@ python3 -m baronh serve
 
 `web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・規則翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。
 
-サーバエージェントを使うときは、同じプロセスの `/api/translate`（`python -m baronh serve`）か、Cloud Run などに載せた URL を設定します。GitHub Pages だけではエージェントは動きません。ブラウザから OpenAI 互換 API を直接呼ぶ経路は実験用です。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
+サーバエージェントを使うときは、同じプロセスの `/api/translate`（`python -m baronh serve`）か、Cloud Run などに載せた URL を設定します。GitHub Pages だけではサーバエージェントは動きません。ブラウザの生成AIは、GitHub Actions が事前構築したベクトル索引（`vectors.bin`）と文法コンテキストで Chat Completions を呼びます。ローカルでは `python3 -m baronh export-web` が同じファイルを `web/data/` に書き出します。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
 
 サイト全体を見るときは `python3 -m baronh serve`（概要 `/`、アース `/ath/`、翻訳 `/web/`）か、ルートで `python3 -m http.server 8000` です。
 

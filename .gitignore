@@ -5,6 +5,8 @@ __pycache__/
 .venv/
 venv/
 data/user_lexicon.json
+web/data/vectors.bin
+web/data/vectors.json
 *.mp3
 speech.wav
 speech.mp3

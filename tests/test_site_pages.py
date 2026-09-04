@@ -51,6 +51,7 @@ class SiteStructureTest(unittest.TestCase):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("サーバエージェント", web)
         self.assertIn("ベクトル検索", web)
+        self.assertIn("js/vectordb.js", web)
         self.assertIn("id=\"agent-url\"", web)
         self.assertIn("/api/translate", web)
 
@@ -93,6 +94,9 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ath/**", workflow)
         self.assertIn("cp ath/index.html docs/ath/index.html", workflow)
         self.assertIn("cp site.css docs/site.css", workflow)
+        self.assertIn("python3 -m baronh export-web --out docs/web/data", workflow)
+        self.assertIn("vectors.bin", workflow)
+        self.assertIn("vectors.json", workflow)
 
 
 if __name__ == "__main__":

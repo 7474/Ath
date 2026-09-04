@@ -8,7 +8,7 @@
 
 - 規則ベースはローカル完結。辞書と文法規則だけで ja / en / baronh を翻訳し、読み上げまで行う。Web ではアーヴ語を選んだ入出力欄だけアース文字フォントで表示する。
 - 他言語 → アーヴ語では、辞書に無い普通名詞を造語せず、**ベクトル検索と語釈の類義語で意味が通るように寄せる**。
-- サーバエージェントは生成 AI が必須。モデルが辞書をベクトル検索し、文法コンテキストのうえで文を組む。ブラウザからの単発呼び出しには限界がある（キー露出、CORS、往復回数、ベクトル索引がブラウザに無い）。
+- サーバエージェントは生成 AI が必須。モデルが辞書をベクトル検索し、文法コンテキストのうえで文を組む。ブラウザからの単発呼び出しには限界がある（キー露出、CORS、往復回数）。ページ上のベクトル索引は GitHub Actions が事前構築した成果物を読む。
 - 辞書全文は 1 回の API 呼び出しに載せない。文法の骨格はエージェントのシステムプロンプトに載せる。
 - モデルが造語した普通名詞を、そのままアーヴ語として出さない。
 
@@ -42,11 +42,11 @@
 |---|---|---|
 | 規則翻訳 | `baronh/translate.py` | `web/js/engine.js` の `translate` |
 | 辞書・点数付け | `baronh/lexicon.py` | 同ファイルの `Lexicon.rank` / `search` |
-| 類義語寄せ | `baronh/synonyms.py` | サーバ API 経由 |
-| 簡易ベクトル索引 | `baronh/vectordb.py` | `GET /api/search` |
-| 文法コンテキスト | `baronh/grammar.py` の `grammar_context()` | エージェントのシステムプロンプト |
+| 類義語寄せ | `baronh/synonyms.py` | `web/js/engine.js` の `findSynonyms` |
+| 簡易ベクトル索引 | `baronh/vectordb.py` | `web/js/vectordb.js`（Flat 索引） |
+| 文法コンテキスト | `baronh/grammar.py` の `grammar_context()` | `web/js/engine.js` の `grammarContext()` |
 | サーバエージェント | `baronh/agent.py` + `baronh/server.py` | `web/js/app.js` が `POST /api/translate` |
-| 生成 AI（実験） | `baronh/openai_backend.py` | `web/js/app.js` が Chat Completions を直接呼ぶ |
+| 生成 AI ハーネス | `baronh/agent.py` | `web/js/engine.js` の `translateAgent` |
 | 格・活用 | `baronh/grammar.py` | `web/js/engine.js` |
 | 発音転記・読み | `baronh/phonology.py` | `web/js/engine.js` |
 
@@ -62,7 +62,7 @@
 
 ## サーバエージェント（本線の生成経路）
 
-クライアント単発の限界は、API キーがブラウザに出ること、ツール往復を GitHub Pages から安定して回せないこと、ベクトル索引と文法全文をブラウザに載せにくいこと、である。エージェントは `python -m baronh serve` の `POST /api/translate` で動かす。生成 AI が無ければ 503 で止める。規則ベースへはフォールバックしない。
+クライアント単発の限界は、API キーがブラウザに出ること、ツール往復を GitHub Pages から安定して回せないこと、である。エージェントは `python -m baronh serve` の `POST /api/translate` で動かす。生成 AI が無ければ 503 で止める。規則ベースへはフォールバックしない。
 
 1. 原文とトークンを `baronh/vectordb.py` のハッシュ n-gram 索引（512 次元、余弦類似度）で検索する。Pinecone 等の外部 DB や埋め込み API は使わない。
 2. システムプロンプトに `grammar_context()` の文法全文を載せる。規則ベースの下訳は渡さない。
@@ -73,31 +73,28 @@
 
 GitHub Pages の静的ホストはエージェントを実行しない。翻訳ページは同じオリジンの `/api/translate`、または設定した Cloud Run 等の URL へ POST する。載せ方は [DEPLOY.md](DEPLOY.md)。
 
-## 生成 AI（ブラウザからの実験経路）
+## 生成 AI（ブラウザ経路）
 
-### ブラウザ経路は線形スキャン、エージェントは簡易ベクトル索引
+サーバエージェントと同じハーネスを、ページ内で組む。規則下訳は渡さない。文法は `grammarContext()` をシステムプロンプトに全文載せる。辞書は `web/js/vectordb.js` の Flat ベクトル DB で検索する。行列は GitHub Actions が `python -m baronh export-web` で blake2b 埋め込みを書き出した `vectors.bin` / `vectors.json` であり、ページ読み込み時には組まない。クエリとユーザー追加辞書だけ実行時に embed する。
 
-マージ後の辞書は約 2400 見出しである。全文を整形すると約 16 万文字になり、1 プロンプトに載せる量ではない。エージェントは見出し・語釈・類義語ブリッジをハッシュ n-gram で埋め込み、上位だけを渡す。外部のベクトル DB や別モデルの埋め込みは使わない。
+### なぜ EdgeVec / USearch / Orama をバンドルしないか
 
-ブラウザの実験経路は埋め込みを持たないので、従来どおり `Lexicon.rank` の線形スキャンである。日本語の部分一致や複合語への吸い込みは、どちらの経路でも行わない。
+調べた JS/WASM ベクトル DB:
+
+- **EdgeVec / VantaDB / TalaDB**: ブラウザ向け WASM + HNSW。npm と `.wasm` 配布が要る。GitHub Pages のこのサイトにはバンドラが無い。
+- **USearch WASM**: 作者が「ブラウザの数千件には向かない。近似検索は大規模向け」と述べている（[issue #191](https://github.com/unum-cloud/USearch/issues/191)）。
+- **Voy / Orama**: 同様にバンドルか CDN が要る。埋め込みモデルは別途。
+
+辞書は約 2400 × 512 次元である。完全な余弦類似度の Flat 索引で足り、HNSW の近似は要らない。埋め込みはハッシュ n-gram（blake2b、サーバと同じ）。索引構築は GitHub Actions の `export-web` が行い、ブラウザは `vectors.bin` を読む。外部のベクトル DB や埋め込み API は使わない。
 
 ### 呼び出しの流れ
 
-1. 先に規則ベースで下訳と解析トークンを作る。下訳は誤り・抜けがあり得る、とプロンプトに書く。
-2. 原文・下訳・解析からトークンを取り、辞書を全件スキャンして点数付けする。上位のみ（既定最大 36、実際はそれより少ない）を関連辞書として渡す。
-3. システムプロンプトに文法要点、格・動詞などの詳細トピック、数件の例示を載せる。
-4. `POST {base}/chat/completions`。モデルは `lookup_lexicon` と `grammar_note` を最大 6 往復まで呼べる。ツール非対応（400 など）ならツールなしの単発に切り替える。
-5. 生成が空なら下訳を使う。アーヴ語の Ath キーと仮名読みは、生成文をローカルで再計算する。解析行は規則ベースのまま残す。
+1. 原文トークンをベクトル索引で検索し、文法全文をシステムプロンプトへ載せる。規則下訳は渡さない。
+2. モデルが `search_lexicon` / `find_synonyms` / `lookup_lexicon` / `transcribe_name` / `grammar_note` / `validate_baronh` を最大 10 往復する。
+3. 生成したアーヴ語を辞書語形と照合する。造語なら再生成する。規則下訳には戻さない。
+4. Ath キーと仮名読みは生成文からローカルで再計算する。
 
-原文そのものは常にユーザメッセージに入る。検索が外れても、モデルは原文を読める。
-
-### 検索（関連語の渡し方）
-
-`Lexicon.rank` / `score_entry`（`baronh/lexicon.py`）が全文スキャンする。完全一致の語釈・見出しを強くし、弱い部分一致は採らない。しきい値未満は渡さない。
-
-ツール `lookup_lexicon` は同じ点数付けを短いクエリに対して行う。`grammar_note` は `cases` / `verbs` / `pronouns` / `syntax` / `phonology` の定型テキストを返す。
-
-ファジー照合は原文トークンに対してだけ行う。下訳の語形（例: `bale`）を 1 文字差で別見出し（例: `bate`「待つ」）に結ばない。
+`POST {base}/chat/completions`。ツール非対応（400 など）ならツールなしの単発に切り替える。生成が空ならエラーにする。
 
 ### 残すファジー / 捨てるファジー
 
