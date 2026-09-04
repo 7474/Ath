@@ -1,20 +1,25 @@
-# Aarth — Ath Alphabet Webfont
+# アーヴ語とアース
 
-[アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) の字形を抽出し、Web フォント（`aarth.ttf` / `aarth.woff2`）にしたものです。
+[アーヴ語（Baronh）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) と、それを書く文字 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) についての二次創作です。GitHub Pages で字形デモと翻訳ツールを公開しています。
 
-字母（森岡浩之）に加え、数字 0–9（赤井孝美）もグリフ化します。既定の入力は `templates/ath_source_filled.png` です。自前のラスタを使う場合は [入力テンプレート](#入力テンプレート) を `--image` または `--digits-image` で渡してください。
+- **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォント（`aarth.ttf` / `aarth.woff2`）にしたもの。既定の入力は `templates/ath_source_filled.png` です。
+- **アーヴ語**: 辞書と文法規則で日本語・英語と行き来する翻訳（CLI とブラウザ）。
 
-## デモ
+## サイト
 
-公開デモ（GitHub Pages）: **https://7474.github.io/Ath/**
+公開サイト（GitHub Pages）: **https://7474.github.io/Ath/**
 
-アーヴ語翻訳（辞書・文法・音声）: 同じ Pages の [`web/`](web/index.html)、またはローカルで `python3 -m baronh serve`。
+| パス | 内容 |
+|---|---|
+| [`/`](index.html) | アーヴ語とアースの概要 |
+| [`/ath/`](ath/index.html) | アースの字形デモ（Translate で読み下し） |
+| [`/web/`](web/index.html) | アーヴ語の翻訳ツール（辞書・文法・音声） |
 
-GitHub Pages はプロジェクトのショーケース用です。他サイトからフォントを URL 指定する場合は [jsDelivr](#jsdelivr) を使ってください。
+ローカルでは `python3 -m baronh serve`（既定 http://127.0.0.1:8765/）か、リポジトリ根で `python3 -m http.server 8000` です。他サイトからフォントを URL 指定する場合は [jsDelivr](#jsdelivr) を使ってください。GitHub Pages はサイト本体であり、フォント配信の CDN ではありません。
 
 ## 出典・ライセンス
 
-[Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) によれば、アースの**字母は原作者の森岡浩之**、**数字は原作イラストの赤井孝美**が設計しました。アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字体系であり、本フォントはその設定に基づく**二次創作**です。
+[Wikipedia「アーヴ語」](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) によれば、アースの**字母は原作者の森岡浩之**、**数字は原作イラストの赤井孝美**が設計しました。アーヴ語およびアースは森岡浩之『星界シリーズ』の架空言語・文字体系であり、本リポジトリのフォントと翻訳ツールはその設定に基づく**二次創作**です。
 
 | 区分 | 設計 | ラスタ出典 | ラスタのライセンス |
 |---|---|---|---|
@@ -25,7 +30,11 @@ GitHub Pages はプロジェクトのショーケース用です。他サイト�
 
 ---
 
-## Character mapping
+## ウェブフォント
+
+字母に加え、数字 0–9 もグリフ化します。自前のラスタを使う場合は [入力テンプレート](#入力テンプレート) を `--image` または `--digits-image` で渡してください。
+
+### Character mapping
 
 The 28 Ath phonemes are mapped to the following Unicode code points:
 
@@ -74,7 +83,7 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 
 ---
 
-## CSS / HTML usage
+### CSS / HTML usage
 
 ### jsDelivr
 
@@ -122,7 +131,7 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 
 ---
 
-## Quick start
+### Quick start
 
 リポジトリをクローンしたあと、次の手順でフォントをローカル生成できます。
 
@@ -166,16 +175,18 @@ aarth.woff2  — モダンブラウザ向けの圧縮 Web フォント
 
 ### 4. Preview in a browser
 
-`index.html` をローカル HTTP サーバで開きます（同じフォルダに `aarth.css`、`aarth.woff2`、`aarth.ttf` があること）。
+リポジトリ根で HTTP サーバを起動します（`aarth.css`、`aarth.woff2`、`aarth.ttf` が根にあること）。概要は `/`、字形デモは `/ath/`、翻訳は `/web/` です。
 
 ```bash
 python3 -m http.server 8000
 # http://127.0.0.1:8000/
+# http://127.0.0.1:8000/ath/
+# http://127.0.0.1:8000/web/
 ```
 
 ---
 
-## 入力テンプレート
+### 入力テンプレート
 
 字母と数字を **1 枚のラスタ画像** から読むときのセル配置です。左上から行優先（左→右、上→下）。ラベルはセルの下に小さく書き、グリフ本体より十分低くしてください（検出時にラベルは捨てます）。
 
@@ -236,7 +247,7 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 
 ---
 
-## Command-line options
+### Command-line options
 
 | Option | Default | Description |
 |---|---|---|
@@ -248,7 +259,7 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 
 ---
 
-## Pipeline overview
+### Pipeline overview
 
 ```
 Ath_(alphabet).png  [+ optional digits raster / extra template rows]
@@ -343,7 +354,7 @@ python3 -m baronh translate "私はアーヴです" --engine openai \
   --api-base http://127.0.0.1:1234/v1 --api-key local --model llama3
 python3 -m baronh speak "F'a bale." --engine openai --out /tmp/baronh.mp3
 
-# Web UI（既定 http://127.0.0.1:8765/）
+# Web UI（既定 http://127.0.0.1:8765/ が概要、翻訳は /web/）
 python3 -m baronh serve
 ```
 
@@ -358,9 +369,9 @@ python3 -m baronh serve
 
 ### Web
 
-`web/` は静的ファイルです。辞書 JSON を読み、格変化・翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語の渡し方・ファジー照合の範囲・生成後の検証は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) を参照してください。音声合成は翻訳とは別の `/v1/audio/speech` です。
+`web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。生成 AI を使うときだけ、設定した OpenAI 互換ベース URL（既定 `https://api.openai.com/v1`）へアクセスします。API キーは `localStorage` のみです。辞書全文は送りません。関連語の渡し方・ファジー照合の範囲・生成後の検証は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) を参照してください。音声合成は翻訳とは別の `/v1/audio/speech` です。
 
-ルートで `python3 -m http.server 8000` した場合の URL は `http://127.0.0.1:8000/web/` です。
+サイト全体を見るときは `python3 -m baronh serve`（概要 `/`、アース `/ath/`、翻訳 `/web/`）か、ルートで `python3 -m http.server 8000` です。
 
 ### 取り込みファイル形式
 
