@@ -3,7 +3,7 @@
 [アーヴ語（Baronh）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) と、それを書く文字 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) についての二次創作です。GitHub Pages で字形デモと翻訳ツールを公開しています。
 
 - **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォントにしたもの。既定フェイスは `aarth.ttf` / `aarth.woff2`（入力は `templates/ath_source_filled.png`）。同じラスタを等線で描き直したゴシック（`aarth-gothic`）や、手書きなど追加の字体は `faces.json` に登録し、字形デモの「字体」から切り替えます。
-- **アーヴ語**: 辞書と文法規則で日本語・英語と行き来する翻訳（CLI とブラウザ）。
+- **アーヴ語**: 辞書と文法規則で日本語・英語と行き来する翻訳（CLI とブラウザ）。新規の架空言語は同じ転移翻訳を `langs/` の言語パックとして設計できる（雛形はミーナ語）。
 
 ## サイト
 
@@ -423,6 +423,13 @@ python3 -m baronh serve
 
 # GitHub Pages / ブラウザ用に辞書 JSON とベクトル索引を書き出す（CI でも実行）
 python3 -m baronh export-web --out web/data
+
+# 言語パック（新規の架空言語。詳細は langs/README.md）
+python3 -m baronh languages
+python3 -m baronh translate "私はミーナです" --from ja --to mina --show-analysis
+python3 -m baronh g2p "na ya minde." --lang mina --ipa
+python3 -m baronh recognize "ナヤミンデ" --lang mina
+python3 -m baronh init-lang keth --name-ja ケス語 --name-en Keth
 ```
 
 `ingest known` は [アーヴ語掻き集め](http://mule.s59.xrea.com/seikai/jisyo/) と [Dadh Baronr 私家版辞書](http://dadh-baronr.s5.xrea.com/etc/ondic.html) を走査し、`data/ingested.json` に書き出します。その他の URL / CSV は `data/user_lexicon.json`（gitignore 済み）へ上乗せします。古いファンサイトは euc-jp / Shift_JIS のことがあります。見出しのラテン転写の畳み（`oe`→`œ`、`e'`→`é`、`k`→`c` など）は [転写とグリフの留意点](#転写とグリフの留意点) を参照してください。

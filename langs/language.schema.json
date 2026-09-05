@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://7474.github.io/Ath/langs/language.schema.json",
+  "title": "Ath language pack",
+  "type": "object",
+  "required": ["id", "names", "phonology", "morphology", "syntax"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "names": {
+      "type": "object",
+      "properties": {
+        "autonym": { "type": "string" },
+        "ja": { "type": "string" },
+        "en": { "type": "string" }
+      }
+    },
+    "description": { "type": "string" },
+    "script": { "type": "string" },
+    "lexicon": { "type": "string" },
+    "closed_forms": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "grammar_notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "phonology": { "type": "object" },
+    "morphology": { "type": "object" },
+    "syntax": { "type": "object" }
+  }
+}

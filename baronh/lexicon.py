@@ -347,7 +347,7 @@ class Lexicon:
                     seen.add(ident)
                     found.append(item)
 
-        if lang in ("auto", "baronh"):
+        if lang not in ("ja", "en"):
             take(self._by_lemma.get(key, []))
             folded_oe = _normalize_key(fold_fan_romanization(query))
             if folded_oe != key:
@@ -703,4 +703,12 @@ def load_lexicon(paths: Iterable[Path] | None = None) -> Lexicon:
             document = json.loads(path.read_text(encoding="utf-8"))
             replace = path != INGESTED_PATH
             lexicon.merge_document(document, replace=replace)
+    return lexicon
+
+
+def load_lexicon_document(path: Path) -> Lexicon:
+    """シード語彙を混ぜず、1 ファイルの辞書だけを読む。言語パック用。"""
+    document = json.loads(Path(path).read_text(encoding="utf-8"))
+    lexicon = Lexicon([])
+    lexicon.merge_document(document, replace=True)
     return lexicon

@@ -52,6 +52,15 @@
 
 クラウドへの載せ方（Cloud Run + Vertex、Bedrock AgentCore など）は [DEPLOY.md](DEPLOY.md) を参照する。
 
+## 言語パック（架空言語の設計と、実在言語への寄せ方）
+
+アーヴ語の規則は `grammar.py` / `phonology.py` に固定されている。これを一般化したものが `langs/` の言語パックである。詳細は [langs/README.md](../langs/README.md)。
+
+- 新規言語は `python -m baronh init-lang <id>` で `langs/mina` を複製し、音韻・形態・統語・辞書を書く。
+- 実行は `baronh/transfer.py`（転移翻訳）、`baronh/g2p.py`（仮名・IPA）、`baronh/asr.py`（語形制約の認識）。
+- アーヴ語の本番翻訳は従来エンジンのまま。`langs/baronh/` は記述と読み・認識の委譲用である。
+- 実在言語へ近づけるときは、解析と音響だけ既存モデルに差し、語彙と形態の制約はパックに残す。
+
 ## 規則ベース（既定）
 
 辞書見出しと日本語・英語語釈の照合、7 格、動詞活用、主題 `F'a`、疑問の `sa` などを規則で組む。生成 AI がオフでもこれが最終訳になる。

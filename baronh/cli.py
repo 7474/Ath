@@ -11,11 +11,33 @@ from pathlib import Path
 from baronh import __version__
 from baronh.grammar import FormIndex, all_verb_forms, analyze_form, conjugate, decline
 from baronh.ingest import ingest_auto, merge_into_lexicon, write_lexicon, write_lexicon_document
+from baronh.langpack import LangpackError, grammar_context_for, init_lang, is_pack_lang, list_packs, load_pack, uses_builtin_engine
 from baronh.lexicon import CASE_JA, Lexicon, load_lexicon, write_seed_lexicon
 from baronh.paths import USER_LEXICON_PATH, WEB_DIR
 from baronh.phonology import reading_ja, to_ath_keys
 from baronh.translate import translate
 from baronh.tts import synthesize_local
+
+
+def _lang_choices() -> list[str]:
+    from baronh.langpack import list_pack_ids
+
+    ids = ["auto", "ja", "en"]
+    for pack_id in ["baronh", *list_pack_ids()]:
+        if pack_id not in ids:
+            ids.append(pack_id)
+    return ids
+
+
+def _pack_for_lang(lang: str):
+    if not lang or lang in {"auto", "ja", "en"}:
+        return None
+    if not is_pack_lang(lang):
+        return None
+    pack = load_pack(lang)
+    if uses_builtin_engine(pack):
+        return None
+    return pack
 
 
 def _lexicon(args: argparse.Namespace) -> Lexicon:
@@ -31,14 +53,43 @@ def _load_with_extra(extra: list[Path]) -> Lexicon:
 
 
 def cmd_translate(args: argparse.Namespace) -> int:
-    lexicon = _lexicon(args)
     text = args.text if args.text is not None else sys.stdin.read()
     engine = args.engine
-    if engine == "agent":
-        from baronh.agent import AgentModelRequired, translate_agent
+    pack = _pack_for_lang(args.source) or _pack_for_lang(args.target)
+    if pack is not None:
+        if engine not in {"local", "auto"}:
+            print("言語パックの翻訳は --engine local のみです", file=sys.stderr)
+            return 2
+        from baronh.transfer import translate_pack
 
-        try:
-            result = translate_agent(
+        result = translate_pack(
+            text,
+            pack,
+            source_lang=args.source,
+            target_lang=args.target,
+        )
+    else:
+        lexicon = _lexicon(args)
+        if engine == "agent":
+            from baronh.agent import AgentModelRequired, translate_agent
+
+            try:
+                result = translate_agent(
+                    text,
+                    lexicon,
+                    source_lang=args.source,
+                    target_lang=args.target,
+                    api_key=args.api_key,
+                    api_base=getattr(args, "api_base", None),
+                    model=args.model,
+                )
+            except AgentModelRequired as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
+        elif engine in {"openai", "auto"} and (args.api_key or engine == "openai"):
+            from baronh.openai_backend import translate_openai
+
+            result = translate_openai(
                 text,
                 lexicon,
                 source_lang=args.source,
@@ -47,33 +98,18 @@ def cmd_translate(args: argparse.Namespace) -> int:
                 api_base=getattr(args, "api_base", None),
                 model=args.model,
             )
-        except AgentModelRequired as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
-    elif engine in {"openai", "auto"} and (args.api_key or engine == "openai"):
-        from baronh.openai_backend import translate_openai
-
-        result = translate_openai(
-            text,
-            lexicon,
-            source_lang=args.source,
-            target_lang=args.target,
-            api_key=args.api_key,
-            api_base=getattr(args, "api_base", None),
-            model=args.model,
-        )
-        if engine == "auto" and not result.text:
-            result = translate(
-                text,
-                lexicon,
-                source_lang=args.source,
-                target_lang=args.target,
-                vector_search=getattr(args, "vector_search", False),
-            )
-    elif engine == "auto":
-        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
-    else:
-        result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
+            if engine == "auto" and not result.text:
+                result = translate(
+                    text,
+                    lexicon,
+                    source_lang=args.source,
+                    target_lang=args.target,
+                    vector_search=getattr(args, "vector_search", False),
+                )
+        elif engine == "auto":
+            result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
+        else:
+            result = translate(text, lexicon, source_lang=args.source, target_lang=args.target, vector_search=getattr(args, "vector_search", False))
     if args.json:
         print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         return 0
@@ -168,10 +204,16 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 def cmd_speak(args: argparse.Namespace) -> int:
     text = args.text
     lang = args.lang
+    pack = None
     if lang == "auto":
         from baronh.translate import detect_lang
 
         lang = detect_lang(text, _lexicon(args))
+    if lang not in {"ja", "en"}:
+        try:
+            pack = load_pack(lang)
+        except LangpackError:
+            pack = None
     if args.engine == "openai":
         from baronh.openai_backend import synthesize_openai
 
@@ -191,6 +233,7 @@ def cmd_speak(args: argparse.Namespace) -> int:
         lang=lang,
         output=Path(args.out) if args.out else None,
         play=args.play,
+        pack=pack,
     )
     print(result.spoken_text)
     if result.audio_path:
@@ -257,9 +300,113 @@ def cmd_export_web(args: argparse.Namespace) -> int:
 
 
 def cmd_reading(args: argparse.Namespace) -> int:
+    lang = getattr(args, "lang", "baronh")
+    pack = None
+    if lang not in {"ja", "en"}:
+        try:
+            pack = load_pack(lang)
+        except LangpackError:
+            pack = None
+    if pack is not None:
+        from baronh.g2p import g2p_ipa, g2p_reading_ja
+
+        print(g2p_reading_ja(args.text, pack))
+        if getattr(args, "ipa", False):
+            print(g2p_ipa(args.text, pack))
+        if args.ath and pack.id == "baronh":
+            print(to_ath_keys(args.text))
+        return 0
     print(reading_ja(args.text))
     if args.ath:
         print(to_ath_keys(args.text))
+    return 0
+
+
+def cmd_languages(args: argparse.Namespace) -> int:
+    rows = []
+    for pack in list_packs():
+        rows.append(
+            {
+                "id": pack.id,
+                "name_ja": pack.name_ja,
+                "name_en": pack.name_en,
+                "engine": pack.morphology.engine,
+                "path": str(pack.path.parent),
+            }
+        )
+        if not args.json:
+            print(f"{pack.id}\t{pack.name_ja}\t{pack.morphology.engine}\t{pack.path.parent}")
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_init_lang(args: argparse.Namespace) -> int:
+    try:
+        dest = init_lang(
+            args.id,
+            name_ja=args.name_ja or "",
+            name_en=args.name_en or "",
+            autonym=args.autonym or "",
+            template_id=args.template,
+        )
+    except LangpackError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(dest)
+    return 0
+
+
+def cmd_g2p(args: argparse.Namespace) -> int:
+    from baronh.g2p import g2p_ipa, g2p_reading_ja
+
+    try:
+        pack = load_pack(args.lang)
+    except LangpackError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    reading = g2p_reading_ja(args.text, pack)
+    ipa = g2p_ipa(args.text, pack)
+    if args.json:
+        print(json.dumps({"lang": pack.id, "text": args.text, "reading_ja": reading, "ipa": ipa}, ensure_ascii=False, indent=2))
+        return 0
+    if args.ipa:
+        print(ipa)
+    else:
+        print(reading)
+    return 0
+
+
+def cmd_recognize(args: argparse.Namespace) -> int:
+    from baronh.asr import recognize
+
+    try:
+        pack = load_pack(args.lang)
+    except LangpackError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    result = recognize(args.text, pack)
+    if args.json:
+        print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        return 0
+    print(result.text)
+    if args.show_analysis:
+        print(f"# 読み: {result.reading_ja}", file=sys.stderr)
+        print(f"# IPA: {result.ipa}", file=sys.stderr)
+        for note in result.notes:
+            print(f"# {note}", file=sys.stderr)
+        for hit in result.path:
+            print(f"# {hit.form} ({hit.note})", file=sys.stderr)
+    return 0
+
+
+def cmd_grammar(args: argparse.Namespace) -> int:
+    try:
+        pack = load_pack(args.lang)
+    except LangpackError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(grammar_context_for(pack))
     return 0
 
 
@@ -285,8 +432,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("translate", help="翻訳する", parents=[shared])
     p.add_argument("text", nargs="?", help="原文。省略時は標準入力")
-    p.add_argument("--from", dest="source", default="auto", choices=["auto", "baronh", "ja", "en"])
-    p.add_argument("--to", dest="target", default="auto", choices=["auto", "baronh", "ja", "en"])
+    p.add_argument("--from", dest="source", default="auto", choices=_lang_choices())
+    p.add_argument("--to", dest="target", default="auto", choices=_lang_choices())
     p.add_argument("--engine", default="local", choices=["local", "openai", "agent", "auto"])
     p.add_argument("--vector-search", action="store_true", help="ローカル辞書で未登録語をベクトル検索して寄せる")
     p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
@@ -325,7 +472,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("speak", help="音声合成する", parents=[shared])
     p.add_argument("text")
-    p.add_argument("--lang", default="auto", choices=["auto", "baronh", "ja", "en"])
+    p.add_argument("--lang", default="auto", choices=_lang_choices())
     p.add_argument("--engine", default="local", choices=["local", "openai"])
     p.add_argument("--api-key", default=None, help="API キー。OPENAI_API_KEY でも可")
     p.add_argument("--api-base", default=None, help="OpenAI 互換ベース URL")
@@ -353,10 +500,42 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("info", help="辞書の統計を表示する", parents=[shared])
     p.set_defaults(func=cmd_info)
 
-    p = sub.add_parser("reading", help="アーヴ語の仮名読み / Ath キー")
+    p = sub.add_parser("reading", help="仮名読み / Ath キー / IPA")
     p.add_argument("text")
+    p.add_argument("--lang", default="baronh", choices=_lang_choices())
     p.add_argument("--ath", action="store_true")
+    p.add_argument("--ipa", action="store_true")
     p.set_defaults(func=cmd_reading)
+
+    p = sub.add_parser("languages", help="言語パックを列挙する")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_languages)
+
+    p = sub.add_parser("init-lang", help="雛形から新しい言語パックを作る")
+    p.add_argument("id", help="小文字の言語 id（ディレクトリ名）")
+    p.add_argument("--name-ja", default="", help="日本語名")
+    p.add_argument("--name-en", default="", help="英語名")
+    p.add_argument("--autonym", default="", help="自称")
+    p.add_argument("--template", default="mina", help="複製元パック id")
+    p.set_defaults(func=cmd_init_lang)
+
+    p = sub.add_parser("g2p", help="正書法を仮名読みまたは IPA にする")
+    p.add_argument("text")
+    p.add_argument("--lang", default="baronh", choices=_lang_choices())
+    p.add_argument("--ipa", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_g2p)
+
+    p = sub.add_parser("recognize", help="仮名読み / IPA / 正書法を語形制約で認識する")
+    p.add_argument("text")
+    p.add_argument("--lang", default="baronh", choices=_lang_choices())
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--show-analysis", action="store_true")
+    p.set_defaults(func=cmd_recognize)
+
+    p = sub.add_parser("grammar", help="言語パックの文法コンテキストを出す")
+    p.add_argument("--lang", default="baronh", choices=_lang_choices())
+    p.set_defaults(func=cmd_grammar)
 
     return parser
 
