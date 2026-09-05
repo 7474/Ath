@@ -2,7 +2,7 @@
   "cssVariable": "--ath-font",
   "storageKey": "ath-face",
   "default": "aarth",
-  "cacheBust": "4",
+  "cacheBust": "5",
   "faces": [
     {
       "id": "aarth",

@@ -224,8 +224,9 @@ textarea {
 
 /* アーヴ語を選んだ入出力欄だけアース文字。値はローマ字のまま。 */
 textarea.ath-script {
-  font: 1.55rem/1.7 var(--ath-font);
+  font: 400 1.55rem/1.7 var(--ath-font);
   letter-spacing: .04em;
+  font-synthesis: none;
 }
 
 .actions {
