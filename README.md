@@ -2,7 +2,7 @@
 
 [アーヴ語（Baronh）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) と、それを書く文字 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) についての二次創作です。GitHub Pages で字形デモと翻訳ツールを公開しています。
 
-- **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォントにしたもの。既定フェイスは `aarth.ttf` / `aarth.woff2`（入力は `templates/ath_source_filled.png`）。手書きなど追加の字体は `faces.json` に登録し、字形デモの「字体」から切り替えます。
+- **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォントにしたもの。既定フェイスは `aarth.ttf` / `aarth.woff2`（入力は `templates/ath_source_filled.png`）。同じラスタを等線で描き直したゴシック（`aarth-gothic`）や、手書きなど追加の字体は `faces.json` に登録し、字形デモの「字体」から切り替えます。
 - **アーヴ語**: 辞書と文法規則で日本語・英語と行き来する翻訳（CLI とブラウザ）。
 
 ## サイト
@@ -208,6 +208,7 @@ python3 generate_aarth_font.py --all-faces  # faces.json の全フェイス + aa
 
 ```
 aarth.ttf / aarth.woff2
+aarth-gothic.ttf / aarth-gothic.woff2                       # 標準ラスタの等線ゴシック
 aarth-koudenpa-signpen.ttf / aarth-koudenpa-signpen.woff2   # 追加フェイスの例
 aarth.css   — --all-faces または --write-css が faces.json から再生成
 ```
@@ -286,10 +287,10 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 
 ### フォントフェイスを追加する
 
-手書きや別ラスタを、同じ cmap の別ウェブフォントとして足せます。字形デモ（`/ath/`）の「字体」セレクトは `faces.json` を読んで増えます。
+手書きや別ラスタを、同じ cmap の別ウェブフォントとして足せます。字形デモ（`/ath/`）の「字体」セレクトは `faces.json` を読んで増えます。同じ記入済みラスタを等線（丸ゴシック）で描き直す場合は、新規画像は不要です。`traceStyle: "gothic"` を付けます。
 
-1. `templates/ath_blank_template.png` に全グリフを描き、`templates/faces/<id>.png`（または `.jpg`）として保存する。
-2. `faces.json` の `faces` 配列にエントリを足す（`id` / `family` / `fileStem` / `label` / `image` は必須。`copyright` と `designer` も書く）。
+1. `templates/ath_blank_template.png` に全グリフを描き、`templates/faces/<id>.png`（または `.jpg`）として保存する（ゴシック面は既存の `templates/ath_source_filled.png` を流用してよい）。
+2. `faces.json` の `faces` 配列にエントリを足す（`id` / `family` / `fileStem` / `label` / `image` は必須。`copyright` と `designer` も書く。等線化する場合は `traceStyle` を `"gothic"` にする）。
 3. 生成する。
 
 ```bash
@@ -301,6 +302,8 @@ python3 generate_aarth_font.py --all-faces
 ```
 
 `id` はファイル名と `data-ath-face` に使います。例: `aarth-koudenpa-signpen`（サインペン手書き、`templates/faces/aarth-koudenpa-signpen.jpg`）。色ペンでも構いません。生成パイプラインは RGB の最も暗いチャンネルをインクとみなします。
+
+`traceStyle: "gothic"` は、ラスタのシルエットをそのままなぞる代わりに骨格化して一定半径で描き直します。線幅のむらを落とした等線・丸ゴシックになります。既定フェイス `aarth` の見た目は変わりません。
 
 ---
 
@@ -333,7 +336,8 @@ Ath_(alphabet).png  [+ optional digits raster / extra template rows]
         → 4×7 alphabet boxes, then 0–9 if present (row-major)
         │
         ▼  (per glyph)
-  per-component silhouette → SDF smooth + 8× → PGM → potrace --svg --blacklevel → SVG path
+  per-component silhouette → SDF smooth + 8× → PGM → potrace
+        または traceStyle=gothic: 骨格化 + 等線で描き直し → potrace
         │
         ▼
   Scale & translate to 1000-unit EM (ascender=800, descender=-200)
