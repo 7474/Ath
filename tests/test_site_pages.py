@@ -201,11 +201,17 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("../aarth.css", web)
 
     def test_translator_font_face_works_on_pages(self):
-        css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
-        self.assertIn("../../aarth.woff2", css)
-        self.assertIn('url("aarth.woff2")', css)
-        self.assertIn("textarea {", css)
-        self.assertNotIn("<textarea {", css)
+        app = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertNotIn("@font-face", app)
+        self.assertIn("textarea {", app)
+        self.assertNotIn("<textarea {", app)
+        web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('href="../aarth.css"', web)
+        self.assertIn('href="../aarth.woff2"', web)
+        self.assertIn('rel="preload"', web)
+        aarth = (ROOT / "aarth.css").read_text(encoding="utf-8")
+        self.assertIn("@font-face", aarth)
+        self.assertIn("aarth.woff2", aarth)
 
     def test_readme_describes_site_map(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
