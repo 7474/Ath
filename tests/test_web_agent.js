@@ -203,6 +203,9 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
   }).then(function (longOut) {
     assert.ok(longOut.text.indexOf("bale") >= 0);
     assert.ok(longOut.text.indexOf("face") >= 0);
+    assert.ok(longOut.text.indexOf("[1]") < 0);
+    assert.ok(longOut.text.indexOf("[2]") < 0);
+    assert.strictEqual(engine.finalizeTranslation("私はアーヴです。分かりますか。", "[1] F'a bale.\n[2] face sa?"), "F'a bale.\nface sa?");
     assert.ok(longCalls >= 3, "longCalls " + longCalls);
     console.log("OK coverage=" + longOut.text.replace(/\n/g, " / "));
 
@@ -228,11 +231,16 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
     assert.ok(searchLight.hits.some(function (h) { return h.lemma === "sairiac"; }));
     var searchSmart = JSON.parse(engine.dispatchAgentTool("search_lexicon", { query: "頭の出来がいい" }, lexicon));
     assert.ok(searchSmart.hits.every(function (h) { return (h.gloss_ja || "").indexOf("領民") < 0; }));
-    var invented = engine.inventedBaronhForms("cadase lér. iri sacre. fac ad e.", lexicon);
+    var invented = engine.inventedBaronhForms("cadase lér. iri sacre. fac ad e. catoracas. ciloclér. riread.", lexicon);
     assert.ok(invented.indexOf("lér") < 0, "lér " + invented);
     assert.ok(invented.indexOf("iri") < 0, "iri " + invented);
     assert.ok(invented.indexOf("ad") < 0, "ad " + invented);
+    assert.ok(invented.indexOf("catoracas") < 0, "catoracas " + invented);
+    assert.ok(invented.indexOf("ciloclér") < 0, "ciloclér " + invented);
+    assert.ok(invented.indexOf("riread") < 0, "riread " + invented);
     var sampleHints = engine.buildAgentUserPrompt(sample, lexicon, "ja", "baronh");
+    assert.ok(sampleHints.indexOf("- 来る:") < 0);
+    assert.ok(sampleHints.indexOf("-ar-") < 0);
     assert.ok(sampleHints.indexOf("リン・ジント") >= 0);
     assert.ok(sampleHints.indexOf("- リン・ジントって奴") < 0);
     assert.ok(sampleHints.indexOf("catorac") >= 0 || sampleHints.indexOf("機械通訳") >= 0);

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -41,6 +42,7 @@ from baronh.synonyms import (
     find_synonyms,
     format_hits,
     format_resolved_context,
+    hint_piece_usable,
     name_for_transcription,
     resolve_lexicon_hits,
 )
@@ -69,7 +71,8 @@ AGENT_BRIEF = """
 足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。
 1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。
 validate_baronh は訳文が書けてから1回だけ。
-複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。
+複数文・段落の原文は要約せず、番号 [1] [2] … の単位に対応する訳を同じ順で省略なく出す。
+訳文には [1] などの番号を付けない。
 訳文だけを出力し、解説や引用符は付けないでください。
 """
 
@@ -79,7 +82,7 @@ FEW_SHOT_SYNONYM = """
 - 翻訳機 → 機械通訳 (catorac)。喋る → 話す。俺ら → 私たち (farh)。完璧 → 完全 (batta)。
 - 私はアーヴです → F'a bale.
 - ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）
-- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?
+- 複数文は要約せず同じ順（訳に番号は付けない）: [1] 私はアーヴです [2] 分かりますか → F'a bale.\nface sa?
 """
 
 AGENT_TOOLS: list[dict[str, Any]] = [
@@ -282,10 +285,10 @@ def dictionary_hints(text: str, lexicon: Lexicon, source_lang: str) -> str:
             break
         if not word or word in seen or word in JA_PARTICLES:
             continue
-        if word in "、。！？!?.":
+        if word in "、。！？!?.:" or not hint_piece_usable(word, lexicon):
             continue
         seen.add(word)
-        exact = lexicon.lookup(word, lang="auto")
+        exact = [hit for hit in lexicon.lookup(word, lang="auto") if hit.pos != "suffix"]
         if exact:
             top = exact[0]
             lines.append(f"- {word}: 辞書 {top.lemma} [{top.pos}] 「{top.gloss_ja}」")
@@ -299,6 +302,8 @@ def dictionary_hints(text: str, lexicon: Lexicon, source_lang: str) -> str:
             lines.append(f"- {word}: 固有名詞の可能性。transcribe_name で発音転記")
             continue
         if len(word) > HINT_TOKEN_MAX:
+            continue
+        if len(word) <= 2 or (re.fullmatch(r"[\u3040-\u309fー]+", word) and len(word) < 4):
             continue
         lines.append(f"- {word}: 未登録。search_lexicon / find_synonyms で辞書内の言い換えを探す")
         if len(lines) >= HINT_LINE_LIMIT:
@@ -411,7 +416,8 @@ def build_agent_user_prompt(
     retrieved = format_resolved_context(queries, lexicon, limit=16)
     hints = dictionary_hints(text, lexicon, source_lang)
     coverage = (
-        "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
+        "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。"
+        "訳文に [1] などの番号は付けないでください。要約しないでください。"
         if len(units) > 1
         else "訳文だけを出力してください。"
     )
@@ -556,7 +562,7 @@ def translate_agent(
                 f"次の語は辞書の語形でも発音転記でもありません: {', '.join(invented)}。"
                 "造語せず、search_lexicon / find_synonyms の queries にまとめて辞書の類義語へ寄せて書き直してください。"
                 "規則ベースの下訳は無いので、自分で訳してください。"
-                "要約せず、次の原文を番号順に省略なく訳してください。訳文だけを出力してください。\n\n"
+                "要約せず、次の原文を同じ順で省略なく訳してください。訳文に番号は付けないでください。訳文だけを出力してください。\n\n"
                 f"原文:\n{format_numbered_source(text)}"
             )
             messages.append({"role": "assistant", "content": out})

@@ -97,6 +97,7 @@ LOOKUP_QUERY_LIMIT = 24
 TOOL_ANSWER_NOW = (
     "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。"
     "要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。"
+    "訳文に [1] などの番号は付けないでください。"
     "訳文だけを出力してください。"
 )
 COVERAGE_ATTEMPTS = 2
@@ -291,25 +292,42 @@ def coverage_nudge(source_text: str, translated: str) -> str:
     missing = missing_unit_indices(mapping, len(units)) if mapping else list(range(1, len(units) + 1))
     listed = "\n".join(f"[{index}] {units[index - 1]}" for index in missing)
     return (
-        "訳が原文より短い、または番号が欠けています。要約せず、次の未訳単位を同じ番号で訳してください。"
-        "既訳は繰り返さなくてよいです。訳文だけを出力してください。\n\n"
+        "訳が原文より短い、または単位が欠けています。要約せず、次の未訳単位を同じ順で訳してください。"
+        "既訳は繰り返さなくてよいです。訳文に番号は付けないでください。訳文だけを出力してください。\n\n"
         f"{listed}"
     )
+
+
+def _lines_to_map(text: str, count: int) -> dict[int, str]:
+    mapping = parse_numbered_map(text)
+    if mapping:
+        return mapping
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    return {index: lines[index - 1] for index in range(1, min(count, len(lines)) + 1)}
 
 
 def merge_translation(source_text: str, previous: str, extra: str) -> str:
     units = split_source_units(source_text)
     count = len(units)
-    extra_map = parse_numbered_map(extra)
-    prev_map = parse_numbered_map(previous)
+    prev_map = _lines_to_map(previous, count)
+    extra_numbered = parse_numbered_map(extra)
+    extra_lines = [line.strip() for line in (extra or "").splitlines() if line.strip()]
+    if extra_numbered:
+        extra_map = extra_numbered
+    elif len(extra_lines) >= count:
+        extra_map = {index: extra_lines[index - 1] for index in range(1, count + 1)}
+    else:
+        missing = missing_unit_indices(prev_map, count)
+        extra_map = {
+            missing[offset]: extra_lines[offset]
+            for offset in range(min(len(missing), len(extra_lines)))
+        }
     if extra_map and not missing_unit_indices(extra_map, count):
         return join_numbered_units(extra_map, count)
     merged = dict(prev_map)
     merged.update({key: value for key, value in extra_map.items() if str(value).strip()})
     if merged:
-        return "\n".join(
-            f"[{index}] {merged[index]}" for index in range(1, count + 1) if index in merged
-        )
+        return join_numbered_units(merged, count)
     return extra or previous
 
 
@@ -320,8 +338,7 @@ def finalize_translation(source_text: str, translated: str) -> str:
         joined = join_numbered_units(mapping, len(units))
         if joined:
             return joined
-        return strip_unit_numbers(translated)
-    return strip_unit_numbers(translated) if mapping else (translated or "")
+    return strip_unit_numbers(translated or "")
 
 
 def ensure_source_coverage(
@@ -590,6 +607,25 @@ def phonetic_allowed_forms(local: TranslationResult | None) -> set[str]:
     return allowed
 
 
+def _known_with_affixes(surface: str, index: FormIndex) -> bool:
+    """見出しに動詞語尾・態接辞を足しただけなら造語ではない。"""
+    if index.lookup(surface):
+        return True
+    key = surface.casefold()
+    endings = sorted({*VERB_ENDINGS.values(), *VOICE_SUFFIX.values()}, key=len, reverse=True)
+    voices = sorted(VOICE_SUFFIX.values(), key=len, reverse=True)
+    for ending in endings:
+        if len(key) <= len(ending) or not key.endswith(ending):
+            continue
+        stem = key[: -len(ending)]
+        if index.lookup(stem):
+            return True
+        for voice in voices:
+            if len(stem) > len(voice) and stem.endswith(voice) and index.lookup(stem[: -len(voice)]):
+                return True
+    return False
+
+
 def invented_baronh_forms(
     text: str,
     lexicon: Lexicon,
@@ -612,7 +648,7 @@ def invented_baronh_forms(
             continue
         if not re.search(r"[A-Za-zÉéÏïÜüŸÿŒœ]", surface):
             continue
-        if idx.lookup(surface):
+        if idx.lookup(surface) or _known_with_affixes(surface, idx):
             continue
         if len(key) <= 2 and key in CLOSED_BARONH:
             continue
