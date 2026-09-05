@@ -16,6 +16,8 @@ on:
       - 'generate_favicon.py'
       - 'ath/**'
       - 'aarth.css'
+      - 'faces.json'
+      - 'ath-face.js'
       - 'theme.js'
       - 'requirements.txt'
       - 'web/**'
@@ -43,10 +45,10 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate font
+      - name: Generate fonts
         run: |
           python3 generate_aarth_font.py \
-            --image templates/ath_source_filled.png \
+            --all-faces \
             --output-dir docs \
             --debug
 
@@ -55,6 +57,8 @@ jobs:
           cp index.html docs/index.html
           cp site.css docs/site.css
           cp aarth.css docs/aarth.css
+          cp faces.json docs/faces.json
+          cp ath-face.js docs/ath-face.js
           cp theme.js docs/theme.js
           cp favicon.ico docs/favicon.ico
           rm -rf docs/icons

@@ -75,6 +75,25 @@ def make_grid_image(
 
 
 class DigitGridDetectionTest(unittest.TestCase):
+    def test_page_edge_stripe_does_not_hide_glyphs(self):
+        gray = make_grid_image([7, 7, 7, 7, 7, 3], header=True)
+        gray[:, -3:] = 0
+        binary = aarth.binarize(gray)
+        alphabet, digits = aarth.find_alphabet_and_digit_boxes(binary)
+        self.assertEqual(len(alphabet), 28)
+        self.assertEqual(len(digits), 10)
+
+    def test_red_sign_pen_ink_is_detected(self):
+        gray = make_grid_image([7, 7, 7, 7, 7, 3], header=False)
+        bgr = np.full((*gray.shape, 3), 255, dtype=np.uint8)
+        bgr[gray < 128] = (18, 22, 190)
+        dest = Path(tempfile.mkdtemp(prefix="aarth-red-")) / "red.png"
+        cv2.imwrite(str(dest), bgr)
+        binary = aarth.load_and_binarize(dest)
+        alphabet, digits = aarth.find_alphabet_and_digit_boxes(binary)
+        self.assertEqual(len(alphabet), 28)
+        self.assertEqual(len(digits), 10)
+
     def test_wikipedia_sheet_has_no_digits(self):
         binary = aarth.load_and_binarize(SOURCE_PNG)
         alphabet, digits = aarth.find_alphabet_and_digit_boxes(binary)

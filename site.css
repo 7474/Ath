@@ -170,7 +170,7 @@ html {
 }
 
 .site-logo {
-  font-family: 'Aarth', serif;
+  font-family: var(--ath-font);
   font-size: 1.7rem;
   letter-spacing: .08em;
   line-height: 1;
@@ -245,8 +245,43 @@ html {
 .translate-play {
   flex: 1 0 100%;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: .45rem;
   padding: .15rem 0 .1rem;
+}
+
+.ath-face-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  width: 100%;
+  max-width: 28rem;
+  font: 600 .9rem/1.2 system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.ath-face-switch select {
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  padding: .4rem .9rem;
+  font: 600 .9rem/1.2 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ath-face-switch select:hover {
+  border-color: var(--trim);
+}
+
+.ath-face-switch select:focus-visible {
+  outline: 2px solid var(--trim);
+  outline-offset: 3px;
 }
 
 #translate-button {
@@ -347,7 +382,7 @@ body.translated #translate-button {
 }
 
 .site-card .ath-sample {
-  font-family: 'Aarth', serif;
+  font-family: var(--ath-font);
   font-size: 1.8rem;
   letter-spacing: .08em;
   margin: .7rem 0 .5rem;

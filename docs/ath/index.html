@@ -9,6 +9,8 @@
     try {
       var t = localStorage.getItem("ath-theme");
       if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      var f = localStorage.getItem("ath-face");
+      if (f) document.documentElement.setAttribute("data-ath-face", f);
     } catch (e) {}
   </script>
   <link rel="icon" href="../favicon.ico" sizes="48x48">
@@ -52,7 +54,7 @@
 
     /* Default: the document reads as Ath. Translate restores Latin copy. */
     body:not(.translated) .page-content {
-      font-family: 'Aarth', Georgia, serif;
+      font-family: var(--ath-font);
       text-transform: lowercase;
       letter-spacing: .04em;
     }
@@ -65,7 +67,7 @@
     body:not(.translated) .alpha-cell .label,
     body:not(.translated) code,
     body:not(.translated) pre {
-      font-family: 'Aarth', ui-monospace, monospace;
+      font-family: var(--ath-font);
     }
 
     body.translated .page-content {
@@ -81,12 +83,12 @@
     body.translated .size-scale p,
     body.translated .aarth-para,
     body.translated .ath-keys {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
     }
 
     /* A / I / E are digraph keys (ai / au / eu). Never lowercase them. */
     .ath-keys {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       letter-spacing: .04em;
     }
 
@@ -121,7 +123,7 @@
     /* Aarth font utility class                                            */
     /* ------------------------------------------------------------------ */
     .aarth {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
     }
 
     /* ------------------------------------------------------------------ */
@@ -140,7 +142,7 @@
 
     /* Large heading */
     .aarth-hero {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: clamp(2.4rem, 12vw, 5rem);
       line-height: 1.2;
       letter-spacing: .08em;
@@ -172,7 +174,7 @@
     }
 
     .alpha-cell .glyph {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: clamp(1.35rem, 6vw, 2.8rem);
       line-height: 1.35;
     }
@@ -218,7 +220,7 @@
     .mapping-table tbody tr:last-child td { border-bottom: none; }
 
     .mapping-table .glyph {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: 1.55rem;
       line-height: 1.2;
       letter-spacing: .04em;
@@ -251,7 +253,7 @@
 
     body:not(.translated) .mapping-table .glyph,
     body.translated .mapping-table .glyph {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       text-transform: none;
     }
 
@@ -294,7 +296,7 @@
     }
 
     .size-scale p {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       line-height: 1.3;
       overflow-wrap: anywhere;
       word-break: break-word;
@@ -302,7 +304,7 @@
 
     /* Paragraph */
     .aarth-para {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: 1.6rem;
       line-height: 1.6;
       letter-spacing: .04em;
@@ -441,6 +443,12 @@
       <button type="button" class="theme-toggle" id="theme-toggle">自動</button>
     </nav>
     <div class="translate-play">
+      <label class="ath-face-switch" for="ath-face-select">字体
+        <select id="ath-face-select" aria-label="アースの字体">
+          <option value="aarth" selected>標準</option>
+          <option value="aarth-koudenpa-signpen">光電波サインペン</option>
+        </select>
+      </label>
       <button type="button" id="translate-button" aria-pressed="false" aria-controls="page-content">
         ラテンで読む
       </button>
@@ -654,7 +662,15 @@
         (branch URLs are cached about 12 hours).
         <code>raw.githubusercontent.com</code> is not suitable.
       </p>
-      <p class="use-note">When the font files sit next to your page, use a relative path:</p>
+      <p class="use-note">
+        Additional handwritten faces (for example
+        <code>Aarth Koudenpa Signpen</code>) are registered in the same
+        stylesheet. On this demo, pick <strong>字体</strong> in the header.
+        Sites that link <code>aarth.css</code> can set
+        <code>html[data-ath-face="aarth-koudenpa-signpen"]</code>
+        or use <code>font-family: var(--ath-font)</code>.
+        New faces belong in <code>faces.json</code>.
+      </p>
       <pre><code id="snippet-link">&lt;link rel="stylesheet" href="./aarth.css"&gt;
 
 &lt;style&gt;
@@ -791,6 +807,7 @@
     })();
   </script>
   <script src="../theme.js"></script>
+  <script src="../ath-face.js" data-faces="../faces.json"></script>
 
 </body>
 </html>

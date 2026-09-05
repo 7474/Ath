@@ -1,6 +1,7 @@
 # ライセンス
 
-数字グリフを含む本ウェブフォント（`aarth.ttf` / `aarth.woff2`）は、
+数字グリフを含む本ウェブフォント（`aarth.ttf` / `aarth.woff2` および
+`faces.json` に登録した追加フェイス）は、
 [Creative Commons Attribution-ShareAlike 3.0 Unported](https://creativecommons.org/licenses/by-sa/3.0/)
 （CC BY-SA 3.0）の下で提供します。
 
@@ -34,3 +35,5 @@
 ## ShareAlike
 
 数字ラスタが CC BY-SA 3.0 であるため、それを取り込んだ結合成果物（記入済みテンプレートおよび本ウェブフォント）も CC BY-SA 3.0 です。再利用・改変した成果物は、出典を表示し、同じライセンス（または互換ライセンス）で共有してください。字母ラスタ単体はパブリックドメインのままです。
+
+手書きフェイス（例: `aarth-koudenpa-signpen`）のラスタは空白テンプレートへの記入であり、字母・数字の**設計**は上表と同じです。ラスタ写真は `templates/faces/` にあります。

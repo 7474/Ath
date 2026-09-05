@@ -11,9 +11,36 @@ ROOT = Path(__file__).resolve().parent.parent
 
 class SiteStructureTest(unittest.TestCase):
     def test_pages_exist(self):
-        for rel in ("index.html", "ath/index.html", "web/index.html", "site.css", "theme.js"):
+        for rel in (
+            "index.html",
+            "ath/index.html",
+            "web/index.html",
+            "site.css",
+            "theme.js",
+            "ath-face.js",
+            "faces.json",
+        ):
             path = ROOT / rel
             self.assertTrue(path.is_file(), f"missing {rel}")
+
+    def test_pages_load_font_face_switcher(self):
+        pages = {
+            "index.html": "faces.json",
+            "ath/index.html": "../faces.json",
+            "web/index.html": "../faces.json",
+        }
+        for rel, faces_href in pages.items():
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            with self.subTest(page=rel):
+                self.assertIn('localStorage.getItem("ath-face")', text)
+                self.assertIn("data-ath-face", text)
+                self.assertIn("ath-face.js", text)
+                self.assertIn(faces_href, text)
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        self.assertIn("var(--ath-font)", css)
+        self.assertIn(".ath-face-switch", css)
+        app = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertIn("var(--ath-font)", app)
 
     def test_pages_link_favicon(self):
         pages = {
@@ -89,6 +116,10 @@ class SiteStructureTest(unittest.TestCase):
         main_at = demo.find("<main")
         self.assertGreater(play_at, 0)
         self.assertGreater(main_at, play_at)
+        self.assertIn('id="ath-face-select"', demo)
+        self.assertIn("ath-face.js", demo)
+        self.assertIn("faces.json", demo)
+        self.assertIn("光電波サインペン", demo)
         self.assertIn("../aarth.css", demo)
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
@@ -238,6 +269,9 @@ class SiteStructureTest(unittest.TestCase):
         aarth = (ROOT / "aarth.css").read_text(encoding="utf-8")
         self.assertIn("@font-face", aarth)
         self.assertIn("aarth.woff2", aarth)
+        self.assertIn("--ath-font", aarth)
+        self.assertIn("aarth-koudenpa-signpen", aarth)
+        self.assertIn("Aarth Koudenpa Signpen", aarth)
 
     def test_readme_describes_site_map(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -302,6 +336,9 @@ class SiteStructureTest(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "build-font.yml").read_text(
             encoding="utf-8"
         )
+        self.assertIn("cp faces.json docs/faces.json", workflow)
+        self.assertIn("cp ath-face.js docs/ath-face.js", workflow)
+        self.assertIn("--all-faces", workflow)
         self.assertIn("site.css", workflow)
         self.assertIn("ath/**", workflow)
         self.assertIn("cp ath/index.html docs/ath/index.html", workflow)
