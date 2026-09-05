@@ -43,7 +43,7 @@
       meta.setAttribute("name", "theme-color");
       document.head.appendChild(meta);
     }
-    meta.setAttribute("content", resolved() === "dark" ? "#0e1628" : "#f6f1ea");
+    meta.setAttribute("content", resolved() === "dark" ? "#121820" : "#f7f3ee");
   }
 
   function syncToggle(pref) {
