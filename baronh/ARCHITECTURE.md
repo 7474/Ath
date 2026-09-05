@@ -58,7 +58,7 @@
 
 - 新規言語は `python -m baronh init-lang <id>` で `langs/mina` を複製し、音韻・形態・統語・辞書を書く。
 - 実行は `baronh/transfer.py`（転移翻訳）、`baronh/g2p.py`（仮名・IPA）、`baronh/asr.py`（語形制約の認識）。ブラウザは `web/js/langpack.js`。
-- 運用は翻訳ページの言語セレクト、`POST /api/translate`、`python -m baronh serve` / GitHub Pages（CI が `export-web` でパック JSON を書く）。
+- **運用**: 公開サイトの翻訳ページはアーヴ語向け。`ui: true` のパックだけセレクトと GitHub Pages の静的 JSON に出す。ミーナ語は雛形なので `ui: false`。CLI と `POST /api/translate` は `ui` に関係なくパックを訳せる。
 - アーヴ語の本番翻訳は従来エンジンのまま。`langs/baronh/` は記述と読み・認識の委譲用である。
 - 実在言語へ近づけるときは、解析と音響だけ既存モデルに差し、語彙と形態の制約はパックに残す。
 

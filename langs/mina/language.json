@@ -6,7 +6,8 @@
     "ja": "ミーナ語",
     "en": "Mina"
   },
-  "description": "新規の架空言語を設計するための雛形。CV 音節、膠着、主題助詞 ya、疑問 ka。アーヴ語と同じ 7 格役割で日本語・英語と橋渡しする。",
+  "description": "新規の架空言語を設計するための雛形。CV 音節、膠着、主題助詞 ya、疑問 ka。アーヴ語と同じ 7 格役割で日本語・英語と橋渡しする。公開サイトはアーヴ語向けなので ui は false。",
+  "ui": false,
   "script": "latin",
   "lexicon": "lexicon.json",
   "closed_forms": ["ya", "ka", "o"],

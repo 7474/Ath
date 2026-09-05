@@ -41,6 +41,7 @@ class LangpackLoadTest(unittest.TestCase):
         lex = pack.load_lexicon()
         self.assertTrue(lex.lookup("mina", lang="mina"))
         self.assertTrue(lex.lookup("私", lang="ja"))
+        self.assertFalse(pack.ui)
 
     def test_baronh_pack_delegates_lexicon(self):
         pack = load_pack("baronh")
@@ -176,6 +177,7 @@ class InitLangTest(unittest.TestCase):
             self.assertTrue((dest / "lexicon.json").is_file())
             meta = json.loads((dest / "lexicon.json").read_text(encoding="utf-8"))["meta"]
             self.assertEqual(meta["language"], "keth")
+            self.assertFalse(pack.ui)
 
 
 class CliLangpackTest(unittest.TestCase):
@@ -202,7 +204,7 @@ class CliLangpackTest(unittest.TestCase):
         self.assertIn("mina", buf.getvalue())
         self.assertIn("baronh", buf.getvalue())
 
-    def test_export_web_includes_language_packs(self) -> None:
+    def test_export_web_omits_template_packs(self) -> None:
         from baronh.langpack import export_web_packs
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -210,10 +212,10 @@ class CliLangpackTest(unittest.TestCase):
             export_web_packs(out)
             catalog = json.loads((out / "languages.json").read_text(encoding="utf-8"))
             ids = {row["id"] for row in catalog["languages"]}
-            self.assertIn("mina", ids)
-            pack = json.loads((out / "langs" / "mina" / "language.json").read_text(encoding="utf-8"))
-            self.assertEqual(pack["id"], "mina")
-            self.assertTrue((out / "langs" / "mina" / "lexicon.json").is_file())
+            self.assertIn("baronh", ids)
+            self.assertIn("ja", ids)
+            self.assertNotIn("mina", ids)
+            self.assertFalse((out / "langs" / "mina").exists())
 
     def test_dockerfile_copies_langs(self) -> None:
         text = (ROOT / "deploy" / "Dockerfile").read_text(encoding="utf-8")

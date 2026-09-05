@@ -26,17 +26,8 @@
       "kind": "pack",
       "engine": "baronh",
       "ath": true,
-      "builtin": true
-    },
-    {
-      "id": "mina",
-      "name_ja": "ミーナ語",
-      "name_en": "Mina",
-      "autonym": "mina",
-      "kind": "pack",
-      "engine": "suffix",
-      "ath": false,
-      "builtin": false
+      "builtin": true,
+      "ui": true
     }
   ]
 }

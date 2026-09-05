@@ -7,6 +7,7 @@
     "en": "Baronh"
   },
   "description": "既存のアーヴ語エンジン（grammar.py / phonology.py / translate.py）を言語パックの形で記述したもの。形態・音韻の実行は engine=baronh が従来実装へ委譲する。新規言語は langs/mina を複製し engine=suffix / table にする。",
+  "ui": true,
   "script": "latin-ath",
   "lexicon": "../../data/lexicon.json",
   "closed_forms": ["F'a", "D'a", "S'a", "sa", "a", "éü", "le", "lo", "te"],

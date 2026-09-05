@@ -130,11 +130,11 @@ class VectorExportTest(unittest.TestCase):
             self.assertTrue((dest / "vectors.json").is_file())
             self.assertGreater((dest / "vectors.bin").stat().st_size, 100_000)
             self.assertTrue((dest / "languages.json").is_file())
-            self.assertTrue((dest / "langs" / "mina" / "language.json").is_file())
-            self.assertTrue((dest / "langs" / "mina" / "lexicon.json").is_file())
             catalog = json.loads((dest / "languages.json").read_text(encoding="utf-8"))
             ids = {row["id"] for row in catalog["languages"]}
-            self.assertIn("mina", ids)
+            self.assertIn("baronh", ids)
+            self.assertNotIn("mina", ids)
+            self.assertFalse((dest / "langs" / "mina").exists())
 
 
 class AgentPromptTest(unittest.TestCase):

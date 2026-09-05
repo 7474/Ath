@@ -280,6 +280,7 @@
       var sel = $(id);
       (list || []).forEach(function (lang) {
         if (!lang || !lang.id || lang.id === "auto" || lang.kind === "pivot" || lang.builtin) return;
+        if (!lang.ui) return;
         ensureLangOption(sel, lang.id, lang.name_ja || lang.id);
       });
     });
@@ -318,7 +319,7 @@
     fillLangOptions(items);
     if (!window.Langpack) return Promise.resolve();
     var jobs = items.filter(function (lang) {
-      return lang.kind === "pack" && !lang.builtin;
+      return lang.kind === "pack" && !lang.builtin && lang.ui;
     }).map(function (lang) {
       return loadOnePack(lang.id, lang.name_ja);
     });
@@ -336,7 +337,7 @@
     var area = $("source-text");
     if (!area) return;
     var id = packIdInUse();
-    area.placeholder = id ? "例: 私はミーナです" : "例: 私は移民します";
+    area.placeholder = id ? "例: 翻訳する文を入力" : "例: 私は移民します";
   }
 
   function syncAthScript() {

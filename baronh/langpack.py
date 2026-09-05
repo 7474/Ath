@@ -211,6 +211,7 @@ class LanguagePack:
     version: int = 1
     names: dict[str, str] = field(default_factory=dict)
     description: str = ""
+    ui: bool = False
     script: str = "latin"
     phonology: PhonologySpec = field(default_factory=PhonologySpec)
     morphology: MorphologySpec = field(default_factory=MorphologySpec)
@@ -276,6 +277,7 @@ def load_pack(source: str | Path, *, langs_dir: Path | None = None) -> LanguageP
         version=int(raw.get("version") or 1),
         names=names,
         description=str(raw.get("description") or ""),
+        ui=bool(raw.get("ui")),
         script=str(raw.get("script") or "latin"),
         phonology=PhonologySpec.from_dict(raw.get("phonology")),
         morphology=MorphologySpec.from_dict(raw.get("morphology")),
@@ -502,6 +504,7 @@ def init_lang(
     names["ja"] = name_ja or f"{pack_id}語"
     names["en"] = name_en or pack_id.title()
     raw["names"] = names
+    raw["ui"] = False
     raw["description"] = (
         raw.get("description") or ""
     ) + f"\n（{template_id} から複製した雛形。音韻・形態・語彙を書き換えてください。）"
@@ -516,14 +519,24 @@ def init_lang(
     return dest
 
 
-def web_language_catalog() -> list[dict[str, Any]]:
-    """翻訳 UI / /api/languages 用の言語一覧。"""
+def pack_shown_on_web(pack: LanguagePack) -> bool:
+    """翻訳ページのセレクト / GitHub Pages の静的パックに出すか。"""
+    if uses_builtin_engine(pack):
+        return True
+    return bool(pack.ui)
+
+
+def web_language_catalog(*, public: bool = False) -> list[dict[str, Any]]:
+    """翻訳 UI / /api/languages 用の言語一覧。public=True ならページ向け（雛形を除く）。"""
     rows: list[dict[str, Any]] = [
         {"id": "auto", "name_ja": "自動", "name_en": "Auto", "kind": "pivot"},
         {"id": "ja", "name_ja": "日本語", "name_en": "Japanese", "kind": "pivot"},
         {"id": "en", "name_ja": "English", "name_en": "English", "kind": "pivot"},
     ]
     for pack in list_packs():
+        shown = pack_shown_on_web(pack)
+        if public and not shown:
+            continue
         rows.append(
             {
                 "id": pack.id,
@@ -534,6 +547,7 @@ def web_language_catalog() -> list[dict[str, Any]]:
                 "engine": pack.morphology.engine,
                 "ath": pack.id == "baronh" or pack.script == "latin-ath",
                 "builtin": uses_builtin_engine(pack),
+                "ui": shown,
             }
         )
     return rows
@@ -570,7 +584,7 @@ def export_web_packs(dest: Path) -> list[Path]:
     langs_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
     for pack in list_packs():
-        if uses_builtin_engine(pack):
+        if uses_builtin_engine(pack) or not pack.ui:
             continue
         out = langs_dir / pack.id
         out.mkdir(parents=True, exist_ok=True)
@@ -578,7 +592,7 @@ def export_web_packs(dest: Path) -> list[Path]:
         if pack.lexicon_path and pack.lexicon_path.is_file():
             shutil.copy2(pack.lexicon_path, out / "lexicon.json")
         written.append(out / "language.json")
-    catalog = {"languages": web_language_catalog()}
+    catalog = {"languages": web_language_catalog(public=True)}
     for path in (dest / "languages.json", langs_dir / "index.json"):
         path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         written.append(path)

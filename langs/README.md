@@ -118,7 +118,7 @@ python3 -m baronh grammar --lang keth
 | `baronh` | アーヴ語の記述。本番翻訳は従来コード | `morphology.engine=baronh` |
 | `mina` | 膠着・CV 音節の雛形。転移エンジンの回帰対象 | `suffix` + `table` |
 
-ミーナ語は作品設定ではなく、スキーマを試すための小さな言語である。
+ミーナ語は作品設定ではなく、スキーマを試すための小さな言語である。公開サイトはアーヴ語向けなので `ui` は false であり、翻訳ページのセレクトには出ない。
 
 ## ファイル
 
@@ -132,7 +132,7 @@ langs/
 
 Python 側は `baronh/langpack.py`（読込・形態）、`baronh/transfer.py`（転移翻訳）、`baronh/g2p.py`（読み・IPA）、`baronh/asr.py`（制約付き認識）。ブラウザは `web/js/langpack.js`。運用経路は次である。
 
-- **翻訳ページ**: 入出力セレクトにパック言語が出る。GitHub Pages では CI の `export-web` が `docs/web/data/langs/` を書く。ローカルは `python -m baronh serve` か `python -m baronh export-web --out web/data`。
-- **API**: `POST /api/translate` に `"source_lang":"ja","target_lang":"mina"`。生成 AI が無くても規則翻訳を返す。
+- **翻訳ページ**: 公開 UI は日本語・英語・アーヴ語。`ui: true` のパックだけセレクトに足す。GitHub Pages は CI の `export-web` が `docs/web/data/` を書く（雛形は含めない）。
+- **API**: `POST /api/translate` に `"source_lang":"ja","target_lang":"mina"`。生成 AI が無くても規則翻訳を返す。ページには出さない。
 - **CLI**: `python -m baronh translate "私はミーナです" --from ja --to mina`
 
