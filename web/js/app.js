@@ -556,10 +556,37 @@
 
   $("translate-btn").addEventListener("click", runTranslate);
   $("speak-btn").addEventListener("click", speak);
+  var copyResetTimer = null;
+
+  function flashCopyFeedback() {
+    var btn = $("copy-btn");
+    if (!btn) return;
+    if (copyResetTimer) clearTimeout(copyResetTimer);
+    var prev = btn.getAttribute("data-label") || btn.textContent;
+    btn.setAttribute("data-label", prev);
+    btn.textContent = "コピーしました";
+    btn.classList.add("is-copied");
+    setStatus("訳をコピーしました");
+    copyResetTimer = setTimeout(function () {
+      btn.textContent = prev;
+      btn.classList.remove("is-copied");
+      copyResetTimer = null;
+    }, 1600);
+  }
+
   $("copy-btn").addEventListener("click", function () {
     var text = $("target-text").value;
-    if (navigator.clipboard) navigator.clipboard.writeText(text);
-    else window.prompt("Copy:", text);
+    if (!String(text || "").trim()) {
+      setStatus("コピーする訳がありません");
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flashCopyFeedback).catch(function () {
+        window.prompt("Copy:", text);
+      });
+    } else {
+      window.prompt("Copy:", text);
+    }
   });
   $("swap-langs").addEventListener("click", function () {
     var a = $("source-lang").value;
