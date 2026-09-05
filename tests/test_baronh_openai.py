@@ -203,6 +203,30 @@ class BatchToolTest(unittest.TestCase):
         self.assertIn("queries", GRAMMAR_BRIEF)
         self.assertIn("1語ずつ", GRAMMAR_BRIEF)
 
+    def test_describe_tool_progress_lists_queries(self):
+        from baronh.openai_backend import describe_tool_progress, emit_progress
+
+        ev = describe_tool_progress([{
+            "function": {
+                "name": "search_lexicon",
+                "arguments": json.dumps({"queries": ["光", "星"]}, ensure_ascii=False),
+            }
+        }])
+        self.assertEqual(ev["type"], "progress")
+        self.assertEqual(ev["phase"], "tools")
+        self.assertIn("光", ev["message"])
+        self.assertEqual(ev["tools"], ["search_lexicon"])
+        self.assertIn("光", ev["queries"])
+
+        seen: list[dict] = []
+
+        def boom(event: dict) -> None:
+            seen.append(event)
+            raise RuntimeError("boom")
+
+        emit_progress(boom, ev)
+        self.assertEqual(seen, [ev])
+
     def test_tool_loop_forces_answer_after_one_batch(self):
         from baronh.openai_backend import TOOL_ANSWER_NOW, run_chat_tool_loop
 

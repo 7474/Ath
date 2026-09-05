@@ -130,6 +130,19 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
         if source not in {"auto", "ja", "en", "baronh"} or target not in {"auto", "ja", "en", "baronh"}:
             self._send_json({"error": "invalid lang"}, status=400)
             return
+        wants_stream = bool(payload.get("stream")) and engine in {"agent", "openai"}
+        if wants_stream:
+            if engine == "agent" and not model_configured(chat_once=self.chat_once):
+                self._send_json({"error": str(AgentModelRequired())}, status=503)
+                return
+            self._stream_translate(
+                text,
+                source_lang=source,
+                target_lang=target,
+                engine=engine,
+                vector_search=vector_search,
+            )
+            return
         try:
             result = run_translate(
                 self.lexicon,
@@ -156,6 +169,55 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _begin_ndjson(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-transform")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+    def _write_ndjson(self, body: dict[str, Any]) -> None:
+        data = (json.dumps(body, ensure_ascii=False) + "\n").encode("utf-8")
+        try:
+            self.wfile.write(data)
+            self.wfile.flush()
+        except BrokenPipeError:
+            return
+
+    def _stream_translate(
+        self,
+        text: str,
+        *,
+        source_lang: str,
+        target_lang: str,
+        engine: str,
+        vector_search: bool,
+    ) -> None:
+        self._begin_ndjson()
+
+        def on_progress(event: dict[str, Any]) -> None:
+            if isinstance(event, dict):
+                self._write_ndjson(event)
+
+        try:
+            result = run_translate(
+                self.lexicon,
+                text,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                engine=engine,
+                vector_search=vector_search,
+                chat_once=self.chat_once,
+                on_progress=on_progress,
+            )
+        except AgentModelRequired as exc:
+            self._write_ndjson({"type": "error", "error": str(exc)})
+            return
+        except Exception as exc:  # noqa: BLE001 — API 境界でメッセージを返す
+            self._write_ndjson({"type": "error", "error": str(exc)})
+            return
+        self._write_ndjson({"type": "result", "result": result.to_dict()})
+
 
 def run_translate(
     lexicon: Lexicon,
@@ -166,6 +228,7 @@ def run_translate(
     engine: str = "agent",
     vector_search: bool = False,
     chat_once: Any = None,
+    on_progress: Any = None,
 ) -> Any:
     if engine == "local":
         return translate(text, lexicon, source_lang=source_lang, target_lang=target_lang, vector_search=vector_search)
@@ -179,6 +242,7 @@ def run_translate(
         source_lang=source_lang,
         target_lang=target_lang,
         chat_once=chat_once,
+        on_progress=on_progress,
     )
 
 

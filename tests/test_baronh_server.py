@@ -86,6 +86,29 @@ class AgentHttpTest(unittest.TestCase):
         self.assertEqual(res.status, 503, body)
         self.assertIn("生成 AI", body["error"])
 
+    def test_translate_agent_stream_requires_model(self):
+        payload = json.dumps({
+            "text": "星たちの光を見ます",
+            "source_lang": "ja",
+            "target_lang": "baronh",
+            "engine": "agent",
+            "stream": True,
+        }).encode("utf-8")
+        env = {"OPENAI_API_KEY": "", "OPENAI_BASE_URL": "", "OPENAI_API_BASE": ""}
+        with mock.patch.dict("os.environ", env, clear=False):
+            conn = self._conn()
+            conn.request(
+                "POST",
+                "/api/translate",
+                body=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            res = conn.getresponse()
+            body = json.loads(res.read().decode("utf-8"))
+        self.assertEqual(res.status, 503, body)
+        self.assertIn("生成 AI", body["error"])
+        self.assertNotIn("ndjson", (res.getheader("Content-Type") or "").lower())
+
     def test_translate_rules_still_leaves_unknown(self):
         payload = json.dumps({
             "text": "星たちの光を見ます",
@@ -169,6 +192,32 @@ class AgentHttpFakeChatTest(unittest.TestCase):
         self.assertEqual(body["source_text"], "星たちの光を見ます")
         self.assertIn("sairiac", body["text"])
         self.assertNotIn("光", body["text"])
+
+    def test_translate_agent_stream_progress(self):
+        payload = json.dumps({
+            "text": "星たちの光を見ます",
+            "source_lang": "ja",
+            "target_lang": "baronh",
+            "engine": "agent",
+            "stream": True,
+        }).encode("utf-8")
+        conn = HTTPConnection("127.0.0.1", self.port, timeout=8)
+        conn.request(
+            "POST",
+            "/api/translate",
+            body=payload,
+            headers={"Content-Type": "application/json", "Accept": "application/x-ndjson"},
+        )
+        res = conn.getresponse()
+        raw = res.read().decode("utf-8")
+        self.assertEqual(res.status, 200, raw)
+        self.assertIn("ndjson", (res.getheader("Content-Type") or "").lower())
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        self.assertTrue(any(ev.get("type") == "progress" and ev.get("phase") == "chat" for ev in events), events)
+        self.assertTrue(any(ev.get("type") == "progress" and ev.get("phase") == "draft" for ev in events), events)
+        result = next(ev for ev in events if ev.get("type") == "result")
+        self.assertIn("sairiac", result["result"]["text"])
+        self.assertNotIn("光", result["result"]["text"])
 
 
 if __name__ == "__main__":
