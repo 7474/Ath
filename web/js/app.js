@@ -56,8 +56,6 @@
     var btn = $("translate-btn");
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
-    var spin = btn.querySelector(".busy-spinner");
-    if (spin) spin.hidden = false;
     var row = $("busy-row");
     if (row) row.hidden = false;
     busyStarted = Date.now();
@@ -93,8 +91,6 @@
     var btn = $("translate-btn");
     btn.disabled = false;
     btn.removeAttribute("aria-busy");
-    var spin = btn.querySelector(".busy-spinner");
-    if (spin) spin.hidden = true;
     var row = $("busy-row");
     if (row) row.hidden = true;
     var el = $("busy-elapsed");
