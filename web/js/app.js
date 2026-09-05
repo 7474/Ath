@@ -514,16 +514,20 @@
       html += hits.map(function (e) { return renderEntryCard(e); }).join("");
     }
     if (window.BaronhVectorDB) {
-      var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
-      if (vec.length) {
-        html += "<p class='forms-heading'>ベクトル検索</p>";
-        html += vec.map(function (hit) {
-          var extra = hit.entry.notes
-            ? "<p class='hint'>" + escapeHtml(String(hit.entry.notes).replace(/\s+/g, " ").trim()) +
-              "（" + hit.score.toFixed(3) + "）</p>"
-            : "<p class='hint'>" + hit.score.toFixed(3) + "</p>";
-          return renderEntryCard(hit.entry, extra);
-        }).join("");
+      try {
+        var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
+        if (vec.length) {
+          html += "<p class='forms-heading'>ベクトル検索</p>";
+          html += vec.map(function (hit) {
+            var extra = hit.entry.notes
+              ? "<p class='hint'>" + escapeHtml(String(hit.entry.notes).replace(/\s+/g, " ").trim()) +
+                "（" + hit.score.toFixed(3) + "）</p>"
+              : "<p class='hint'>" + hit.score.toFixed(3) + "</p>";
+            return renderEntryCard(hit.entry, extra);
+          }).join("");
+        }
+      } catch (err) {
+        /* 索引が無くても語釈と格変化は出す */
       }
     }
     $("lookup-out").innerHTML = html;
@@ -675,6 +679,8 @@
         matrix: matrix
       });
       BaronhVectorDB.getIndex(lexicon);
+    }).catch(function (err) {
+      console.warn(err);
     });
   }).then(function () {
     return probeAgentConfigured();

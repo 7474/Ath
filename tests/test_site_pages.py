@@ -191,6 +191,7 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("closeSettings", js)
         self.assertIn("renderEntryCard", js)
         self.assertIn("openaiNeedsSetup", js)
+        self.assertIn("索引が無くても語釈と格変化は出す", js)
         self.assertNotIn("examples-btn", js)
 
     def test_translator_points_to_site_hub(self):
