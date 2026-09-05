@@ -10,6 +10,9 @@
   align-items: center;
   gap: 1rem;
   padding: .85rem 1.4rem;
+  padding-top: calc(.85rem + env(safe-area-inset-top, 0px));
+  padding-left: calc(1.4rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1.4rem + env(safe-area-inset-right, 0px));
   background: rgba(250, 250, 248, .94);
   border-bottom: 1px solid #e0e0e0;
   backdrop-filter: blur(8px);
@@ -48,6 +51,11 @@
 }
 
 .site-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: .5rem .6rem;
   font: 600 .9rem/1.2 system-ui, sans-serif;
   color: #1a1a1a;
   text-decoration: none;
@@ -58,15 +66,36 @@
   text-underline-offset: .2em;
 }
 
+.site-nav a:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 3px;
+}
+
+.site-bar--with-play {
+  flex-wrap: wrap;
+}
+
+.translate-play {
+  flex: 1 0 100%;
+  display: flex;
+  justify-content: center;
+  padding: .15rem 0 .1rem;
+}
+
 #translate-button {
   flex-shrink: 0;
-  font: 600 .95rem/1.2 system-ui, sans-serif;
-  padding: .5rem 1.15rem;
+  min-height: 2.75rem;
+  min-width: min(100%, 22rem);
+  width: 100%;
+  max-width: 28rem;
+  font: 700 1.05rem/1.2 system-ui, sans-serif;
+  padding: .7rem 1.3rem;
   border: 1px solid #1a1a1a;
   border-radius: 999px;
   background: #1a1a1a;
   color: #fff;
   cursor: pointer;
+  box-shadow: 0 1px 0 rgba(26, 26, 26, .2);
 }
 
 #translate-button:hover { background: #333; }
@@ -89,7 +118,31 @@ body.translated #translate-button {
 }
 
 @media (max-width: 760px) {
+  .site-bar {
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding: .55rem .9rem;
+    padding-top: calc(.55rem + env(safe-area-inset-top, 0px));
+    padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(.9rem + env(safe-area-inset-right, 0px));
+  }
+  .site-meta { display: none; }
+  .site-nav {
+    gap: .15rem;
+    flex-shrink: 1;
+    justify-content: flex-end;
+  }
   .site-cards { grid-template-columns: 1fr; }
+  .site-main {
+    padding: 1.2rem .9rem 3rem;
+    padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(.9rem + env(safe-area-inset-right, 0px));
+  }
+  .site-footer {
+    padding-bottom: calc(2.2rem + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(.9rem + env(safe-area-inset-right, 0px));
+  }
 }
 
 .site-card {
@@ -102,7 +155,15 @@ body.translated #translate-button {
   text-decoration: none;
 }
 
-.site-card:hover { border-color: #1a1a1a; }
+.site-card:hover,
+.site-card:active {
+  border-color: #1a1a1a;
+}
+
+.site-card:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 3px;
+}
 
 .site-card h2 {
   font-size: 1.15rem;
