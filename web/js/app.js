@@ -42,11 +42,16 @@
     return $("translator") || document.querySelector(".translator");
   }
 
-  function startBusy(message) {
+  function startBusy(message, opts) {
+    opts = opts || {};
     var panel = translatorPanel();
     if (panel) {
       panel.classList.add("is-busy");
       panel.setAttribute("aria-busy", "true");
+    }
+    if (opts.clearResult) {
+      $("analysis").innerHTML = "";
+      $("reading").textContent = "";
     }
     var btn = $("translate-btn");
     btn.disabled = true;
@@ -426,7 +431,9 @@
   function runTranslate() {
     if (!lexicon) return;
     var engine = $("engine").value;
-    startBusy(engine === "local" ? "翻訳中…" : "生成AIに問い合わせています…");
+    startBusy(engine === "local" ? "翻訳中…" : "生成AIに問い合わせています…", {
+      clearResult: engine !== "local"
+    });
     var work = engine === "agent"
       ? agentTranslate(updateBusy)
       : engine === "openai"
