@@ -179,6 +179,88 @@ class CleanJaGlossTest(unittest.TestCase):
         gloss, _notes = clean_ja_gloss("「大きい」「規模の大きな」を示す")
         self.assertEqual(gloss, "大きい / 規模の大きな")
 
+    def test_trailing_usage_paren(self):
+        gloss, notes = clean_ja_gloss("と（並列）")
+        self.assertEqual(gloss, "と")
+        self.assertIn("並列", notes)
+        gloss, notes = clean_ja_gloss("と（引用）")
+        self.assertEqual(gloss, "と")
+        self.assertIn("引用", notes)
+        gloss, notes = clean_ja_gloss("ええと(感嘆詞)")
+        self.assertEqual(gloss, "ええと")
+        self.assertIn("感嘆詞", notes)
+        gloss, notes = clean_ja_gloss("かね(後置詞)")
+        self.assertEqual(gloss, "かね")
+        self.assertIn("後置詞", notes)
+        gloss, notes = clean_ja_gloss("どの(生格)")
+        self.assertEqual(gloss, "どの")
+        self.assertIn("生格", notes)
+        gloss, notes = clean_ja_gloss("〜についての(正格扱い)")
+        self.assertEqual(gloss, "〜についての")
+        self.assertIn("正格扱い", notes)
+        gloss, notes = clean_ja_gloss("〜人(人数を表す)")
+        self.assertEqual(gloss, "〜人")
+        self.assertIn("人数を表す", notes)
+        gloss, notes = clean_ja_gloss("ようこそ(歓迎の言葉)")
+        self.assertEqual(gloss, "ようこそ")
+        self.assertIn("歓迎の言葉", notes)
+        gloss, notes = clean_ja_gloss("愛するもの(呼びかけ)")
+        self.assertEqual(gloss, "愛するもの")
+        self.assertIn("呼びかけ", notes)
+
+    def test_trailing_furigana_is_note(self):
+        gloss, notes = clean_ja_gloss("明日(あした)")
+        self.assertEqual(gloss, "明日")
+        self.assertIn("あした", notes)
+        gloss, notes = clean_ja_gloss("狭間(はざま)")
+        self.assertEqual(gloss, "狭間")
+        self.assertIn("はざま", notes)
+
+    def test_leading_sense_qualifier(self):
+        gloss, notes = clean_ja_gloss("(位置が)高い")
+        self.assertEqual(gloss, "高い")
+        self.assertIn("位置が", notes)
+        gloss, notes = clean_ja_gloss("(船が)沈む")
+        self.assertEqual(gloss, "沈む")
+        self.assertIn("船が", notes)
+        gloss, notes = clean_ja_gloss("(帝国)臣民")
+        self.assertEqual(gloss, "臣民")
+        self.assertIn("帝国", notes)
+        gloss, notes = clean_ja_gloss("(前置型)帝国の")
+        self.assertEqual(gloss, "帝国の")
+        self.assertIn("前置型", notes)
+        gloss, notes = clean_ja_gloss("(前文の内容を受けて)それで、そのために")
+        self.assertEqual(gloss, "それで / そのために")
+        self.assertIn("前文の内容を受けて", notes)
+
+    def test_keeps_optional_conjugation_kana(self):
+        gloss, notes = clean_ja_gloss("〜(ら)れる")
+        self.assertEqual(gloss, "〜(ら)れる")
+        self.assertNotIn("ら", notes)
+
+    def test_expands_compact_variants(self):
+        gloss, notes = clean_ja_gloss("皇太子(女)")
+        self.assertEqual(gloss, "皇太子 / 皇太女")
+        gloss, notes = clean_ja_gloss("打撃(隊)")
+        self.assertEqual(gloss, "打撃 / 打撃隊")
+        gloss, notes = clean_ja_gloss("探査(するもの)")
+        self.assertEqual(gloss, "探査するもの")
+
+    def test_mid_nado_qualifier(self):
+        gloss, notes = clean_ja_gloss("馬(などに)乗ること")
+        self.assertEqual(gloss, "乗ること")
+        self.assertIn("馬など", notes)
+
+    def test_aliases_drop_usage_paren(self):
+        aliases = _split_ja_aliases("と（並列）")
+        self.assertIn("と", aliases)
+        self.assertFalse(any("並列" == item or "と（並列）" == item for item in aliases))
+
+    def test_slash_inside_paren_is_not_a_sense_break(self):
+        gloss, notes = clean_ja_gloss("(品詞不詳 / か)頃")
+        self.assertEqual(gloss, "頃")
+        self.assertIn("品詞不詳", notes)
+
 
 class AthRomanizationFoldTest(unittest.TestCase):
     def test_latin1_oe_becomes_oelig(self):

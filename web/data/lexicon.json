@@ -25,7 +25,7 @@
       "スペシャルサンクス: アーヴ語掻き集め『アーヴ語辞書』（http://mule.s59.xrea.com/seikai/jisyo/ 、2005-01-23 版）。語彙表を走査して辞書を拡充しました。",
       "スペシャルサンクス: Dadh Baronr — アーヴ語の世界『Sidrÿac Borgh=Racair Mauch の私家版アーヴ語辞書』（http://dadh-baronr.s5.xrea.com/etc/ondic.html）。見出し語と品詞・語釈を走査して辞書を拡充しました。語源・語釈は編者の再構成であり、森岡浩之氏は関知していません。"
     ],
-    "entry_count": 2386
+    "entry_count": 2385
   },
   "entries": [
     {
@@ -49,7 +49,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "人称代名詞、一人称単数主格 (pl. farh) F'a Bale. 我はアーヴ",
+      "notes": "人称代名詞、一人称単数主格 (pl. farh) は F'a Bale. 我はアーヴ",
       "source": "seed"
     },
     {
@@ -73,7 +73,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "人称代名詞、二人称単数主格 (pl. darh) Dar carsarh 汝の眷属",
+      "notes": "人称代名詞、二人称単数主格 (pl. darh) は Dar carsarh 汝の眷属",
       "source": "seed"
     },
     {
@@ -97,7 +97,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "人称代名詞、三人称単数主格 知性体にのみ用いる。性別を特定しない (pl. cnac)",
+      "notes": "人称代名詞、三人称単数主格 知性体にのみ用いる。性別を特定しない (pl. cnac) は",
       "source": "seed"
     },
     {
@@ -190,7 +190,7 @@
     {
       "lemma": "re",
       "pos": "pronoun",
-      "gloss_ja": "それ / そこ / 中称の事物代名詞",
+      "gloss_ja": "それ / そこ / 中称の事物代名詞 / そのとおりです",
       "gloss_en": "that",
       "reading_ja": "レ",
       "paradigm": {
@@ -208,7 +208,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "非知性体に用いる Role ane それです/そのとおりです",
+      "notes": "非知性体に用いる Role ane それです",
       "source": "seed"
     },
     {
@@ -264,7 +264,7 @@
     {
       "lemma": "ath",
       "pos": "noun",
-      "gloss_ja": "アース（文字） / アーヴ文字",
+      "gloss_ja": "アース / アーヴ文字",
       "gloss_en": "Ath (letter)",
       "declension": "1",
       "stem": "at",
@@ -284,6 +284,7 @@
         "ingested",
         "mule-jisyo"
       ],
+      "notes": "文字",
       "source": "seed"
     },
     {
@@ -393,7 +394,7 @@
     {
       "lemma": "ïomh",
       "pos": "noun",
-      "gloss_ja": "恋人 / 想人 / 妻(夫?)",
+      "gloss_ja": "恋人 / 想人 / 妻",
       "gloss_en": "lover",
       "declension": "2",
       "stem": "ïom",
@@ -404,7 +405,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "(- razaimena で)",
+      "notes": "(- razaimena で) 夫?",
       "source": "seed"
     },
     {
@@ -637,7 +638,7 @@
     {
       "lemma": "cilugiac",
       "pos": "noun",
-      "gloss_ja": "皇太子 / 皇太女 / 皇太子(女)",
+      "gloss_ja": "皇太子 / 皇太女",
       "gloss_en": "crown prince/princess",
       "declension": "4",
       "stem": "cilug",
@@ -806,7 +807,7 @@
     {
       "lemma": "fïac",
       "pos": "noun",
-      "gloss_ja": "皇子 / 皇女 / 殿下 / 皇族のうち / 王 / 王子(女) / 皇子(女)の称号",
+      "gloss_ja": "皇子 / 皇女 / 殿下 / 皇族のうち / 王 / 王子 / 王女",
       "gloss_en": "imperial child",
       "declension": "3",
       "stem": "fïa",
@@ -818,7 +819,7 @@
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "Fïac Boerr 子爵殿下",
+      "notes": "の称号 Fïac Boerr 子爵殿下",
       "source": "seed"
     },
     {
@@ -915,7 +916,7 @@
     {
       "lemma": "lébh",
       "pos": "noun",
-      "gloss_ja": "レーフ（帝国国民）",
+      "gloss_ja": "レーフ",
       "gloss_en": "imperial citizen",
       "declension": "2",
       "stem": "léb",
@@ -923,6 +924,7 @@
       "tags": [
         "wikipedia"
       ],
+      "notes": "帝国国民",
       "source": "seed"
     },
     {
@@ -1356,13 +1358,13 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "F'a usere. 私は移民します Dar saurh a ? ご家族は(いますか)? 述べる題目となるものを示す F'a bale. 我はアーヴ Spaurhlacé a ciloemh ane pïana. スポールは瞳が紅い",
+      "notes": "F'a usere. 私は移民します いますか Dar saurh a ? ご家族は? 述べる題目となるものを示す F'a bale. 我はアーヴ Spaurhlacé a ciloemh ane pïana. スポールは瞳が紅い",
       "source": "seed"
     },
     {
       "lemma": "éü",
       "pos": "postposition",
-      "gloss_ja": "よ / 呼びかけの意を表わす / 〜よ",
+      "gloss_ja": "よ / 〜よ",
       "gloss_en": "vocative",
       "reading_ja": "エウ",
       "tags": [
@@ -1371,7 +1373,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "(nom.支配) Gereulach - 星たちよ 後置詞。呼びかけを表す",
+      "notes": "(nom.支配) 呼びかけの意を表わす Gereulach - 星たちよ 後置詞。呼びかけを表す",
       "source": "seed"
     },
     {
@@ -1391,18 +1393,19 @@
     {
       "lemma": "te",
       "pos": "postposition",
-      "gloss_ja": "と（引用）",
+      "gloss_ja": "と",
       "gloss_en": "quotative",
       "reading_ja": "テ",
       "tags": [
         "wikipedia"
       ],
+      "notes": "引用",
       "source": "seed"
     },
     {
       "lemma": "le",
       "pos": "postposition",
-      "gloss_ja": "と（並列） / と / lo と",
+      "gloss_ja": "と",
       "gloss_en": "and",
       "reading_ja": "レ",
       "tags": [
@@ -1410,18 +1413,19 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "類 並列、連結を示す ïadh syrégna le crasbyrh 銀の枝と蝸牛",
+      "notes": "並列 類 並列、連結を示す ïadh syrégna le crasbyrh 銀の枝と蝸牛 lo と",
       "source": "seed"
     },
     {
       "lemma": "lo",
       "pos": "postposition",
-      "gloss_ja": "と（並列）",
+      "gloss_ja": "と",
       "gloss_en": "and",
       "reading_ja": "ロ",
       "tags": [
         "wikipedia"
       ],
+      "notes": "並列",
       "source": "seed"
     },
     {
@@ -1568,13 +1572,13 @@
     {
       "lemma": "-ad-",
       "pos": "suffix",
-      "gloss_ja": "〜ない / 否定の意を表わす",
-      "gloss_en": "〜ない / 否定の意を表わす",
+      "gloss_ja": "〜ない",
+      "gloss_en": "〜ない",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "F'anade sacle. 私は従士ではない",
+      "notes": "否定の意を表わす F'anade sacle. 私は従士ではない",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
@@ -1909,14 +1913,14 @@
     {
       "lemma": "-ar-",
       "pos": "suffix",
-      "gloss_ja": "〜(ら)れる / 受動の意を現わす / 〜される / 受け身",
-      "gloss_en": "〜(ら)れる / 受動の意を現わす",
+      "gloss_ja": "〜(ら)れる / 〜される / 受け身",
+      "gloss_en": "〜(ら)れる",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "Fe ïarbarle. 私は選抜された",
+      "notes": "受動の意を現わす Fe ïarbarle. 私は選抜された",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
@@ -1989,13 +1993,13 @@
     {
       "lemma": "-as-",
       "pos": "suffix",
-      "gloss_ja": "〜(さ)せる / 使役の意を現わす",
-      "gloss_en": "〜(さ)せる / 使役の意を現わす",
+      "gloss_ja": "〜(さ)せる",
+      "gloss_en": "〜(さ)せる",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "sacase 書かせる",
+      "notes": "使役の意を現わす sacase 書かせる",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
@@ -2773,7 +2777,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "重要な国事にのみ用いられる、帝宮中もっとも格式の高い部屋 *Üabais-ec/s *Bézorhotr 謁見の広間",
+      "notes": "重要な国事にのみ用いられる、帝宮中もっとも格式の高い部屋 *Üabais-ec s *Bézorhotr 謁見の広間",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
@@ -2906,15 +2910,15 @@
     {
       "lemma": "bhotuth",
       "pos": "noun",
-      "gloss_ja": "打撃(隊) / 打撃するもの",
-      "gloss_en": "打撃(隊)",
+      "gloss_ja": "打撃 / 打撃隊 / 機雷・核弾頭など実体弾による攻撃 / 打撃するもの",
+      "gloss_en": "打撃 / 打撃隊 / 機雷・核弾頭など実体弾による攻撃",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "戦列艦を主体とする分艦隊 ïadbyrec bhotutr 打撃分艦隊 機雷・核弾頭など実体弾による攻撃(を主とする部隊) →打撃船隊",
+      "notes": "戦列艦を主体とする分艦隊 を主とする部隊 ïadbyrec bhotutr 打撃分艦隊 →打撃船隊",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -3134,27 +3138,27 @@
     {
       "lemma": "bitsair-ec",
       "pos": "noun",
-      "gloss_ja": "(帝国)臣民 / 帝国の支配をうける者の総称",
-      "gloss_en": "(帝国)臣民 / 帝国の支配をうける者の総称",
+      "gloss_ja": "臣民 / 帝国の支配をうける者の総称",
+      "gloss_en": "臣民 / 帝国の支配をうける者の総称",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
-      "notes": "(rüé -)",
+      "notes": "(rüé -) 帝国",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
       "lemma": "h",
       "pos": "noun",
-      "gloss_ja": "(帝国)臣民 / 帝国の支配をうける者の総称 / 百合 / 薔薇 / 髪 / 髪の毛",
-      "gloss_en": "(帝国)臣民 / 帝国の支配をうける者の総称",
+      "gloss_ja": "臣民 / 帝国の支配をうける者の総称 / 百合 / 薔薇 / 髪 / 髪の毛",
+      "gloss_en": "臣民 / 帝国の支配をうける者の総称",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
-      "notes": "(rüé -)",
+      "notes": "(rüé -) 帝国",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -3924,14 +3928,14 @@
     {
       "lemma": "catmh",
       "pos": "noun",
-      "gloss_ja": "狭間 / 狭間(はざま)",
+      "gloss_ja": "狭間",
       "gloss_en": "狭間",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "通常空間の美称 - gereulacr 星々の狭間",
+      "notes": "通常空間の美称 - gereulacr 星々の狭間 はざま",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -4227,14 +4231,14 @@
     {
       "lemma": "chés-",
       "pos": "prefix",
-      "gloss_ja": "「一万分の一の」「十のマイナス四乗倍の」の意 / 1スカールの一万分の一)",
-      "gloss_en": "「一万分の一の」「十のマイナス四乗倍の」の意 / 1スカールの一万分の一)",
+      "gloss_ja": "「一万分の一の」「十のマイナス四乗倍の」の意",
+      "gloss_en": "「一万分の一の」「十のマイナス四乗倍の」の意",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
-      "notes": "*kyt chésdagh 1マイクロメートル *kyt chéscédlairh 1シェスケドレル(1ケドレルの一万分の一) chésscarh シェスカール(帝国標準通貨補助単位",
+      "notes": "*kyt chésdagh 1マイクロメートル 1ケドレルの一万分の一 *kyt chéscédlairh 1シェスケドレル 帝国標準通貨補助単位。1スカールの一万分の一 chésscarh シェスカール",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -4891,7 +4895,7 @@
         "ingested",
         "reconstructed"
       ],
-      "notes": "物理 重要な国事にのみ使用される、帝宮中もっとも格式の高い部屋 *Üabais-ec/s *Bézorhotr 謁見の広間",
+      "notes": "物理 重要な国事にのみ使用される、帝宮中もっとも格式の高い部屋 *Üabais-ec s *Bézorhotr 謁見の広間",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -5864,13 +5868,13 @@
     {
       "lemma": "doréc",
       "pos": "noun",
-      "gloss_ja": "乗ること / 馬(などに)乗ること",
-      "gloss_en": "乗ること / 馬(などに)乗ること",
+      "gloss_ja": "乗ること",
+      "gloss_en": "乗ること",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "あるいは乗り手の意か 無重力庭園内でするアーヴの子どもの遊戯。もとは地上世界で騎乗して行われる競技の名 rïaic - 馬上試合",
+      "notes": "あるいは乗り手の意か 無重力庭園内でするアーヴの子どもの遊戯。もとは地上世界で騎乗して行われる競技の名 馬などに rïaic - 馬上試合",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6105,12 +6109,13 @@
     {
       "lemma": "éét",
       "pos": "interjection",
-      "gloss_ja": "躊躇・逡巡の意を表わす / ええと",
-      "gloss_en": "躊躇・逡巡の意を表わす / ええと",
+      "gloss_ja": "ええと",
+      "gloss_en": "ええと",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "躊躇・逡巡の意を表わす",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6165,13 +6170,13 @@
     {
       "lemma": "érumitta",
       "pos": "adjective",
-      "gloss_ja": "高貴な / 陛下 / 皇帝の称号",
-      "gloss_en": "高貴な / 陛下 / 皇帝の称号",
+      "gloss_ja": "高貴な / 陛下",
+      "gloss_en": "高貴な / 陛下",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "speunaigh - 皇帝陛下",
+      "notes": "皇帝の称号 speunaigh - 皇帝陛下",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6203,12 +6208,13 @@
     {
       "lemma": "ét",
       "pos": "interjection",
-      "gloss_ja": "驚きの意を表わす / えっ / あっ",
-      "gloss_en": "驚きの意を表わす / えっ / あっ",
+      "gloss_ja": "えっ / あっ",
+      "gloss_en": "えっ / あっ",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "驚きの意を表わす",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6447,15 +6453,15 @@
     {
       "lemma": "fasanzœrh",
       "pos": "noun",
-      "gloss_ja": "皇族 / アブリアル氏族 / 皇帝 / 上皇 / 王 / 王子(女) / 皇子(女)の別がある / アブリアル氏族の成員",
-      "gloss_en": "皇族 / アブリアル氏族 / 皇帝 / 上皇 / 王 / 王子(女) / 皇子(女)の別がある / アブリアル氏族の成員",
+      "gloss_ja": "皇族 / アブリアル氏族 / 皇帝 / 上皇 / 王 / 王子 / 王女 / 皇子 / 皇女 / アブリアル氏族の成員",
+      "gloss_en": "皇族 / アブリアル氏族 / 皇帝 / 上皇 / 王 / 王子 / 王女 / 皇子 / 皇女 / アブリアル氏族の成員",
       "reading_ja": "ファサンゼール",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "王家を継がない皇族は一代皇族となり、次の世代以降は新氏姓を称する 皇帝以外の",
+      "notes": "王家を継がない皇族は一代皇族となり、次の世代以降は新氏姓を称する の別がある 皇帝以外の",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-3.html"
     },
     {
@@ -6960,7 +6966,7 @@
     {
       "lemma": "gacth",
       "pos": "noun",
-      "gloss_ja": "家 / 館(やかた)",
+      "gloss_ja": "家 / 館",
       "gloss_en": "家",
       "tags": [
         "dadh-baronr",
@@ -6968,7 +6974,7 @@
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "地上世界の施設も含む",
+      "notes": "地上世界の施設も含む やかた",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
@@ -7489,13 +7495,13 @@
     {
       "lemma": "glaharérh rüé byrer",
       "pos": "phrase",
-      "gloss_ja": "帝国艦隊司令長官",
-      "gloss_en": "帝国艦隊司令長官",
+      "gloss_ja": "帝国艦隊司令長官 / かつては皇帝が / 現在は皇太子",
+      "gloss_en": "帝国艦隊司令長官 / かつては皇帝が / 現在は皇太子",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "この職に推されることはただちに立太子を意味する かつては皇帝が、現在は皇太子(女)が兼職する戦闘部門の最高位",
+      "notes": "この職に推されることはただちに立太子を意味する 現在は皇太女が兼職する戦闘部門の最高位",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
@@ -8299,13 +8305,13 @@
     {
       "lemma": "-hynh",
       "pos": "suffix",
-      "gloss_ja": "「国」の意 / (伯爵以上が封じられた)「邦国」の意",
-      "gloss_en": "「国」の意 / (伯爵以上が封じられた)「邦国」の意",
+      "gloss_ja": "「国」の意 / 「邦国」の意",
+      "gloss_en": "「国」の意 / 「邦国」の意",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "Parhynh 薔薇の国(星系名) Nimhynh Laitpanr レトパーニュ大公国",
+      "notes": "Parhynh 薔薇の国(星系名) 伯爵以上が封じられた Nimhynh Laitpanr レトパーニュ大公国",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
@@ -8441,27 +8447,27 @@
     {
       "lemma": "ïarlucec",
       "pos": "noun",
-      "gloss_ja": "公子 / 男性の称号 / 領主の男子の称号 / 親の爵位と共に用いる / 最下級の世襲爵位",
-      "gloss_en": "公子 / 男性の称号 / 領主の男子の称号 / 親の爵位と共に用いる / 最下級の世襲爵位",
+      "gloss_ja": "公子 / 親の爵位と共に用いる / 最下級の世襲爵位",
+      "gloss_en": "公子 / 親の爵位と共に用いる / 最下級の世襲爵位",
       "reading_ja": "ヤルルーク",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "領地を持たない 類 爵位の一 lonh ïarlucer dreur 伯爵公子閣下 男爵の下 ïarlumec",
+      "notes": "領地を持たない 類 爵位の一 男性の称号 領主の男子の称号 lonh ïarlucer dreur 伯爵公子閣下 男爵の下 ïarlumec",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
       "lemma": "ïarlumec",
       "pos": "noun",
-      "gloss_ja": "公女 / 女性の称号 / 領主の女子の称号 / 親の爵位と共に用いる / 最下級の世襲爵位",
-      "gloss_en": "公女 / 女性の称号 / 領主の女子の称号 / 親の爵位と共に用いる / 最下級の世襲爵位",
+      "gloss_ja": "公女 / 親の爵位と共に用いる / 最下級の世襲爵位",
+      "gloss_en": "公女 / 親の爵位と共に用いる / 最下級の世襲爵位",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "領地を持たない 類 爵位の一 lonh ïarlumer laicerr 公爵公女閣下 男爵の下 ïarlucec",
+      "notes": "領地を持たない 類 爵位の一 女性の称号 領主の女子の称号 lonh ïarlumer laicerr 公爵公女閣下 男爵の下 ïarlucec",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
@@ -8656,14 +8662,14 @@
     {
       "lemma": "ïomh razaimena",
       "pos": "phrase",
-      "gloss_ja": "妻 / (夫?)",
-      "gloss_en": "妻 / (夫?)",
+      "gloss_ja": "妻",
+      "gloss_en": "妻",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "原義は「定まった想人」",
+      "notes": "原義は「定まった想人」 夫?",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-4.html"
     },
     {
@@ -8850,27 +8856,27 @@
     {
       "lemma": "labh",
       "pos": "noun",
-      "gloss_ja": "(繊維)束 / 束",
-      "gloss_en": "(繊維)束",
+      "gloss_ja": "束",
+      "gloss_en": "束",
       "reading_ja": "ラーヴ",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "の意か labh *ihosr 光繊維束",
+      "notes": "繊維 の意か labh *ihosr 光繊維束",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
       "lemma": "laca",
       "pos": "adjective",
-      "gloss_ja": "高い / (位置が)高い / (値段が)高価な",
-      "gloss_en": "高い / (位置が)高い / (値段が)高価な",
+      "gloss_ja": "高い / 高価な",
+      "gloss_en": "高い / 高価な",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "ビールデセクスの幻想映像作品 Gamh Laca 高山",
+      "notes": "ビールデセクスの幻想映像作品 Gamh Laca 高山 位置が 値段が",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -9187,8 +9193,8 @@
     {
       "lemma": "lamodh",
       "pos": "noun",
-      "gloss_ja": "玉斧 の意、あるいは玉のように価値ある(あるいは玉を産する)野原の意",
-      "gloss_en": "玉斧 の意、あるいは玉のように価値ある(あるいは玉を産する)野原の意",
+      "gloss_ja": "玉斧",
+      "gloss_en": "玉斧",
       "paradigm": {
         "nom": "lamodh",
         "gen": "lamdor"
@@ -9198,7 +9204,7 @@
         "ingested",
         "reconstructed"
       ],
-      "notes": "古代地球で用いられた王権を表す装飾品のひとつ",
+      "notes": "古代地球で用いられた王権を表す装飾品のひとつ 玉斧 の意、あるいは玉のように価値ある(あるいは玉を産する)野原の意",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -9586,13 +9592,14 @@
     {
       "lemma": "lisarh",
       "pos": "noun",
-      "gloss_ja": "力 / (物理的な)力 / 大国 / 強国 / 出力",
-      "gloss_en": "力 / (物理的な)力 / 大国 / 強国",
+      "gloss_ja": "力 / 大国 / 強国 / 出力",
+      "gloss_en": "力 / 大国 / 強国",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
+      "notes": "物理的な",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -10869,15 +10876,15 @@
     {
       "lemma": "négh",
       "pos": "noun",
-      "gloss_ja": "愛 / 愛するもの(呼びかけ) / 愛の都",
-      "gloss_en": "愛 / 愛するもの(呼びかけ)",
+      "gloss_ja": "愛 / 息子 / 愛するもの / 愛の都",
+      "gloss_en": "愛 / 息子 / 愛するもの",
       "reading_ja": "ビロート・ネグ",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "親とその想人を遺伝子提供者とする子 愛 frymec/frycec négr 愛の娘/息子 →愛の都",
+      "notes": "親とその想人を遺伝子提供者とする子 愛 frymec frycec négr 愛の娘 呼びかけ →愛の都",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -11032,8 +11039,8 @@
     {
       "lemma": "nisoth",
       "pos": "noun",
-      "gloss_ja": "猊下 / 上皇の称号",
-      "gloss_en": "猊下 / 上皇の称号",
+      "gloss_ja": "猊下",
+      "gloss_en": "猊下",
       "reading_ja": "ニソース。ニソス",
       "tags": [
         "dadh-baronr",
@@ -11041,7 +11048,7 @@
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "Nisoth Raica Barcoer 前バルケー王猊下",
+      "notes": "上皇の称号 Nisoth Raica Barcoer 前バルケー王猊下",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -11204,8 +11211,8 @@
     {
       "lemma": "oll",
       "pos": "noun",
-      "gloss_ja": "(あるいは か)歌 / 歌",
-      "gloss_en": "(あるいは か)歌",
+      "gloss_ja": "歌",
+      "gloss_en": "歌",
       "reading_ja": "オル",
       "paradigm": {
         "nom": "oll",
@@ -11216,7 +11223,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "Rüé oll 帝国国歌(名称: Farh a Lomi Zacsantto Loréïl)",
+      "notes": "あるいは か Rüé oll 帝国国歌(名称: Farh a Lomi Zacsantto Loréïl)",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11280,18 +11287,6 @@
         "ingested",
         "reconstructed",
         "mule-jisyo"
-      ],
-      "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
-    },
-    {
-      "lemma": "op-",
-      "pos": "prefix",
-      "gloss_ja": "ob- に同じ",
-      "gloss_en": "ob- に同じ",
-      "tags": [
-        "dadh-baronr",
-        "ingested",
-        "reconstructed"
       ],
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
@@ -11413,12 +11408,13 @@
     {
       "lemma": "paunh",
       "pos": "noun",
-      "gloss_ja": "(平面航行機能を持たない)星系内航行船",
-      "gloss_en": "(平面航行機能を持たない)星系内航行船",
+      "gloss_ja": "星系内航行船",
+      "gloss_en": "星系内航行船",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "平面航行機能を持たない",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11441,7 +11437,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "Ciloemh Pïana Spaurr スポールの紅瞳(スポール氏族の家徴)",
+      "notes": "スポール氏族の家徴 Ciloemh Pïana Spaurr スポールの紅瞳",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11550,14 +11546,15 @@
     {
       "lemma": "radaiüe",
       "pos": "verb",
-      "gloss_ja": "(ある基準に適っているか)審査する / 検査する",
-      "gloss_en": "(ある基準に適っているか)審査する / 検査する",
+      "gloss_ja": "審査する / 検査する",
+      "gloss_en": "審査する / 検査する",
       "stem": "radaiü",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
+      "notes": "ある基準に適っているか",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11593,7 +11590,7 @@
         "ingested",
         "reconstructed"
       ],
-      "notes": "Abh ror - a hora rorite élaséta. 「アーヴ、その性、傲慢にして無謀」(成句: 帝国創建以前に遡るといわれる、アーヴ評)",
+      "notes": "成句: 帝国創建以前に遡るといわれる、アーヴ評 Abh ror - a hora rorite élaséta. 「アーヴ、その性、傲慢にして無謀」",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11795,7 +11792,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "Cfazaitec Rainibr 幻炎作戦(帝国歴955年の打通作戦) →幻炎作戦",
+      "notes": "帝国歴955年の打通作戦 Cfazaitec Rainibr 幻炎作戦 →幻炎作戦",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -11913,7 +11910,7 @@
     {
       "lemma": "rébhath",
       "pos": "noun",
-      "gloss_ja": "兵員輸送船 / 兵員用(輸送艦) / 兵員用輸送艦 / 兵員輸送",
+      "gloss_ja": "兵員輸送船 / 兵員用輸送艦 / 兵員輸送",
       "gloss_en": "兵員輸送船",
       "reading_ja": "レーヴァス",
       "tags": [
@@ -12367,7 +12364,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "帝宮の部屋の一つ。外国使節の謁見等に用いる *Üabais-ec/s Rizairr 飛燕草の広間 →飛燕草の広間",
+      "notes": "帝宮の部屋の一つ。外国使節の謁見等に用いる *Üabais-ec s Rizairr 飛燕草の広間 →飛燕草の広間",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -12435,15 +12432,15 @@
     {
       "lemma": "rœnh",
       "pos": "noun",
-      "gloss_ja": "翡翠 / ひすい(具体的に何を指すかは不詳)",
-      "gloss_en": "翡翠 / ひすい(具体的に何を指すかは不詳)",
+      "gloss_ja": "翡翠 / ひすい",
+      "gloss_en": "翡翠 / ひすい",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "謁見の広間におかれる皇帝の椅子 scaimsorh *roenr 翡翠の玉座",
+      "notes": "謁見の広間におかれる皇帝の椅子 具体的に何を指すかは不詳 scaimsorh *roenr 翡翠の玉座",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -12620,12 +12617,13 @@
     {
       "lemma": "rorite",
       "pos": "conjunction",
-      "gloss_ja": "単純な並列の意あるいは順接を表わす / そして / あと",
-      "gloss_en": "単純な並列の意あるいは順接を表わす / そして / あと",
+      "gloss_ja": "そして / あと",
+      "gloss_en": "そして / あと",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "単純な並列の意あるいは順接を表わす",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -12695,13 +12693,13 @@
     {
       "lemma": "rüé",
       "pos": "adjective",
-      "gloss_ja": "(前置型)帝国の",
-      "gloss_en": "(前置型)帝国の",
+      "gloss_ja": "帝国の",
+      "gloss_en": "帝国の",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "- laimh 帝国国民",
+      "notes": "前置型 - laimh 帝国国民",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-6.html"
     },
     {
@@ -14118,13 +14116,14 @@
     {
       "lemma": "selumh",
       "pos": "noun",
-      "gloss_ja": "包み / (まとめて)外側を布等で覆ったもの",
-      "gloss_en": "包み / (まとめて)外側を布等で覆ったもの",
+      "gloss_ja": "包み / 外側を布等で覆ったもの",
+      "gloss_en": "包み / 外側を布等で覆ったもの",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
+      "notes": "まとめて",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14161,7 +14160,7 @@
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "frocragh - 艦外(船外)空識覚",
+      "notes": "船外 frocragh - 艦外空識覚 の",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14265,7 +14264,7 @@
     {
       "lemma": "sobiac",
       "pos": "noun",
-      "gloss_ja": "補給を業とするもの / 補給(するもの)",
+      "gloss_ja": "補給を業とするもの / 補給するもの",
       "gloss_en": "補給を業とするもの",
       "tags": [
         "dadh-baronr",
@@ -14510,12 +14509,13 @@
     {
       "lemma": "sor",
       "pos": "adverb",
-      "gloss_ja": "(品詞不詳 / か)頃",
-      "gloss_en": "(品詞不詳 / か)頃",
+      "gloss_ja": "頃",
+      "gloss_en": "頃",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "品詞不詳。か",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14571,13 +14571,14 @@
     {
       "lemma": "soth",
       "pos": "noun",
-      "gloss_ja": "こと / 事柄 / 物事 / 事(こと)",
+      "gloss_ja": "こと / 事柄 / 物事 / 事",
       "gloss_en": "こと / 事柄 / 物事",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
+      "notes": "こと",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14739,27 +14740,28 @@
     {
       "lemma": "styme",
       "pos": "verb",
-      "gloss_ja": "(船が)沈む / 爆散する",
-      "gloss_en": "(船が)沈む / 爆散する",
+      "gloss_ja": "沈む / 爆散する",
+      "gloss_en": "沈む / 爆散する",
       "stem": "stym",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
+      "notes": "船が",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
       "lemma": "such",
       "pos": "noun",
-      "gloss_ja": "口 / 口(くち)",
+      "gloss_ja": "口",
       "gloss_en": "口",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "dach sucr 口の中",
+      "notes": "dach sucr 口の中 くち",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14778,7 +14780,7 @@
     {
       "lemma": "sure",
       "pos": "verb",
-      "gloss_ja": "来る / (許可が)下りる",
+      "gloss_ja": "来る / 下りる",
       "gloss_en": "来る",
       "stem": "sur",
       "tags": [
@@ -14786,6 +14788,7 @@
         "ingested",
         "mule-jisyo"
       ],
+      "notes": "許可が",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14871,7 +14874,7 @@
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "特にアーヴ帝国以外の Brubhoth Gos Synr 四ヶ国連合(正式名: ノヴァシチリア条約諸国)",
+      "notes": "特にアーヴ帝国以外の 正式名: ノヴァシチリア条約諸国 Brubhoth Gos Synr 四ヶ国連合",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -15027,15 +15030,15 @@
     {
       "lemma": "tymh",
       "pos": "noun",
-      "gloss_ja": "物質燃料(推進剤)採取基地 / 物質燃料・推進剤採取基地",
-      "gloss_en": "物質燃料(推進剤)採取基地",
+      "gloss_ja": "物質燃料採取基地 / 物質燃料・推進剤採取基地",
+      "gloss_en": "物質燃料採取基地",
       "reading_ja": "テューフ",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "=itymh",
+      "notes": "=itymh 推進剤",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -15048,7 +15051,7 @@
         "ingested",
         "reconstructed"
       ],
-      "notes": "重要な国事にのみ使用される、帝宮中もっとも格式の高い部屋 *Üabais-ec/s *Bézorhotr 謁見の広間",
+      "notes": "重要な国事にのみ使用される、帝宮中もっとも格式の高い部屋 *Üabais-ec s *Bézorhotr 謁見の広間",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -15101,7 +15104,7 @@
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "*sor-ec/h gyme üaca 弓を置くとき",
+      "notes": "*sor-ec h gyme üaca 弓を置くとき",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -15613,14 +15616,14 @@
     {
       "lemma": "ybh",
       "pos": "noun",
-      "gloss_ja": "海 / 湖沼",
-      "gloss_en": "海 / 湖沼",
+      "gloss_ja": "海 / 湖沼 / h",
+      "gloss_en": "海 / 湖沼 / h",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "類義語 *fim-ec/h",
+      "notes": "類義語 *fim-ec",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -15650,12 +15653,13 @@
     {
       "lemma": "zac",
       "pos": "adverb",
-      "gloss_ja": "(前文の内容を受けて)それで、そのために",
-      "gloss_en": "(前文の内容を受けて)それで、そのために",
+      "gloss_ja": "それで / そのために",
+      "gloss_en": "それで / そのために",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
+      "notes": "前文の内容を受けて",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -15934,12 +15938,13 @@
     {
       "lemma": "afta",
       "pos": "noun",
-      "gloss_ja": "多くの / 数多(あまた)",
-      "gloss_en": "多くの / 数多(あまた)",
+      "gloss_ja": "多くの / 数多",
+      "gloss_en": "多くの / 数多",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "あまた",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -16214,12 +16219,13 @@
     {
       "lemma": "aréth",
       "pos": "noun",
-      "gloss_ja": "明日(あした)",
-      "gloss_en": "明日(あした)",
+      "gloss_ja": "明日",
+      "gloss_en": "明日",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "あした",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -16248,13 +16254,14 @@
     {
       "lemma": "ase",
       "pos": "verb",
-      "gloss_ja": "(部屋が)空いている / (穴が)開く",
-      "gloss_en": "(部屋が)空いている",
+      "gloss_ja": "空いている / 開く",
+      "gloss_en": "空いている",
       "stem": "as",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "部屋が 穴が",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -16283,12 +16290,13 @@
     {
       "lemma": "auss",
       "pos": "noun",
-      "gloss_ja": "明日(あす)",
-      "gloss_en": "明日(あす)",
+      "gloss_ja": "明日",
+      "gloss_en": "明日",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "あす",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -18392,12 +18400,13 @@
     {
       "lemma": "ceutes banodhoti",
       "pos": "phrase",
-      "gloss_ja": "(客)一人あたり",
-      "gloss_en": "(客)一人あたり",
+      "gloss_ja": "一人あたり",
+      "gloss_en": "一人あたり",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "客",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -18447,13 +18456,14 @@
     {
       "lemma": "cfazaitec",
       "pos": "adjective",
-      "gloss_ja": "(個人的な)戦い",
-      "gloss_en": "(個人的な)戦い",
+      "gloss_ja": "戦い",
+      "gloss_en": "戦い",
       "reading_ja": "クファゼート",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "個人的な",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -19314,12 +19324,13 @@
     {
       "lemma": "dainh",
       "pos": "noun",
-      "gloss_ja": "何(なに)",
-      "gloss_en": "何(なに)",
+      "gloss_ja": "何",
+      "gloss_en": "何",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "なに",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -19404,13 +19415,13 @@
     {
       "lemma": "danh",
       "pos": "noun",
-      "gloss_ja": "何(なん)",
-      "gloss_en": "何(なん)",
+      "gloss_ja": "何",
+      "gloss_en": "何",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
-      "notes": "dainh と同じ",
+      "notes": "dainh と同じ なん",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -19996,12 +20007,13 @@
     {
       "lemma": "éllorséc",
       "pos": "noun",
-      "gloss_ja": "(船殻)融解",
-      "gloss_en": "(船殻)融解",
+      "gloss_ja": "融解",
+      "gloss_en": "融解",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "船殻",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -20540,12 +20552,13 @@
     {
       "lemma": "fe a bami ane",
       "pos": "phrase",
-      "gloss_ja": "(元気？と問われて)元気です",
-      "gloss_en": "(元気？と問われて)元気です",
+      "gloss_ja": "元気です",
+      "gloss_en": "元気です",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "元気？と問われて",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -21151,12 +21164,13 @@
     {
       "lemma": "gamadé",
       "pos": "noun",
-      "gloss_ja": "(ありがとうにこたえて)どういたしまして",
-      "gloss_en": "(ありがとうにこたえて)どういたしまして",
+      "gloss_ja": "どういたしまして",
+      "gloss_en": "どういたしまして",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "ありがとうにこたえて",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -21610,13 +21624,14 @@
     {
       "lemma": "gochire",
       "pos": "verb",
-      "gloss_ja": "(進路が)交差する",
-      "gloss_en": "(進路が)交差する",
+      "gloss_ja": "交差する",
+      "gloss_en": "交差する",
       "stem": "gochir",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "進路が",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -21679,12 +21694,13 @@
     {
       "lemma": "gona",
       "pos": "noun",
-      "gloss_ja": "ようこそ(歓迎の言葉) / 第四",
-      "gloss_en": "ようこそ(歓迎の言葉)",
+      "gloss_ja": "ようこそ / 第四",
+      "gloss_en": "ようこそ",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "歓迎の言葉",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -22058,12 +22074,13 @@
     {
       "lemma": "ïa",
       "pos": "noun",
-      "gloss_ja": "ええと(感嘆詞)",
-      "gloss_en": "ええと(感嘆詞)",
+      "gloss_ja": "ええと",
+      "gloss_en": "ええと",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "感嘆詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -22457,12 +22474,13 @@
     {
       "lemma": "isor",
       "pos": "noun",
-      "gloss_ja": "いくら(副詞)",
-      "gloss_en": "いくら(副詞)",
+      "gloss_ja": "いくら",
+      "gloss_en": "いくら",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "副詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -22756,12 +22774,13 @@
     {
       "lemma": "lahyc",
       "pos": "noun",
-      "gloss_ja": "こと / 類(たぐい)",
-      "gloss_en": "こと / 類(たぐい)",
+      "gloss_ja": "こと / 類",
+      "gloss_en": "こと / 類",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "たぐい",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -22941,12 +22960,13 @@
     {
       "lemma": "lami styri",
       "pos": "phrase",
-      "gloss_ja": "玉に瑕(きず)",
-      "gloss_en": "玉に瑕(きず)",
+      "gloss_ja": "玉に瑕",
+      "gloss_en": "玉に瑕",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "きず",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -23667,13 +23687,14 @@
     {
       "lemma": "loraigee",
       "pos": "verb",
-      "gloss_ja": "取り上げる / (政府が)召しあげる",
-      "gloss_en": "取り上げる / (政府が)召しあげる",
+      "gloss_ja": "取り上げる / 召しあげる",
+      "gloss_en": "取り上げる / 召しあげる",
       "stem": "loraige",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "政府が",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -23723,13 +23744,14 @@
     },
     {
       "lemma": "lori",
-      "pos": "noun",
-      "gloss_ja": "辛い(つらい)",
-      "gloss_en": "辛い(つらい)",
+      "pos": "adjective",
+      "gloss_ja": "辛い",
+      "gloss_en": "辛い",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "つらい",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -24009,12 +24031,13 @@
     {
       "lemma": "lylér",
       "pos": "noun",
-      "gloss_ja": "〜についての(正格扱い)",
-      "gloss_en": "〜についての(正格扱い)",
+      "gloss_ja": "〜についての",
+      "gloss_en": "〜についての",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "正格扱い",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -24623,12 +24646,13 @@
     {
       "lemma": "oï",
       "pos": "noun",
-      "gloss_ja": "おや(感嘆詞)",
-      "gloss_en": "おや(感嘆詞)",
+      "gloss_ja": "おや",
+      "gloss_en": "おや",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "感嘆詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -24898,8 +24922,8 @@
     {
       "lemma": "ragriac",
       "pos": "noun",
-      "gloss_ja": "探査(するもの)",
-      "gloss_en": "探査(するもの)",
+      "gloss_ja": "探査するもの",
+      "gloss_en": "探査するもの",
       "tags": [
         "mule-jisyo",
         "ingested"
@@ -25238,13 +25262,14 @@
     {
       "lemma": "reurec",
       "pos": "noun",
-      "gloss_ja": "料金 / 代(しろ) / 吸い物",
-      "gloss_en": "料金 / 代(しろ)",
+      "gloss_ja": "料金 / 代 / 吸い物",
+      "gloss_en": "料金 / 代",
       "reading_ja": "リュール",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "しろ",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -26441,12 +26466,13 @@
     {
       "lemma": "sai",
       "pos": "noun",
-      "gloss_ja": "セ(単位)",
-      "gloss_en": "セ(単位)",
+      "gloss_ja": "セ",
+      "gloss_en": "セ",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "単位",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -26653,12 +26679,13 @@
     {
       "lemma": "saine",
       "pos": "postposition",
-      "gloss_ja": "かね(後置詞)",
-      "gloss_en": "かね(後置詞)",
+      "gloss_ja": "かね",
+      "gloss_en": "かね",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "後置詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -27016,12 +27043,13 @@
     {
       "lemma": "saume",
       "pos": "postposition",
-      "gloss_ja": "かもしれない(後置詞)",
-      "gloss_en": "かもしれない(後置詞)",
+      "gloss_ja": "かもしれない",
+      "gloss_en": "かもしれない",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "後置詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -27605,12 +27633,13 @@
     {
       "lemma": "socrtach",
       "pos": "noun",
-      "gloss_ja": "つもり / 志(こころざし)",
-      "gloss_en": "つもり / 志(こころざし)",
+      "gloss_ja": "つもり / 志",
+      "gloss_en": "つもり / 志",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "こころざし",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -27824,12 +27853,13 @@
     {
       "lemma": "-s-onn",
       "pos": "suffix",
-      "gloss_ja": "〜人(人数を表す)",
-      "gloss_en": "〜人(人数を表す)",
+      "gloss_ja": "〜人",
+      "gloss_en": "〜人",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "人数を表す",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -28171,12 +28201,13 @@
     {
       "lemma": "styc",
       "pos": "noun",
-      "gloss_ja": "傷(きず)",
-      "gloss_en": "傷(きず)",
+      "gloss_ja": "傷",
+      "gloss_en": "傷",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "きず",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -28906,23 +28937,25 @@
     {
       "lemma": "üésdagh",
       "pos": "noun",
-      "gloss_ja": "ウェスダージュ(長さの単位)",
-      "gloss_en": "ウェスダージュ(長さの単位)",
+      "gloss_ja": "ウェスダージュ",
+      "gloss_en": "ウェスダージュ",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "長さの単位",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
       "lemma": "üét",
       "pos": "noun",
-      "gloss_ja": "ええと(感嘆詞)",
-      "gloss_en": "ええと(感嘆詞)",
+      "gloss_ja": "ええと",
+      "gloss_en": "ええと",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "感嘆詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -28938,13 +28971,14 @@
     },
     {
       "lemma": "um",
-      "pos": "noun",
-      "gloss_ja": "ううむ(感動詞)",
-      "gloss_en": "ううむ(感動詞)",
+      "pos": "verb",
+      "gloss_ja": "ううむ",
+      "gloss_en": "ううむ",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "感動詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -29053,12 +29087,13 @@
     {
       "lemma": "zairec",
       "pos": "noun",
-      "gloss_ja": "誰(だれ)",
-      "gloss_en": "誰(だれ)",
+      "gloss_ja": "誰",
+      "gloss_en": "誰",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "だれ",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -29254,12 +29289,13 @@
     {
       "lemma": "zor",
       "pos": "noun",
-      "gloss_ja": "どの(生格)",
-      "gloss_en": "どの(生格)",
+      "gloss_ja": "どの",
+      "gloss_en": "どの",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "生格",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -29276,12 +29312,13 @@
     {
       "lemma": "zorite",
       "pos": "noun",
-      "gloss_ja": "どうしても(副詞)",
-      "gloss_en": "どうしても(副詞)",
+      "gloss_ja": "どうしても",
+      "gloss_en": "どうしても",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
+      "notes": "副詞",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     }
   ]

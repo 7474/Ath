@@ -167,6 +167,21 @@ class CliSmokeTest(unittest.TestCase):
         self.assertTrue(any(entry.lemma.startswith("lacmhacar") for entry in capital))
         self.assertFalse(any(entry.lemma == "murrautec" for entry in capital))
 
+    def test_usage_paren_is_note_not_lookup_key(self):
+        from baronh.lexicon import load_lexicon
+
+        lex = load_lexicon()
+        and_hits = lex.lookup("と")
+        self.assertTrue({entry.lemma for entry in and_hits} >= {"le", "lo", "te"})
+        for lemma, label in (("le", "並列"), ("lo", "並列"), ("te", "引用")):
+            entry = next(item for item in lex.lookup(lemma) if item.lemma == lemma)
+            self.assertEqual(entry.gloss_ja.split("/")[0].strip(), "と")
+            self.assertIn(label, entry.notes)
+            self.assertNotIn(f"（{label}）", entry.gloss_ja)
+            self.assertNotIn(f"({label})", entry.gloss_ja)
+        self.assertFalse(any(entry.lemma in {"le", "lo"} for entry in lex.lookup("並列")))
+        self.assertFalse(any(entry.lemma == "te" for entry in lex.lookup("引用")))
+
     def test_lexicon_letters_are_ath_glyphs(self):
         from baronh.lexicon import load_lexicon
         from baronh.phonology import to_ath_keys

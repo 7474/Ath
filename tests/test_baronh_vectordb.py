@@ -52,6 +52,17 @@ class VectorIndexTest(unittest.TestCase):
         self.assertIn("ラクファカール", home.entry.notes)
         self.assertIn("ラクファカール", home.document)
 
+    def test_usage_paren_notes_are_vector_reference_hits(self):
+        exact = self.lex.lookup("並列")
+        self.assertFalse(any(entry.lemma in {"le", "lo"} for entry in exact))
+        hits = self.index.search("並列", limit=8)
+        lemmas = [hit.entry.lemma for hit in hits]
+        self.assertTrue({"le", "lo"} & set(lemmas))
+        for hit in hits:
+            if hit.entry.lemma in {"le", "lo"}:
+                self.assertEqual(hit.entry.gloss_ja.split("/")[0].strip(), "と")
+                self.assertIn("並列", hit.entry.notes)
+
     def test_see_finds_mire(self):
         hits = self.index.search("見る", limit=8)
         lemmas = [hit.entry.lemma for hit in hits]
