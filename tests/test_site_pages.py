@@ -57,9 +57,21 @@ class SiteStructureTest(unittest.TestCase):
     def test_ath_demo_keeps_translate_play(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
         self.assertIn('id="translate-button"', demo)
+        self.assertIn('class="translate-play"', demo)
+        self.assertIn("ラテンで読む", demo)
+        self.assertIn("アースで見る", demo)
+        nav = demo[demo.find('class="site-nav"') : demo.find("</nav>")]
+        self.assertNotIn("translate-button", nav)
+        play_at = demo.find('class="translate-play"')
+        main_at = demo.find("<main")
+        self.assertGreater(play_at, 0)
+        self.assertGreater(main_at, play_at)
         self.assertIn("../aarth.css", demo)
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        self.assertIn(".translate-play", css)
+        self.assertIn("min-height: 2.75rem", css)
 
     def test_ath_demo_sets_empire_anthem_in_ath_keys(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")

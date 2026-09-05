@@ -388,7 +388,7 @@
 </head>
 <body>
 
-  <header class="site-bar">
+  <header class="site-bar site-bar--with-play">
     <a class="site-brand" href="../">
       <span class="site-logo" aria-hidden="true">aarth</span>
       <span class="site-meta" id="translate-meta">Ath</span>
@@ -397,11 +397,15 @@
       <a href="../">概要</a>
       <a href="./" aria-current="page">アース</a>
       <a href="../web/">翻訳</a>
-      <button type="button" id="translate-button" aria-pressed="false">Translate</button>
     </nav>
+    <div class="translate-play">
+      <button type="button" id="translate-button" aria-pressed="false" aria-controls="page-content">
+        ラテンで読む
+      </button>
+    </div>
   </header>
 
-  <main class="page-content">
+  <main class="page-content" id="page-content">
   <h1>Ath (Aarth) — glyph demo</h1>
 
   <!-- Hero -->
@@ -722,7 +726,7 @@
       function applyTranslation(translated) {
         document.body.classList.toggle('translated', translated);
         translateButton.setAttribute('aria-pressed', String(translated));
-        translateButton.textContent = translated ? 'Show Ath' : 'Translate';
+        translateButton.textContent = translated ? 'アースで見る' : 'ラテンで読む';
         if (translateMeta) translateMeta.textContent = translated ? 'Latin' : 'Ath';
         if (pageContent) pageContent.classList.remove('is-switching');
       }

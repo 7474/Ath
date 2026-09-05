@@ -58,15 +58,31 @@
   text-underline-offset: .2em;
 }
 
+.site-bar--with-play {
+  flex-wrap: wrap;
+}
+
+.translate-play {
+  flex: 1 0 100%;
+  display: flex;
+  justify-content: center;
+  padding: .15rem 0 .1rem;
+}
+
 #translate-button {
   flex-shrink: 0;
-  font: 600 .95rem/1.2 system-ui, sans-serif;
-  padding: .5rem 1.15rem;
+  min-height: 2.75rem;
+  min-width: min(100%, 22rem);
+  width: 100%;
+  max-width: 28rem;
+  font: 700 1.05rem/1.2 system-ui, sans-serif;
+  padding: .7rem 1.3rem;
   border: 1px solid #1a1a1a;
   border-radius: 999px;
   background: #1a1a1a;
   color: #fff;
   cursor: pointer;
+  box-shadow: 0 1px 0 rgba(26, 26, 26, .2);
 }
 
 #translate-button:hover { background: #333; }
