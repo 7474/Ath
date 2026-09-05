@@ -374,6 +374,15 @@
     var wrap = $("local-vector-wrap");
     if (!wrap) return;
     wrap.hidden = $("engine").value !== "local";
+    syncEngineSummary();
+  }
+
+  function syncEngineSummary() {
+    var el = $("engine-summary");
+    var sel = $("engine");
+    if (!el || !sel) return;
+    var opt = sel.options[sel.selectedIndex];
+    el.textContent = opt ? opt.textContent : "";
   }
 
   function openaiTranslate(onProgress) {
