@@ -446,6 +446,7 @@
       <label class="ath-face-switch" for="ath-face-select">字体
         <select id="ath-face-select" aria-label="アースの字体">
           <option value="aarth" selected>標準</option>
+          <option value="aarth-gothic">ゴシック</option>
           <option value="aarth-koudenpa-signpen">光電波サインペン</option>
         </select>
       </label>
@@ -663,11 +664,12 @@
         <code>raw.githubusercontent.com</code> is not suitable.
       </p>
       <p class="use-note">
-        Additional handwritten faces (for example
+        Additional faces (for example the monoline
+        <code>Aarth Gothic</code>, or handwritten
         <code>Aarth Koudenpa Signpen</code>) are registered in the same
         stylesheet. On this demo, pick <strong>字体</strong> in the header.
         Sites that link <code>aarth.css</code> can set
-        <code>html[data-ath-face="aarth-koudenpa-signpen"]</code>
+        <code>html[data-ath-face="aarth-gothic"]</code>
         or use <code>font-family: var(--ath-font)</code>.
         New faces belong in <code>faces.json</code>.
       </p>

@@ -15,12 +15,14 @@ Pipeline:
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
      parent glyph; keep the 4×7 alphabet grid (drop the header) and, when
      present, the numeral cells 0–9 from the same sheet or ``--digits-image``.
-  4. For each glyph: split ink into components, 8× silhouette-blur, potrace.
+  4. For each glyph: split ink into components, then either SDF-smooth the
+     silhouette (default) or skeletonize and restroke at uniform width
+     (``traceStyle: gothic``), 8×, potrace.
   5. Build a TTF font via fontTools (TTFont + pens), then compress to WOFF2.
 
 Usage:
     python generate_aarth_font.py [--image PATH_OR_URL]
-    python generate_aarth_font.py --face aarth-koudenpa-signpen
+    python generate_aarth_font.py --face aarth-gothic
     python generate_aarth_font.py --all-faces
     python generate_aarth_font.py --write-template templates/
 
@@ -159,6 +161,12 @@ TRACE_BLACKLEVEL = 0.5   # midpoint of the SDF ramp (0-level of the field)
 # Box detection ignores light-gray template titles/guides (blank sheets
 # have no black glyphs, so Otsu would otherwise promote captions to ink).
 DETECT_INK_MAX = 110
+
+# Gothic (monoline) restroke: skeletonize the existing raster, then paint a
+# uniform disc along the medial axis so stroke weight matches across letters.
+GOTHIC_STROKE_GAIN = 0.95
+GOTHIC_EDGE_SIGMA = 1.25
+GOTHIC_SPUR_LEN = 6
 
 
 # ---------------------------------------------------------------------------
@@ -510,13 +518,173 @@ def prepare_component_for_trace(ink_mask: np.ndarray) -> np.ndarray:
     return gray
 
 
+def zhang_suen_thin(binary: np.ndarray) -> np.ndarray:
+    """Vectorized Zhang–Suen thinning. ``binary`` is 0/1 or 0/255; returns 0/1."""
+    img = np.pad((binary > 0).astype(np.uint8), 1, mode="constant")
+
+    def nbr(im):
+        return (
+            im[:-2, 1:-1], im[:-2, 2:], im[1:-1, 2:], im[2:, 2:],
+            im[2:, 1:-1], im[2:, :-2], im[1:-1, :-2], im[:-2, :-2],
+        )
+
+    changed = True
+    while changed:
+        changed = False
+        for step in (0, 1):
+            p2, p3, p4, p5, p6, p7, p8, p9 = nbr(img)
+            core = img[1:-1, 1:-1]
+            n_count = (
+                p2.astype(np.int16) + p3 + p4 + p5 + p6 + p7 + p8 + p9
+            )
+            trans = (
+                ((p2 == 0) & (p3 == 1)).astype(np.uint8)
+                + ((p3 == 0) & (p4 == 1))
+                + ((p4 == 0) & (p5 == 1))
+                + ((p5 == 0) & (p6 == 1))
+                + ((p6 == 0) & (p7 == 1))
+                + ((p7 == 0) & (p8 == 1))
+                + ((p8 == 0) & (p9 == 1))
+                + ((p9 == 0) & (p2 == 1))
+            )
+            mark = (core == 1) & (n_count >= 2) & (n_count <= 6) & (trans == 1)
+            if step == 0:
+                mark &= (p2 * p4 * p6 == 0) & (p4 * p6 * p8 == 0)
+            else:
+                mark &= (p2 * p4 * p8 == 0) & (p2 * p6 * p8 == 0)
+            if mark.any():
+                img[1:-1, 1:-1][mark] = 0
+                changed = True
+    return img[1:-1, 1:-1]
+
+
+def prune_skeleton_spurs(skel: np.ndarray, max_len: int = GOTHIC_SPUR_LEN) -> np.ndarray:
+    """Peel short endpoint branches left by raster jaggies."""
+    img = skel.astype(np.uint8).copy()
+    kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]], np.uint8)
+    for _ in range(max_len):
+        neigh = cv2.filter2D(img, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+        ends = (img > 0) & (neigh == 1)
+        if not np.any(ends):
+            break
+        img[ends] = 0
+    return img if img.any() else skel.astype(np.uint8)
+
+
+def estimate_stroke_radius(binary: np.ndarray, boxes: list) -> float:
+    """Median half-width along letter skeletons (native pixels)."""
+    radii = []
+    for box in boxes:
+        crop = crop_glyph(binary, box, padding=2)
+        ink = (crop > 0).astype(np.uint8)
+        if int(ink.sum()) < 8:
+            continue
+        dist = cv2.distanceTransform(ink, cv2.DIST_L2, 5)
+        skel = zhang_suen_thin(ink)
+        vals = dist[skel > 0]
+        if vals.size >= 8:
+            radii.append(float(np.median(vals)))
+        else:
+            radii.append(float(dist.max()))
+    if not radii:
+        return 5.0
+    return float(np.median(radii))
+
+
+def _gothic_greymap(painted_ink: np.ndarray) -> np.ndarray:
+    """Dark-ink greymap whose 0.5 isosurface is the gothic stroke edge."""
+    blur = cv2.GaussianBlur(
+        painted_ink.astype(np.float32),
+        (0, 0),
+        GOTHIC_EDGE_SIGMA,
+    )
+    return np.clip(255.0 - blur, 0, 255).astype(np.uint8)
+
+
+def _is_compact_blob(ink: np.ndarray, stroke_radius: float) -> bool:
+    """True for umlaut dots and other disc-like marks, not letter strokes."""
+    ys, xs = np.where(ink > 0)
+    if ys.size < 4:
+        return True
+    bh = int(ys.max() - ys.min()) + 1
+    bw = int(xs.max() - xs.min()) + 1
+    span = max(bh, bw)
+    short = max(min(bh, bw), 1)
+    if span > 3.2 * max(stroke_radius, 1.0):
+        return False
+    if span / short > 1.65:
+        return False
+    dist = cv2.distanceTransform(ink.astype(np.uint8), cv2.DIST_L2, 5)
+    rmax = float(dist.max())
+    if rmax <= 0:
+        return False
+    area = float(ys.size)
+    circularity = area / (np.pi * rmax * rmax)
+    return 0.55 < circularity < 1.45
+
+
+def prepare_gothic_component(
+    ink_mask: np.ndarray,
+    stroke_radius: float,
+    scale: int = TRACE_SCALE,
+) -> np.ndarray:
+    """Uniform-weight restroke of one ink component (gothic / monoline)."""
+    ink = (ink_mask > 0).astype(np.uint8)
+    if not ink.any():
+        return prepare_component_for_trace(ink_mask)
+    ink = cv2.morphologyEx(
+        ink,
+        cv2.MORPH_CLOSE,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
+    )
+    radius = max(0.75, stroke_radius) * scale * GOTHIC_STROKE_GAIN
+    h, w = ink.shape
+    if _is_compact_blob(ink, stroke_radius):
+        ys, xs = np.where(ink > 0)
+        cy = (float(ys.mean()) + 0.5) * scale
+        cx = (float(xs.mean()) + 0.5) * scale
+        pad = int(np.ceil(radius)) + 4
+        canvas = np.zeros((int(h * scale) + 2 * pad, int(w * scale) + 2 * pad), np.uint8)
+        cv2.circle(
+            canvas,
+            (int(round(cx + pad)), int(round(cy + pad))),
+            max(1, int(round(radius * 0.92))),
+            255,
+            thickness=-1,
+            lineType=cv2.LINE_AA,
+        )
+        return _gothic_greymap(canvas)
+
+    up = cv2.resize(
+        ink * 255,
+        (w * scale, h * scale),
+        interpolation=cv2.INTER_LINEAR,
+    )
+    up = (up >= 128).astype(np.uint8)
+    skel = zhang_suen_thin(up)
+    skel = prune_skeleton_spurs(skel, max_len=max(3, scale - 2))
+    if not skel.any():
+        return prepare_component_for_trace(ink_mask)
+    pad = int(np.ceil(radius)) + 4
+    padded = np.pad(skel, pad, mode="constant")
+    inv = np.where(padded > 0, 0, 1).astype(np.uint8)
+    dist = cv2.distanceTransform(inv, cv2.DIST_L2, 5)
+    painted = np.where(dist <= radius, 255, 0).astype(np.uint8)
+    return _gothic_greymap(painted)
+
+
 def prepare_glyph_for_trace(
     gray: np.ndarray, binary: np.ndarray, box, padding: int = 4,
+    style: str = "silhouette",
+    stroke_radius: float | None = None,
 ) -> list[np.ndarray]:
-    """Return one blurred silhouette greymap per ink component of ``box``."""
+    """Return one greymap per ink component of ``box`` (silhouette or gothic)."""
     gray_crop = crop_glyph(gray, box, padding)
     otsu_crop = crop_glyph(binary, box, padding)
     masks = split_ink_components(gray_crop, otsu_crop)
+    if style == "gothic":
+        radius = float(stroke_radius if stroke_radius is not None else 5.0)
+        return [prepare_gothic_component(mask, radius) for mask in masks]
     return [prepare_component_for_trace(mask) for mask in masks]
 
 
@@ -553,10 +721,21 @@ def glyph_to_svg_path(glyph_img: np.ndarray, tmp_dir: Path, idx: int) -> str | N
     )
 
 
-def trace_glyph(gray: np.ndarray, binary: np.ndarray, box, tmp_dir: Path, idx: int) -> str | None:
+def trace_glyph(
+    gray: np.ndarray, binary: np.ndarray, box, tmp_dir: Path, idx: int,
+    style: str = "silhouette",
+    stroke_radius: float | None = None,
+) -> str | None:
     """Trace every ink component of a glyph and concatenate the path data."""
+    padding = 4
+    if style == "gothic" and stroke_radius is not None:
+        padding = max(4, int(stroke_radius) + 3)
     parts = []
-    for c_idx, canvas in enumerate(prepare_glyph_for_trace(gray, binary, box)):
+    canvases = prepare_glyph_for_trace(
+        gray, binary, box, padding=padding,
+        style=style, stroke_radius=stroke_radius,
+    )
+    for c_idx, canvas in enumerate(canvases):
         d = _potrace_pgm(
             canvas,
             tmp_dir / f"glyph_{idx:03d}_{c_idx:02d}.pgm",
@@ -1285,13 +1464,18 @@ def _acquire_image(spec: str | None, output_dir: Path, fallback_name: str) -> Pa
 def _trace_boxes(
     gray, binary, boxes, names, codepoints, tmp_dir: Path, glyph_data: list,
     idx0: int = 0, lock_frame: bool = False,
+    style: str = "silhouette",
+    stroke_radius: float | None = None,
 ):
     for i, box in enumerate(boxes):
         idx = idx0 + i
         codepoint = codepoints[i]
         name = names[i]
         print(f"  [{idx:02d}] {name} (U+{codepoint:04X}) …", end="", flush=True)
-        svg_d = trace_glyph(gray, binary, box, tmp_dir, idx)
+        svg_d = trace_glyph(
+            gray, binary, box, tmp_dir, idx,
+            style=style, stroke_radius=stroke_radius,
+        )
         print(" ok" if svg_d else " (no path)")
         glyph_data.append({
             "codepoint": codepoint,
@@ -1387,6 +1571,12 @@ def generate_font_from_rasters(
     if digit_boxes:
         digit_boxes = frame_digit_boxes(digit_boxes)
 
+    style = str((face or {}).get("traceStyle") or "silhouette")
+    stroke_radius = None
+    if style == "gothic":
+        stroke_radius = estimate_stroke_radius(binary, alphabet_boxes)
+        print(f"  gothic monoline radius {stroke_radius:.2f}px (native)")
+
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
         glyph_data = []
@@ -1396,6 +1586,7 @@ def generate_font_from_rasters(
             ALPHABET_NAMES[:len(alphabet_boxes)],
             ALPHABET_CODEPOINTS[:len(alphabet_boxes)],
             tmp_dir, glyph_data, idx0=0,
+            style=style, stroke_radius=stroke_radius,
         )
         if digit_boxes:
             _trace_boxes(
@@ -1404,6 +1595,7 @@ def generate_font_from_rasters(
                 DIGIT_CODEPOINTS[:len(digit_boxes)],
                 tmp_dir, glyph_data, idx0=len(alphabet_boxes),
                 lock_frame=True,
+                style=style, stroke_radius=stroke_radius,
             )
 
         print(f"[build] assembling {meta['family']} …")
