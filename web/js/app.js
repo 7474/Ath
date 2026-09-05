@@ -29,6 +29,121 @@
 
   function setStatus(text) { $("status").textContent = text || ""; }
 
+  var busyTimer = null;
+  var busyStarted = 0;
+
+  function formatElapsed(ms) {
+    var sec = Math.max(0, Math.floor(ms / 1000));
+    if (sec < 60) return sec + "秒経過";
+    return Math.floor(sec / 60) + "分" + (sec % 60) + "秒経過";
+  }
+
+  function translatorPanel() {
+    return $("translator") || document.querySelector(".translator");
+  }
+
+  function startBusy(message) {
+    var panel = translatorPanel();
+    if (panel) {
+      panel.classList.add("is-busy");
+      panel.setAttribute("aria-busy", "true");
+    }
+    var btn = $("translate-btn");
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    var spin = btn.querySelector(".busy-spinner");
+    if (spin) spin.hidden = false;
+    var row = $("busy-row");
+    if (row) row.hidden = false;
+    busyStarted = Date.now();
+    function tick() {
+      var el = $("busy-elapsed");
+      if (el) el.textContent = formatElapsed(Date.now() - busyStarted);
+    }
+    tick();
+    if (busyTimer) clearInterval(busyTimer);
+    busyTimer = setInterval(tick, 400);
+    setStatus(message || "翻訳中…");
+  }
+
+  function updateBusy(event) {
+    if (!event) return;
+    if (event.message) setStatus(event.message);
+    if (event.draft) {
+      $("target-text").value = event.draft;
+      $("reading").textContent = "下書き（生成中）";
+    }
+  }
+
+  function stopBusy() {
+    if (busyTimer) {
+      clearInterval(busyTimer);
+      busyTimer = null;
+    }
+    var panel = translatorPanel();
+    if (panel) {
+      panel.classList.remove("is-busy");
+      panel.removeAttribute("aria-busy");
+    }
+    var btn = $("translate-btn");
+    btn.disabled = false;
+    btn.removeAttribute("aria-busy");
+    var spin = btn.querySelector(".busy-spinner");
+    if (spin) spin.hidden = true;
+    var row = $("busy-row");
+    if (row) row.hidden = true;
+    var el = $("busy-elapsed");
+    if (el) el.textContent = "";
+  }
+
+  function applyNdjsonLine(line, onProgress) {
+    line = String(line || "").trim();
+    if (!line) return null;
+    var ev = JSON.parse(line);
+    if (ev.type === "error") throw new Error(ev.error || "エージェント API でエラーが起きました。");
+    if (ev.type === "result") return ev.result || ev;
+    if (onProgress) onProgress(ev);
+    return null;
+  }
+
+  function readNdjsonStream(res, onProgress) {
+    var reader = res.body && res.body.getReader ? res.body.getReader() : null;
+    if (!reader) {
+      return res.text().then(function (text) {
+        var result = null;
+        String(text || "").split(/\r?\n/).forEach(function (line) {
+          var got = applyNdjsonLine(line, onProgress);
+          if (got) result = got;
+        });
+        if (!result) throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+        return result;
+      });
+    }
+    var decoder = new TextDecoder();
+    var buf = "";
+    var result = null;
+    function pump() {
+      return reader.read().then(function (chunk) {
+        if (chunk.value) buf += decoder.decode(chunk.value, { stream: !chunk.done });
+        if (chunk.done) buf += decoder.decode();
+        var lines = buf.split(/\r?\n/);
+        buf = chunk.done ? "" : lines.pop();
+        lines.forEach(function (line) {
+          var got = applyNdjsonLine(line, onProgress);
+          if (got) result = got;
+        });
+        if (!chunk.done) return pump();
+        if (buf.trim()) {
+          var last = applyNdjsonLine(buf, onProgress);
+          if (last) result = last;
+        }
+        if (!result) throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+        return result;
+      });
+    }
+    return pump();
+  }
+
   function setSettingsStatus(text) {
     var el = $("settings-status");
     if (el) el.textContent = text || "";
@@ -227,17 +342,25 @@
     });
   }
 
-  function agentTranslate() {
+  function agentTranslate(onProgress) {
     return fetchWithRetry(agentEndpoint(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/x-ndjson, application/json"
+      },
       body: JSON.stringify({
         text: $("source-text").value,
         source_lang: $("source-lang").value,
         target_lang: $("target-lang").value,
-        engine: "agent"
+        engine: "agent",
+        stream: true
       })
     }).then(function (res) {
+      var ctype = (res.headers.get("Content-Type") || "").toLowerCase();
+      if (res.body && /ndjson/.test(ctype)) {
+        return readNdjsonStream(res, onProgress);
+      }
       return res.json().then(function (data) {
         if (!res.ok) {
           var msg = (data && data.error) || res.statusText;
@@ -267,16 +390,17 @@
     wrap.hidden = $("engine").value !== "local";
   }
 
-  function openaiTranslate() {
+  function openaiTranslate(onProgress) {
     var base = apiBase();
     var key = localStorage.getItem(KEY) || $("api-key").value.trim();
     if (!key && /api\.openai\.com/.test(base)) {
-      throw new Error("API キーが未設定です。生成AI設定から保存してください。");
+      return Promise.reject(new Error("API キーが未設定です。生成AI設定から保存してください。"));
     }
     var model = localStorage.getItem(MODEL_KEY) || $("chat-model").value || "gpt-4o-mini";
     return BaronhEngine.translateAgent($("source-text").value, lexicon, {
       sourceLang: $("source-lang").value,
       targetLang: $("target-lang").value,
+      onProgress: onProgress,
       chatOnce: function (payload) {
         payload.model = payload.model || model;
         return fetchWithRetry(apiUrl("chat/completions"), {
@@ -301,18 +425,17 @@
 
   function runTranslate() {
     if (!lexicon) return;
-    $("translate-btn").disabled = true;
-    setStatus("翻訳中…");
     var engine = $("engine").value;
+    startBusy(engine === "local" ? "翻訳中…" : "生成AIに問い合わせています…");
     var work = engine === "agent"
-      ? agentTranslate()
+      ? agentTranslate(updateBusy)
       : engine === "openai"
-        ? openaiTranslate()
+        ? openaiTranslate(updateBusy)
         : Promise.resolve(localTranslate());
     work.then(renderResult).catch(function (err) {
       setStatus(err.message || String(err));
     }).then(function () {
-      $("translate-btn").disabled = false;
+      stopBusy();
     });
   }
 

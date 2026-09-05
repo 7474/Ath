@@ -118,10 +118,19 @@ var user = engine.buildAgentUserPrompt("星たちの光を見ます", lexicon, "
   assert.ok(user.indexOf("search_lexicon") >= 0);
   assert.ok(user.indexOf("関連辞書") >= 0);
 
+var progress = [];
+var toolProgress = engine.describeToolProgress([{
+  function: { name: "search_lexicon", arguments: JSON.stringify({ queries: ["光", "星"] }) }
+}]);
+assert.strictEqual(toolProgress.phase, "tools");
+assert.ok(toolProgress.message.indexOf("光") >= 0);
+assert.ok(toolProgress.queries.indexOf("光") >= 0);
+
 var calls = 0;
 engine.translateAgent("星たちの光を見ます", lexicon, {
   sourceLang: "ja",
   targetLang: "baronh",
+  onProgress: function (ev) { progress.push(ev); },
   chatOnce: function (payload) {
     calls += 1;
     if (calls === 1) {
@@ -155,6 +164,13 @@ engine.translateAgent("星たちの光を見ます", lexicon, {
   assert.ok(out.text.indexOf("sairiac") >= 0);
   assert.ok(out.text.indexOf("mire") >= 0);
   assert.ok(calls >= 2);
+  assert.ok(progress.some(function (ev) { return ev.phase === "chat"; }), "chat progress");
+  assert.ok(progress.some(function (ev) {
+    return ev.phase === "tools" && (ev.queries || []).indexOf("光") >= 0;
+  }), "tool progress");
+  assert.ok(progress.some(function (ev) {
+    return ev.phase === "draft" && String(ev.draft || "").indexOf("sairiac") >= 0;
+  }), "draft progress");
   console.log("OK prebuilt=" + built + "ms light=" + light[0].entry.lemma + " translate=" + out.text);
 
   var sample = "アーヴ語翻訳機\n\nリン・ジントって奴はあれでなかなか頭の出来がいい。なんたって故郷、俺らの、ついでにアーヴ語を読み書き出来るんだからな。よく分からん言葉を喋ってると別人に見えて困る。だからと言ってアーヴ語なんて覚える気はない、覚えられない訳じゃないぜ？　とは言えアーヴ語で何を喋ってるのか気にならんこともない。てな訳で機械に翻訳機を作って貰った。これでアーヴ語の読み書きは完璧だぜ。\n\nって、何喋ってるかは分からないじゃねーか！";

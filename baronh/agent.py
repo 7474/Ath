@@ -24,11 +24,13 @@ from baronh.openai_backend import (
     collect_lookup_queries,
     collect_tool_strings,
     dispatch_tool as openai_dispatch_tool,
+    emit_progress,
     ensure_source_coverage,
     format_numbered_source,
     invented_baronh_forms,
     max_output_tokens,
     normalize_api_base,
+    progress_event,
     resolve_api_key,
     run_chat_tool_loop,
     split_source_units,
@@ -474,6 +476,7 @@ def translate_agent(
     model: str | None = None,
     chat_once: Any = None,
     max_rounds: int = 3,
+    on_progress: Any = None,
 ) -> TranslationResult:
     """生成 AI が辞書ツールで訳す。モデルが無ければ AgentModelRequired。"""
     if not model_configured(api_key=api_key, api_base=api_base, chat_once=chat_once):
@@ -520,8 +523,10 @@ def translate_agent(
             chat_once=chat_once,
             source_text=text,
             max_tokens=tokens,
+            on_progress=on_progress,
         )
 
+    emit_progress(on_progress, progress_event("chat", "モデルに問い合わせ中…"))
     try:
         out, rounds = _loop(messages, use_tools=True, rounds=loop_rounds)
         notes.append(f"チャット往復 {rounds} 回。")
@@ -537,6 +542,7 @@ def translate_agent(
     if not out:
         raise RuntimeError("生成結果が空でした。規則ベースへはフォールバックしません。")
 
+    emit_progress(on_progress, progress_event("coverage", "訳の抜けを確認しています…"))
     covered, extra = ensure_source_coverage(
         text=text,
         translated=out,
@@ -561,6 +567,7 @@ def translate_agent(
             )
             messages.append({"role": "assistant", "content": out})
             messages.append({"role": "user", "content": critique})
+            emit_progress(on_progress, progress_event("rewrite", "辞書にない語形を書き直しています…"))
             try:
                 rewritten, extra_rewrite = _loop(messages, use_tools=True, rounds=4)
                 rewritten = clean_model_text(rewritten)

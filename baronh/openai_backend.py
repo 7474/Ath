@@ -708,6 +708,56 @@ def _chat_once(
     return data
 
 
+TOOL_PROGRESS_LABELS = {
+    "search_lexicon": "辞書を検索しています",
+    "find_synonyms": "類義語を探しています",
+    "lookup_lexicon": "辞書を引いています",
+    "transcribe_name": "固有名詞を転記しています",
+    "validate_baronh": "語形を照合しています",
+    "grammar_note": "文法を確認しています",
+}
+
+
+def emit_progress(on_progress: Any, event: dict[str, Any] | None) -> None:
+    """進捗コールバックの失敗で翻訳を止めない。"""
+    if on_progress is None or not event:
+        return
+    try:
+        on_progress(event)
+    except Exception:
+        return
+
+
+def progress_event(phase: str, message: str, **extra: Any) -> dict[str, Any]:
+    event: dict[str, Any] = {"type": "progress", "phase": phase, "message": message}
+    event.update(extra)
+    return event
+
+
+def describe_tool_progress(tool_calls: list[dict[str, Any]] | None) -> dict[str, Any]:
+    names: list[str] = []
+    queries: list[str] = []
+    for call in tool_calls or []:
+        fn = call.get("function") or {}
+        name = str(fn.get("name") or "")
+        if name:
+            names.append(name)
+        try:
+            args = json.loads(fn.get("arguments") or "{}")
+        except json.JSONDecodeError:
+            args = {}
+        if not isinstance(args, dict):
+            args = {}
+        queries.extend(collect_tool_strings(args, "queries", "query", "names", "name", "topics", "topic"))
+        text = str(args.get("text") or "").strip()
+        if text:
+            queries.append(text[:40])
+    label = TOOL_PROGRESS_LABELS.get(names[0] if names else "", "ツールを実行しています")
+    shown = queries[:6]
+    message = f"{label}: {'、'.join(shown)}" if shown else label
+    return progress_event("tools", message, tools=names, queries=shown)
+
+
 def run_chat_tool_loop(
     *,
     url: str,
@@ -722,6 +772,7 @@ def run_chat_tool_loop(
     chat_once: Any = None,
     source_text: str | None = None,
     max_tokens: int | None = None,
+    on_progress: Any = None,
 ) -> tuple[str, int]:
     """Chat Completions のツール往復。1回のツール応答のあと tool_choice=none で訳文へ進む。"""
     rounds = 0
@@ -743,6 +794,10 @@ def run_chat_tool_loop(
         if allow_tools:
             payload["tools"] = tools if tools is not None else CHAT_TOOLS
             payload["tool_choice"] = "none" if saw_tools else "auto"
+        emit_progress(
+            on_progress,
+            progress_event("chat", f"モデルに問い合わせ中…（往復 {rounds}）", round=rounds),
+        )
         try:
             data = chat_fn(payload)
         except RuntimeError as exc:
@@ -759,6 +814,14 @@ def run_chat_tool_loop(
         content = (message.get("content") or "").strip()
         if content:
             last_content = content
+            emit_progress(
+                on_progress,
+                progress_event("draft", "下書きを受信しました", draft=content, round=rounds),
+            )
+        if tool_calls:
+            tool_event = describe_tool_progress(tool_calls)
+            tool_event["round"] = rounds
+            emit_progress(on_progress, tool_event)
         if not tool_calls:
             return content, rounds
         if saw_tools:
@@ -798,6 +861,7 @@ def _run_tool_loop(
     max_rounds: int = 3,
     source_text: str | None = None,
     max_tokens: int | None = None,
+    on_progress: Any = None,
 ) -> tuple[str, int]:
     return run_chat_tool_loop(
         url=url,
@@ -809,6 +873,7 @@ def _run_tool_loop(
         max_rounds=max_rounds,
         source_text=source_text,
         max_tokens=max_tokens,
+        on_progress=on_progress,
     )
 
 

@@ -194,6 +194,52 @@ button.ghost {
 
 button.primary:disabled { opacity: .5; cursor: wait; }
 
+button.primary .busy-spinner {
+  margin-right: .4rem;
+  vertical-align: -0.15em;
+}
+
+.busy-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .45rem;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.busy-row[hidden] { display: none; }
+
+.busy-spinner {
+  display: inline-block;
+  width: .8rem;
+  height: .8rem;
+  border: 2px solid #ccc;
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: busy-spin .7s linear infinite;
+  flex: 0 0 auto;
+}
+
+.busy-elapsed { font-variant-numeric: tabular-nums; }
+
+.translator.is-busy textarea#target-text {
+  animation: busy-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes busy-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes busy-pulse {
+  50% { border-color: #888; background: #f7f6f2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busy-spinner { animation: none; opacity: .7; }
+  .translator.is-busy textarea#target-text { animation: none; }
+}
+
 .note, .reading, .status {
   margin-top: .6rem;
   color: var(--muted);

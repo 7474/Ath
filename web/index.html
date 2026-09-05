@@ -29,7 +29,7 @@
   <main>
     <h1>アーヴ語と日本語・英語</h1>
 
-    <section class="panel translator">
+    <section class="panel translator" id="translator">
       <div class="langs">
         <label>入力
           <select id="source-lang">
@@ -74,14 +74,21 @@
       </div>
 
       <div class="actions">
-        <button type="button" class="primary" id="translate-btn">翻訳</button>
+        <button type="button" class="primary" id="translate-btn">
+          <span class="busy-spinner" hidden aria-hidden="true"></span>
+          翻訳
+        </button>
         <button type="button" class="ghost" id="speak-btn">読み上げ</button>
         <button type="button" class="ghost" id="copy-btn">コピー</button>
         <button type="button" class="ghost" id="examples-btn">例文</button>
         <button type="button" class="ghost" id="open-settings" aria-haspopup="dialog" aria-controls="settings-panel">生成AI設定</button>
       </div>
       <p class="reading" id="reading"></p>
-      <p class="status" id="status"></p>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <div class="busy-row" id="busy-row" hidden>
+        <span class="busy-spinner" aria-hidden="true"></span>
+        <span class="busy-elapsed" id="busy-elapsed" aria-hidden="true"></span>
+      </div>
       <div class="analysis" id="analysis"></div>
     </section>
 

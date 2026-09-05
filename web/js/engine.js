@@ -2125,6 +2125,48 @@
     return out;
   }
 
+  var TOOL_PROGRESS_LABELS = {
+    search_lexicon: "辞書を検索しています",
+    find_synonyms: "類義語を探しています",
+    lookup_lexicon: "辞書を引いています",
+    transcribe_name: "固有名詞を転記しています",
+    validate_baronh: "語形を照合しています",
+    grammar_note: "文法を確認しています"
+  };
+
+  function emitProgress(onProgress, event) {
+    if (typeof onProgress !== "function" || !event) return;
+    try { onProgress(event); } catch (err) { /* 進捗表示の失敗で翻訳は止めない */ }
+  }
+
+  function progressEvent(phase, message, extra) {
+    var ev = { type: "progress", phase: phase, message: message };
+    if (extra) {
+      Object.keys(extra).forEach(function (key) { ev[key] = extra[key]; });
+    }
+    return ev;
+  }
+
+  function describeToolProgress(toolCalls) {
+    var names = [];
+    var queries = [];
+    (toolCalls || []).forEach(function (call) {
+      var fn = call.function || {};
+      if (fn.name) names.push(fn.name);
+      var args = {};
+      try { args = JSON.parse(fn.arguments || "{}"); } catch (err) { args = {}; }
+      collectToolStrings(args, ["queries", "query", "names", "name", "topics", "topic"]).forEach(function (q) {
+        queries.push(q);
+      });
+      var text = String(args.text || "").trim();
+      if (text) queries.push(text.slice(0, 40));
+    });
+    var label = TOOL_PROGRESS_LABELS[names[0]] || "ツールを実行しています";
+    var shown = queries.slice(0, 6);
+    var message = shown.length ? label + ": " + shown.join("、") : label;
+    return progressEvent("tools", message, { tools: names, queries: shown });
+  }
+
   function phoneticStub(trace, sourceLang, targetLang, sourceText) {
     return {
       source_lang: sourceLang,
@@ -2137,7 +2179,7 @@
     };
   }
 
-  function runChatToolLoop(chatOnce, messages, lexicon, trace, useTools, maxRounds, sourceText, maxTokens) {
+  function runChatToolLoop(chatOnce, messages, lexicon, trace, useTools, maxRounds, sourceText, maxTokens, onProgress) {
     maxRounds = maxRounds || 3;
     var lastContent = "";
     function step(round, sawTools, allowTools) {
@@ -2148,6 +2190,7 @@
         payload.tools = AGENT_TOOLS;
         payload.tool_choice = sawTools ? "none" : "auto";
       }
+      emitProgress(onProgress, progressEvent("chat", "モデルに問い合わせ中…（往復 " + round + "）", { round: round }));
       return Promise.resolve(chatOnce(payload)).catch(function (err) {
         if (allowTools && sawTools && (/tool/i.test(err.message || "") || /400/.test(err.message || ""))) {
           var fallback = { temperature: 0.2, messages: messages };
@@ -2159,7 +2202,15 @@
         var message = (((data && data.choices) || [])[0] || {}).message || {};
         var calls = message.tool_calls || [];
         var content = String(message.content || "").trim();
-        if (content) lastContent = content;
+        if (content) {
+          lastContent = content;
+          emitProgress(onProgress, progressEvent("draft", "下書きを受信しました", { draft: content, round: round }));
+        }
+        if (calls.length) {
+          var toolEvent = describeToolProgress(calls);
+          toolEvent.round = round;
+          emitProgress(onProgress, toolEvent);
+        }
         if (!calls.length) return content;
         if (sawTools) {
           if (content) return content;
@@ -2184,16 +2235,17 @@
     return step(1, false, !!useTools);
   }
 
-  function ensureSourceCoverage(chatOnce, messages, lexicon, trace, sourceText, translated, maxTokens) {
+  function ensureSourceCoverage(chatOnce, messages, lexicon, trace, sourceText, translated, maxTokens, onProgress) {
     var current = translated || "";
     var extra = 0;
     function attempt(left) {
       if (!coverageIncomplete(sourceText, current) || left <= 0) {
         return Promise.resolve({ text: finalizeTranslation(sourceText, current), extra: extra });
       }
+      emitProgress(onProgress, progressEvent("coverage", "未訳の文を追記しています…"));
       messages.push({ role: "assistant", content: current });
       messages.push({ role: "user", content: coverageNudge(sourceText, current) });
-      return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 2, sourceText, maxTokens).then(function (nxt) {
+      return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 2, sourceText, maxTokens, onProgress).then(function (nxt) {
         extra += 1;
         nxt = cleanModelText(nxt);
         if (!nxt) return { text: finalizeTranslation(sourceText, current), extra: extra };
@@ -2223,17 +2275,19 @@
     var tokens = maxOutputTokens(text);
     var units = splitSourceUnits(text);
     var maxRounds = Math.max(opts.maxRounds || 3, Math.min(8, 2 + Math.max(1, Math.floor(units.length / 4))));
-    return runChatToolLoop(chatOnce, messages, lexicon, trace, true, maxRounds, text, tokens).catch(function (err) {
+    var onProgress = opts.onProgress;
+    emitProgress(onProgress, progressEvent("chat", "モデルに問い合わせ中…"));
+    return runChatToolLoop(chatOnce, messages, lexicon, trace, true, maxRounds, text, tokens, onProgress).catch(function (err) {
       if (/tool/i.test(err.message || "") || /400/.test(err.message || "")) {
         notes.push("ツール非対応のため生成の単発に切り替えました。規則下訳には戻しません。");
         messages = seed.slice();
-        return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 3, text, tokens);
+        return runChatToolLoop(chatOnce, messages, lexicon, trace, false, 3, text, tokens, onProgress);
       }
       throw err;
     }).then(function (out) {
       out = cleanModelText(out);
       if (!out) throw new Error("生成結果が空でした。規則ベースへはフォールバックしません。");
-      return ensureSourceCoverage(chatOnce, messages, lexicon, trace, text, out, tokens).then(function (covered) {
+      return ensureSourceCoverage(chatOnce, messages, lexicon, trace, text, out, tokens, onProgress).then(function (covered) {
         if (covered.extra) notes.push("未訳単位を同一セッションで追記しました。");
         return covered.text;
       });
@@ -2250,7 +2304,8 @@
           formatNumberedSource(text);
         messages.push({ role: "assistant", content: textOut });
         messages.push({ role: "user", content: critique });
-        return runChatToolLoop(chatOnce, messages, lexicon, trace, true, 4, text, tokens).then(function (rewritten) {
+        emitProgress(onProgress, progressEvent("rewrite", "辞書にない語形を書き直しています…"));
+        return runChatToolLoop(chatOnce, messages, lexicon, trace, true, 4, text, tokens, onProgress).then(function (rewritten) {
           rewritten = cleanModelText(rewritten);
           notes.push("辞書にない語形 " + invented.join(", ") + " を検出し、再生成しました。");
           if (rewritten) {
@@ -2358,6 +2413,8 @@
     resolveLexiconHits: resolveLexiconHits,
     nameForTranscription: nameForTranscription,
     translateAgent: translateAgent,
+    describeToolProgress: describeToolProgress,
+    progressEvent: progressEvent,
     inventedBaronhForms: inventedBaronhForms,
     buildUserPrompt: buildUserPrompt,
     systemPrompt: systemPrompt,
