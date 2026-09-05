@@ -427,12 +427,19 @@ def _translate_out(text: str, pack: LanguagePack, lexicon: Lexicon, target: str)
             continue
         if topic_particle and low == topic_particle:
             if pieces:
-                if target == "ja" and not pieces[-1].endswith("は"):
-                    pieces[-1] += "は"
-                elif target != "ja":
+                if target == "ja":
+                    for suffix in ("が", "を", "の", "に", "へ", "から", "で"):
+                        if pieces[-1].endswith(suffix):
+                            pieces[-1] = pieces[-1][: -len(suffix)] + "は"
+                            break
+                    else:
+                        if not pieces[-1].endswith("は"):
+                            pieces[-1] += "は"
+                elif not pieces[-1].endswith(" (topic)"):
                     pieces[-1] += " (topic)"
             i += 1
             continue
+        nxt = tokens[i + 1].casefold() if i + 1 < len(tokens) else ""
         hits = index.lookup(tok)
         if not hits:
             unknown.append(tok)
@@ -442,6 +449,9 @@ def _translate_out(text: str, pack: LanguagePack, lexicon: Lexicon, target: str)
             continue
         hit = hits[0]
         extras = set(hit.extras)
+        if topic_particle and nxt == topic_particle:
+            extras.add("topic")
+            i += 1
         if target == "ja":
             word = hit.entry.gloss_ja.split("/")[0]
             if "topic" in extras:
@@ -475,7 +485,7 @@ def _translate_out(text: str, pack: LanguagePack, lexicon: Lexicon, target: str)
         pieces.append("か" if target == "ja" else "?")
     surface = "".join(pieces) if target == "ja" else " ".join(pieces)
     if target == "ja":
-        surface = surface.replace("はが", "は")
+        surface = surface.replace("はが", "は").replace("がは", "は")
         if question and not surface.endswith(("か", "？")):
             surface += "か"
         if surface and not surface.endswith(("。", "？", "！", "か")):

@@ -47,11 +47,35 @@ class RecognitionResult:
         }
 
 
+_CASE_RANK = {
+    "nom": 0,
+    "acc": 1,
+    "ins": 2,
+    "gen": 3,
+    "dat": 4,
+    "abl": 5,
+    "all": 6,
+}
+
+
+def _form_rank(form: str, index) -> int:
+    hits = index.lookup(form) if hasattr(index, "lookup") else []
+    if not hits:
+        return 8
+    ranks: list[int] = []
+    for hit in hits:
+        if hit.kind == "verb" or hit.mood:
+            ranks.append(1)
+        else:
+            ranks.append(_CASE_RANK.get(hit.case, 8))
+    return min(ranks) if ranks else 8
+
+
 def _form_inventory(pack: LanguagePack, lexicon: Lexicon) -> list[tuple[str, str, str]]:
     """(form, compact_kana, compact_ipa) を長い読み優先で返す。"""
     index = form_index_for(pack, lexicon)
     seen: set[str] = set()
-    rows: list[tuple[str, str, str]] = []
+    rows: list[tuple[str, str, str, int]] = []
     forms: list[str] = []
     if hasattr(index, "_exact"):
         forms.extend(index._exact.keys())  # type: ignore[attr-defined]
@@ -61,13 +85,12 @@ def _form_inventory(pack: LanguagePack, lexicon: Lexicon) -> list[tuple[str, str
         forms.append(form)
     for form in forms:
         if not form or " " in form:
-            # 主題の "na ya" は単語ごとで見る
             for part in form.split():
                 if part and part.casefold() not in seen:
                     seen.add(part.casefold())
                     kana = compact_reading(g2p_reading_ja(part, pack))
                     ipa = compact_reading(g2p_ipa(part, pack))
-                    rows.append((part, kana, ipa))
+                    rows.append((part, kana, ipa, _form_rank(part, index)))
             continue
         key = form.casefold()
         if key in seen:
@@ -75,9 +98,9 @@ def _form_inventory(pack: LanguagePack, lexicon: Lexicon) -> list[tuple[str, str
         seen.add(key)
         kana = compact_reading(g2p_reading_ja(form, pack))
         ipa = compact_reading(g2p_ipa(form, pack))
-        rows.append((form, kana, ipa))
-    rows.sort(key=lambda item: (-max(len(item[1]), len(item[2])), -len(item[0])))
-    return rows
+        rows.append((form, kana, ipa, _form_rank(form, index)))
+    rows.sort(key=lambda item: (-max(len(item[1]), len(item[2])), item[3], len(item[0]), item[0]))
+    return [(form, kana, ipa) for form, kana, ipa, _rank in rows]
 
 
 def _match_compact(compact: str, rows: list[tuple[str, str, str]], field: int) -> tuple[list[RecognitionHit], list[str]]:

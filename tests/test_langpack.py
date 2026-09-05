@@ -107,6 +107,8 @@ class MinaTranslateTest(unittest.TestCase):
         out = translate_pack("na ya minde.", self.pack, self.lex, source_lang="mina", target_lang="ja")
         self.assertIn("私", out.text)
         self.assertIn("ミーナ", out.text)
+        self.assertNotIn("がは", out.text)
+        self.assertIn("は", out.text)
 
     def test_en_see_star(self):
         out = translate_pack("see the star", self.pack, self.lex, source_lang="en", target_lang="mina")
@@ -149,6 +151,7 @@ class G2pAsrTest(unittest.TestCase):
         result = recognize(spoken, self.baronh)
         compact_out = compact_reading(reading_ja(result.text))
         self.assertEqual(compact_out, compact_reading(spoken))
+        self.assertEqual(result.text, "F'a bale.")
 
     def test_baronh_builtin_untouched(self):
         lex = load_lexicon([])
