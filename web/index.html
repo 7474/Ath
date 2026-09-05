@@ -138,12 +138,9 @@
           <button type="button" class="ghost" id="close-settings">閉じる</button>
         </div>
         <p class="hint">
-          サーバエージェントとブラウザ生成AIの接続先です。キーはこのブラウザにだけ残ります。サーバエージェントは、使えるときだけエンジンに出ます。
+          ブラウザ生成AIの接続先です。キーはこのブラウザにだけ残ります。サーバエージェントは、同一オリジンの /api/translate が応答するときだけエンジンに出ます。
         </p>
         <div class="settings-grid">
-          <label class="block">エージェント URL
-            <input type="text" id="agent-url" placeholder="/api/translate または https://…/api/translate" autocomplete="off" />
-          </label>
           <label class="block">ベース URL（ブラウザ生成AI）
             <input type="text" id="api-base" placeholder="https://api.openai.com/v1" autocomplete="off" />
           </label>
