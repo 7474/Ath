@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>アーヴ語とアース — Ath / Baronh</title>
+  <script>
+    try {
+      var t = localStorage.getItem("ath-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
   <link rel="icon" href="favicon.ico" sizes="48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -16,15 +23,15 @@
 
     body {
       font-family: system-ui, sans-serif;
-      background: #fafaf8;
-      color: #222;
+      background: var(--bg);
+      color: var(--ink);
     }
 
     h1 { font-size: 1.9rem; margin-bottom: .35rem; }
 
     h2.section {
       font-size: 1.2rem;
-      color: #555;
+      color: var(--heading);
       margin: 2rem 0 .6rem;
     }
 
@@ -55,16 +62,16 @@
     }
 
     .notice {
-      background: #fff;
-      border: 1px solid #e0e0e0;
+      background: var(--card);
+      border: 1px solid var(--line);
       border-radius: 10px;
       padding: 1.2rem 1.3rem;
       font-size: .95rem;
       line-height: 1.75;
-      color: #333;
+      color: var(--notice-ink);
     }
 
-    .notice a { color: #1a5fb4; }
+    .notice a { color: var(--link); }
     .notice p + p { margin-top: .8rem; }
   </style>
 </head>
@@ -79,6 +86,7 @@
       <a href="./" aria-current="page">概要</a>
       <a href="ath/">アース</a>
       <a href="web/">翻訳</a>
+      <button type="button" class="theme-toggle" id="theme-toggle">自動</button>
     </nav>
   </header>
 
@@ -156,5 +164,6 @@
     <a href="https://github.com/7474/Ath">GitHub</a>
   </footer>
 
+  <script src="theme.js"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 class SiteStructureTest(unittest.TestCase):
     def test_pages_exist(self):
-        for rel in ("index.html", "ath/index.html", "web/index.html", "site.css"):
+        for rel in ("index.html", "ath/index.html", "web/index.html", "site.css", "theme.js"):
             path = ROOT / rel
             self.assertTrue(path.is_file(), f"missing {rel}")
 
@@ -42,7 +42,10 @@ class SiteStructureTest(unittest.TestCase):
                 self.assertIn("アース", text)
                 self.assertIn("翻訳", text)
                 self.assertIn('class="site-nav"', text)
+                self.assertIn('id="theme-toggle"', text)
                 self.assertIn("viewport-fit=cover", text)
+                self.assertIn('name="color-scheme"', text)
+                self.assertIn("ath-theme", text)
                 for href in hrefs:
                     self.assertIn(f'href="{href}"', text)
 
@@ -70,7 +73,7 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("repeat(4, minmax(0, 1fr))", demo)
         self.assertIn("clamp(2.4rem, 12vw, 5rem)", demo)
         self.assertIn(".mapping-table .unicode { display: none; }", demo)
-        self.assertIn("color: #555;", demo)
+        self.assertIn("var(--heading)", demo)
         hub = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn(".teaser-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }", hub)
 
@@ -243,6 +246,26 @@ class SiteStructureTest(unittest.TestCase):
         cli = (ROOT / "baronh" / "cli.py").read_text(encoding="utf-8")
         self.assertIn("from baronh.server import serve", cli)
 
+    def test_dark_mode_follows_system_by_default(self):
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        js = (ROOT / "theme.js").read_text(encoding="utf-8")
+        self.assertIn("prefers-color-scheme: dark", css)
+        self.assertIn('data-theme="light"', css)
+        self.assertIn('data-theme="dark"', css)
+        self.assertIn("color-scheme: light dark", css)
+        self.assertIn(".theme-toggle", css)
+        self.assertIn("--bg:", css)
+        self.assertIn("--ink:", css)
+        self.assertIn("ath-theme", js)
+        self.assertIn("removeAttribute(\"data-theme\")", js)
+        self.assertIn("system", js)
+        for rel in ("index.html", "ath/index.html", "web/index.html"):
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            with self.subTest(page=rel):
+                self.assertNotIn('data-theme="', text.split("<body", 1)[0].split("<script", 1)[0])
+                self.assertIn('id="theme-toggle"', text)
+                self.assertIn("theme.js", text)
+
     def test_pages_workflow_copies_site_files(self):
         workflow = (ROOT / ".github" / "workflows" / "build-font.yml").read_text(
             encoding="utf-8"
@@ -251,6 +274,7 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ath/**", workflow)
         self.assertIn("cp ath/index.html docs/ath/index.html", workflow)
         self.assertIn("cp site.css docs/site.css", workflow)
+        self.assertIn("cp theme.js docs/theme.js", workflow)
         self.assertIn("cp favicon.ico docs/favicon.ico", workflow)
         self.assertIn("cp -r icons docs/icons", workflow)
         self.assertIn("python3 -m baronh export-web --out docs/web/data", workflow)
