@@ -209,6 +209,16 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("索引が無くても語釈と格変化は出す", js)
         self.assertNotIn("examples-btn", js)
 
+    def test_translator_copy_button_gives_feedback(self):
+        web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="copy-btn"', web)
+        js = (ROOT / "web" / "js" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("flashCopyFeedback", js)
+        self.assertIn("コピーしました", js)
+        self.assertIn("コピーする訳がありません", js)
+        css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertIn("#copy-btn.is-copied", css)
+
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("../ath/", web)
