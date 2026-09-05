@@ -9,6 +9,7 @@
   var OVERLAY_KEY = "ath-translate.overlay";
   var VECTOR_SEARCH_KEY = "ath-translate.local-vector";
   var lexicon = null;
+  var packLexicons = {};
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -217,7 +218,10 @@
   }
 
   function refreshCount() {
-    $("dict-count").textContent = "辞書 " + (lexicon ? lexicon.entries.length : 0) + " 語";
+    var active = lexiconForUi();
+    var id = packIdInUse();
+    var label = id && window.Langpack && Langpack.get(id) ? Langpack.get(id).spec.names.ja : "アーヴ語";
+    $("dict-count").textContent = (label || "辞書") + " " + (active ? active.entries.length : 0) + " 語";
   }
 
   function applyOverlay() {
@@ -240,7 +244,99 @@
   function resolvedTargetLang() {
     var tgt = $("target-lang").value;
     if (tgt && tgt !== "auto") return tgt;
-    return resolvedSourceLang() === "baronh" ? "ja" : "baronh";
+    var src = resolvedSourceLang();
+    if (src === "baronh" || (window.Langpack && Langpack.isPackLang(src))) return "ja";
+    return "baronh";
+  }
+
+  function packIdInUse() {
+    var src = $("source-lang").value;
+    var tgt = $("target-lang").value;
+    if (src === "auto") src = resolvedSourceLang();
+    if (tgt === "auto") tgt = resolvedTargetLang();
+    if (window.Langpack && Langpack.isPackLang(src)) return src;
+    if (window.Langpack && Langpack.isPackLang(tgt)) return tgt;
+    var reserved = { auto: 1, ja: 1, en: 1, baronh: 1 };
+    if (src && !reserved[src]) return src;
+    if (tgt && !reserved[tgt]) return tgt;
+    return "";
+  }
+
+  function lexiconForUi() {
+    var id = packIdInUse();
+    return (id && packLexicons[id]) || lexicon;
+  }
+
+  function ensureLangOption(sel, id, label) {
+    if ([].some.call(sel.options, function (opt) { return opt.value === id; })) return;
+    var opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+
+  function fillLangOptions(list) {
+    ["source-lang", "target-lang"].forEach(function (id) {
+      var sel = $(id);
+      (list || []).forEach(function (lang) {
+        if (!lang || !lang.id || lang.id === "auto" || lang.kind === "pivot" || lang.builtin) return;
+        ensureLangOption(sel, lang.id, lang.name_ja || lang.id);
+      });
+    });
+  }
+
+  function htmlPackIds() {
+    var reserved = { auto: 1, ja: 1, en: 1, baronh: 1 };
+    var ids = [];
+    ["source-lang", "target-lang"].forEach(function (id) {
+      var sel = $(id);
+      if (!sel) return;
+      [].forEach.call(sel.options, function (opt) {
+        if (!opt.value || reserved[opt.value] || ids.indexOf(opt.value) >= 0) return;
+        ids.push(opt.value);
+      });
+    });
+    return ids;
+  }
+
+  function loadOnePack(id, nameJa) {
+    return Promise.all([
+      firstJson(dataUrls("langs/" + id + "/language.json")),
+      firstJson(dataUrls("langs/" + id + "/lexicon.json"))
+    ]).then(function (pair) {
+      var spec = pair[0];
+      var lex = new BaronhEngine.Lexicon(pair[1].entries || []);
+      Langpack.register(spec, lex);
+      packLexicons[spec.id] = lex;
+      ensureLangOption($("source-lang"), spec.id, nameJa || (spec.names && spec.names.ja) || spec.id);
+      ensureLangOption($("target-lang"), spec.id, nameJa || (spec.names && spec.names.ja) || spec.id);
+    });
+  }
+
+  function loadPacks(catalog) {
+    var items = (catalog && catalog.languages) || [];
+    fillLangOptions(items);
+    if (!window.Langpack) return Promise.resolve();
+    var jobs = items.filter(function (lang) {
+      return lang.kind === "pack" && !lang.builtin;
+    }).map(function (lang) {
+      return loadOnePack(lang.id, lang.name_ja);
+    });
+    if (!jobs.length) {
+      jobs = htmlPackIds().map(function (id) { return loadOnePack(id); });
+    }
+    return Promise.all(jobs.map(function (job) {
+      return job.catch(function (err) {
+        console.warn(err);
+      });
+    }));
+  }
+
+  function syncExamplePlaceholder() {
+    var area = $("source-text");
+    if (!area) return;
+    var id = packIdInUse();
+    area.placeholder = id ? "例: 私はミーナです" : "例: 私は移民します";
   }
 
   function syncAthScript() {
@@ -361,6 +457,15 @@
   function localTranslate() {
     var src = $("source-lang").value;
     var tgt = $("target-lang").value;
+    var resolvedSrc = src === "auto" ? resolvedSourceLang() : src;
+    var resolvedTgt = tgt === "auto" ? resolvedTargetLang() : tgt;
+    if (window.Langpack && Langpack.usesPackRoute(resolvedSrc, resolvedTgt)) {
+      return Langpack.translate($("source-text").value, src, tgt);
+    }
+    var missing = packIdInUse();
+    if (missing && missing !== "baronh") {
+      throw new Error("言語パック " + missing + " を読めませんでした。python -m baronh export-web のあと再読み込みしてください。");
+    }
     return BaronhEngine.translate($("source-text").value, lexicon, src, tgt, {
       vectorSearch: !!($("local-vector-search") && $("local-vector-search").checked)
     });
@@ -430,14 +535,27 @@
       return;
     }
     var engine = $("engine").value;
-    startBusy(engine === "local" ? "翻訳中…" : "生成AIに問い合わせています…", {
-      clearResult: engine !== "local"
+    var src = $("source-lang").value;
+    var tgt = $("target-lang").value;
+    var packRoute = window.Langpack && Langpack.usesPackRoute(
+      src === "auto" ? resolvedSourceLang() : src,
+      tgt === "auto" ? resolvedTargetLang() : tgt
+    );
+    startBusy(engine === "local" || packRoute ? "翻訳中…" : "生成AIに問い合わせています…", {
+      clearResult: engine !== "local" && !packRoute
     });
-    var work = engine === "agent"
-      ? agentTranslate(updateBusy)
-      : engine === "openai"
-        ? openaiTranslate(updateBusy)
-        : Promise.resolve(localTranslate());
+    var work;
+    if (packRoute && engine === "agent") {
+      work = agentTranslate(updateBusy).catch(function () { return localTranslate(); });
+    } else if (packRoute) {
+      work = Promise.resolve(localTranslate());
+    } else if (engine === "agent") {
+      work = agentTranslate(updateBusy);
+    } else if (engine === "openai") {
+      work = openaiTranslate(updateBusy);
+    } else {
+      work = Promise.resolve(localTranslate());
+    }
     work.then(renderResult).catch(function (err) {
       setStatus(err.message || String(err));
     }).then(function () {
@@ -448,8 +566,14 @@
   function speak() {
     var resultText = $("target-text").value || $("source-text").value;
     var target = $("target-lang").value;
-    var lang = target === "auto" ? (BaronhEngine.detectLang(resultText, lexicon)) : target;
-    var spoken = lang === "baronh" ? BaronhEngine.readingJa(resultText) : resultText;
+    var lang = target === "auto" ? resolvedTargetLang() : target;
+    var spoken = resultText;
+    if (lang === "baronh") {
+      spoken = BaronhEngine.readingJa(resultText);
+    } else if (window.Langpack && Langpack.isPackLang(lang)) {
+      var rec = Langpack.get(lang);
+      spoken = rec ? Langpack.readingJa(resultText, rec.spec) : resultText;
+    }
     var key = localStorage.getItem(KEY) || ($("api-key") && $("api-key").value.trim());
     var ttsModel = localStorage.getItem(TTS_MODEL_KEY) || ($("tts-model") && $("tts-model").value) || "gpt-4o-mini-tts";
     if ($("engine").value === "openai" && ttsModel) {
@@ -498,9 +622,13 @@
     html += "</p>";
     if (extraHtml) html += extraHtml;
     if (entry.pos === "noun" || entry.pos === "pronoun") {
-      var forms = BaronhEngine.decline(entry);
-      html += "<ul class='cases'>" + BaronhEngine.CASES.map(function (c) {
-        return "<li><span class='case'>" + escapeHtml(BaronhEngine.CASE_JA[c]) + "</span> " +
+      var packId = packIdInUse();
+      var rec = packId && window.Langpack ? Langpack.get(packId) : null;
+      var forms = rec ? Langpack.decline(entry, rec.spec) : BaronhEngine.decline(entry);
+      var caseNames = rec ? ((rec.spec.morphology && rec.spec.morphology.cases) || BaronhEngine.CASES) : BaronhEngine.CASES;
+      var caseJa = (rec && rec.spec.morphology && rec.spec.morphology.case_ja) || BaronhEngine.CASE_JA;
+      html += "<ul class='cases'>" + caseNames.map(function (c) {
+        return "<li><span class='case'>" + escapeHtml(caseJa[c] || c) + "</span> " +
           escapeHtml(forms[c]) + "</li>";
       }).join("") + "</ul>";
     }
@@ -511,16 +639,17 @@
   function doLookup() {
     var q = $("lookup-q").value.trim();
     if (!q) return;
-    var hits = lexicon.lookup(q, "auto");
+    var active = lexiconForUi();
+    var hits = active.lookup(q, "auto");
     var html = "";
     if (!hits.length) {
       html += "<p class='hint'>完全一致なし</p>";
     } else {
       html += hits.map(function (e) { return renderEntryCard(e); }).join("");
     }
-    if (window.BaronhVectorDB) {
+    if (window.BaronhVectorDB && !packIdInUse()) {
       try {
-        var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
+        var vec = BaronhVectorDB.getIndex(active).search(q, 5);
         if (vec.length) {
           html += "<p class='forms-heading'>ベクトル検索</p>";
           html += vec.map(function (hit) {
@@ -540,13 +669,17 @@
 
   function doConj() {
     var q = $("conj-q").value.trim();
-    var hits = lexicon.lookup(q, "auto").filter(function (e) { return e.pos === "verb"; });
+    var active = lexiconForUi();
+    var hits = active.lookup(q, "auto").filter(function (e) { return e.pos === "verb"; });
     if (!hits.length) {
       $("conj-out").innerHTML = "<p class='hint'>動詞が見つかりません</p>";
       return;
     }
     var e = hits[0];
-    var rows = BaronhEngine.allVerbForms(e).filter(function (r) { return r.voices.length === 0; });
+    var packId = packIdInUse();
+    var rec = packId && window.Langpack ? Langpack.get(packId) : null;
+    var rows = (rec ? Langpack.allVerbForms(e, rec.spec) : BaronhEngine.allVerbForms(e))
+      .filter(function (r) { return r.voices.length === 0; });
     var list = "<ul class='forms-list'>" + rows.map(function (r) {
       return "<li><span class='mood'>" + escapeHtml(r.mood) + " / " + escapeHtml(r.aspect) +
         "</span> " + escapeHtml(r.form) + "</li>";
@@ -600,8 +733,16 @@
     $("target-text").value = src;
     syncAthScript();
   });
-  $("source-lang").addEventListener("change", syncAthScript);
-  $("target-lang").addEventListener("change", syncAthScript);
+  $("source-lang").addEventListener("change", function () {
+    syncAthScript();
+    syncExamplePlaceholder();
+    refreshCount();
+  });
+  $("target-lang").addEventListener("change", function () {
+    syncAthScript();
+    syncExamplePlaceholder();
+    refreshCount();
+  });
   $("engine").addEventListener("change", function () {
     syncLocalVectorOption();
     if (openaiNeedsSetup()) {
@@ -692,8 +833,15 @@
       lexicon.mergeDocument(overlay);
     }).catch(function () { /* ユーザー辞書は任意 */ });
   }).then(function () {
+    return firstJson(dataUrls("languages.json")).catch(function () {
+      return firstJson(dataUrls("langs/index.json"));
+    }).then(loadPacks, function () {
+      return loadPacks({ languages: [] });
+    });
+  }).then(function () {
     applyOverlay();
     refreshCount();
+    syncExamplePlaceholder();
     if (!window.BaronhVectorDB || !lexicon) return;
     return Promise.all([
       firstJson(dataUrls("vectors.json")),

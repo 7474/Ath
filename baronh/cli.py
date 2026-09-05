@@ -57,9 +57,6 @@ def cmd_translate(args: argparse.Namespace) -> int:
     engine = args.engine
     pack = _pack_for_lang(args.source) or _pack_for_lang(args.target)
     if pack is not None:
-        if engine not in {"local", "auto"}:
-            print("言語パックの翻訳は --engine local のみです", file=sys.stderr)
-            return 2
         from baronh.transfer import translate_pack
 
         result = translate_pack(
@@ -68,6 +65,8 @@ def cmd_translate(args: argparse.Namespace) -> int:
             source_lang=args.source,
             target_lang=args.target,
         )
+        if engine not in {"local", "auto"}:
+            result.notes.append("パック言語は規則翻訳（言語パック）で訳しています。")
     else:
         lexicon = _lexicon(args)
         if engine == "agent":
@@ -286,6 +285,7 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_export_web(args: argparse.Namespace) -> int:
+    from baronh.langpack import export_web_packs
     from baronh.vectordb import write_index
 
     lexicon = _lexicon(args)
@@ -296,6 +296,8 @@ def cmd_export_web(args: argparse.Namespace) -> int:
     print(dest / "lexicon.json")
     print(dest / "vectors.json")
     print(dest / "vectors.bin")
+    for path in export_web_packs(dest):
+        print(path)
     return 0
 
 

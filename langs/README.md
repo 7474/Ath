@@ -130,4 +130,9 @@ langs/
   mina/lexicon.json
 ```
 
-Python 側は `baronh/langpack.py`（読込・形態）、`baronh/transfer.py`（転移翻訳）、`baronh/g2p.py`（読み・IPA）、`baronh/asr.py`（制約付き認識）。
+Python 側は `baronh/langpack.py`（読込・形態）、`baronh/transfer.py`（転移翻訳）、`baronh/g2p.py`（読み・IPA）、`baronh/asr.py`（制約付き認識）。ブラウザは `web/js/langpack.js`。運用経路は次である。
+
+- **翻訳ページ**: 入出力セレクトにパック言語が出る。GitHub Pages では CI の `export-web` が `docs/web/data/langs/` を書く。ローカルは `python -m baronh serve` か `python -m baronh export-web --out web/data`。
+- **API**: `POST /api/translate` に `"source_lang":"ja","target_lang":"mina"`。生成 AI が無くても規則翻訳を返す。
+- **CLI**: `python -m baronh translate "私はミーナです" --from ja --to mina`
+

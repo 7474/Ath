@@ -202,6 +202,36 @@ class CliLangpackTest(unittest.TestCase):
         self.assertIn("mina", buf.getvalue())
         self.assertIn("baronh", buf.getvalue())
 
+    def test_export_web_includes_language_packs(self) -> None:
+        from baronh.langpack import export_web_packs
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "data"
+            export_web_packs(out)
+            catalog = json.loads((out / "languages.json").read_text(encoding="utf-8"))
+            ids = {row["id"] for row in catalog["languages"]}
+            self.assertIn("mina", ids)
+            pack = json.loads((out / "langs" / "mina" / "language.json").read_text(encoding="utf-8"))
+            self.assertEqual(pack["id"], "mina")
+            self.assertTrue((out / "langs" / "mina" / "lexicon.json").is_file())
+
+    def test_dockerfile_copies_langs(self) -> None:
+        text = (ROOT / "deploy" / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("COPY langs/ langs/", text)
+
+    def test_browser_langpack_matches_python(self) -> None:
+        import subprocess
+
+        completed = subprocess.run(
+            ["node", str(ROOT / "tests" / "test_web_langpack.js")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn("na ya minde.", completed.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

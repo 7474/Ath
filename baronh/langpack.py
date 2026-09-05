@@ -516,5 +516,70 @@ def init_lang(
     return dest
 
 
-def repo_root() -> Path:
-    return ROOT_DIR
+def web_language_catalog() -> list[dict[str, Any]]:
+    """翻訳 UI / /api/languages 用の言語一覧。"""
+    rows: list[dict[str, Any]] = [
+        {"id": "auto", "name_ja": "自動", "name_en": "Auto", "kind": "pivot"},
+        {"id": "ja", "name_ja": "日本語", "name_en": "Japanese", "kind": "pivot"},
+        {"id": "en", "name_ja": "English", "name_en": "English", "kind": "pivot"},
+    ]
+    for pack in list_packs():
+        rows.append(
+            {
+                "id": pack.id,
+                "name_ja": pack.name_ja,
+                "name_en": pack.name_en,
+                "autonym": pack.autonym,
+                "kind": "pack",
+                "engine": pack.morphology.engine,
+                "ath": pack.id == "baronh" or pack.script == "latin-ath",
+                "builtin": uses_builtin_engine(pack),
+            }
+        )
+    return rows
+
+
+def is_translate_lang(lang: str) -> bool:
+    return lang in {"auto", "ja", "en"} or is_pack_lang(lang)
+
+
+def pack_for_route(source_lang: str, target_lang: str) -> LanguagePack | None:
+    """転移エンジンを使うパック。アーヴ語（builtin）は None。"""
+    for lang in (source_lang, target_lang):
+        if not lang or lang in {"auto", "ja", "en"}:
+            continue
+        if not is_pack_lang(lang):
+            continue
+        pack = load_pack(lang)
+        if not uses_builtin_engine(pack):
+            return pack
+    return None
+
+
+def export_web_packs(dest: Path) -> list[Path]:
+    """GitHub Pages / ブラウザ用にパック JSON を書き出す。"""
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    langs_dir = dest / "langs"
+    if langs_dir.exists():
+        for child in langs_dir.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            elif child.suffix == ".json":
+                child.unlink()
+    langs_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for pack in list_packs():
+        if uses_builtin_engine(pack):
+            continue
+        out = langs_dir / pack.id
+        out.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pack.path, out / "language.json")
+        if pack.lexicon_path and pack.lexicon_path.is_file():
+            shutil.copy2(pack.lexicon_path, out / "lexicon.json")
+        written.append(out / "language.json")
+    catalog = {"languages": web_language_catalog()}
+    for path in (dest / "languages.json", langs_dir / "index.json"):
+        path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        written.append(path)
+    return written

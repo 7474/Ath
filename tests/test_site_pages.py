@@ -160,6 +160,10 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("サーバエージェント", web)
         self.assertIn("ベクトル検索", web)
         self.assertIn("js/vectordb.js", web)
+        self.assertIn("js/engine.js", web)
+        self.assertIn("js/langpack.js", web)
+        self.assertIn('value="mina"', web)
+        self.assertIn("ミーナ語", web)
         self.assertNotIn("id=\"agent-url\"", web)
         self.assertNotIn("エージェント URL", web)
         self.assertIn("/api/translate", web)
@@ -351,6 +355,7 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("cp favicon.ico docs/favicon.ico", workflow)
         self.assertIn("cp -r icons docs/icons", workflow)
         self.assertIn("python3 -m baronh export-web --out docs/web/data", workflow)
+        self.assertIn("langs/**", workflow)
         self.assertIn("vectors.bin", workflow)
         self.assertIn("vectors.json", workflow)
 

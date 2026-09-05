@@ -443,9 +443,9 @@ python3 -m baronh init-lang keth --name-ja ケス語 --name-en Keth
 
 ### Web
 
-`web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・規則翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。
+`web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・規則翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。言語パック（ミーナ語など）は入出力セレクトから選びます。パック JSON は `python3 -m baronh export-web`（CI では `docs/web/data`）が書き出します。
 
-サーバエージェントは同一オリジンの `/api/translate`（`python -m baronh serve` または Cloud Run 上のサイト）だけを見ます。応答がなければ翻訳ページのエンジン選択肢から外します。GitHub Pages だけではサーバエージェントは動きません。ブラウザの生成AIは、GitHub Actions が事前構築したベクトル索引（`vectors.bin`）と文法コンテキストで Chat Completions を呼びます。ローカルでは `python3 -m baronh export-web` が同じファイルを `web/data/` に書き出します。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
+サーバエージェントは同一オリジンの `/api/translate`（`python -m baronh serve` または Cloud Run 上のサイト）だけを見ます。応答がなければ翻訳ページのエンジン選択肢から外します。GitHub Pages だけではサーバエージェントは動きません。パック言語は生成 AI が無くても同じ API が規則翻訳を返します。ブラウザの生成AIは、GitHub Actions が事前構築したベクトル索引（`vectors.bin`）と文法コンテキストで Chat Completions を呼びます。ローカルでは `python3 -m baronh export-web` が同じファイルを `web/data/` に書き出します。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
 
 サイト全体を見るときは `python3 -m baronh serve`（概要 `/`、アース `/ath/`、翻訳 `/web/`）か、ルートで `python3 -m http.server 8000` です。
 
