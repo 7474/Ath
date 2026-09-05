@@ -1,0 +1,31 @@
+{
+  "cssVariable": "--ath-font",
+  "storageKey": "ath-face",
+  "default": "aarth",
+  "cacheBust": "3",
+  "faces": [
+    {
+      "id": "aarth",
+      "family": "Aarth",
+      "fileStem": "aarth",
+      "label": "標準",
+      "image": "templates/ath_source_filled.png",
+      "designer": "Hiroyuki Morioka (letters), Takami Akai (numerals)",
+      "description": "Fan-made Ath webfont. Letters: Hiroyuki Morioka. Numerals: Takami Akai.",
+      "copyright": "CC BY-SA 3.0. Ath letters designed by Hiroyuki Morioka; numerals designed by Takami Akai. Digit rasters: Wikimedia Commons TRON 9-9830–9-9839.",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "preload": true
+    },
+    {
+      "id": "aarth-koudenpa-signpen",
+      "family": "Aarth Koudenpa Signpen",
+      "fileStem": "aarth-koudenpa-signpen",
+      "label": "光電波サインペン",
+      "image": "templates/faces/aarth-koudenpa-signpen.jpg",
+      "designer": "Hand-drawn sign-pen face (koudenpa). Letters designed by Hiroyuki Morioka; numerals designed by Takami Akai.",
+      "description": "Hand-drawn Ath webfont (sign pen). Letterforms after Hiroyuki Morioka; numerals after Takami Akai.",
+      "copyright": "Hand-drawn derivative of Ath. Letter designs: Hiroyuki Morioka. Numeral designs: Takami Akai. Raster: koudenpa sign-pen filling of the Aarth blank template.",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    }
+  ]
+}

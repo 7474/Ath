@@ -2,7 +2,7 @@
 
 [アーヴ語（Baronh）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) と、それを書く文字 [アース（Ath）](https://ja.wikipedia.org/wiki/%E3%82%A2%E3%83%BC%E3%83%B4%E8%AA%9E) についての二次創作です。GitHub Pages で字形デモと翻訳ツールを公開しています。
 
-- **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォント（`aarth.ttf` / `aarth.woff2`）にしたもの。既定の入力は `templates/ath_source_filled.png` です。
+- **アース**: 字母（森岡浩之）と数字 0–9（赤井孝美）をウェブフォントにしたもの。既定フェイスは `aarth.ttf` / `aarth.woff2`（入力は `templates/ath_source_filled.png`）。手書きなど追加の字体は `faces.json` に登録し、字形デモの「字体」から切り替えます。
 - **アーヴ語**: 辞書と文法規則で日本語・英語と行き来する翻訳（CLI とブラウザ）。
 
 ## サイト
@@ -125,10 +125,12 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.css">
 <style>
-  .ath { font-family: 'Aarth', serif; }
+  .ath { font-family: var(--ath-font, 'Aarth', serif); }
 </style>
 <p class="ath">aarth lotr atosr</p>
 ```
+
+`aarth.css` は `faces.json` の全フェイスを `@font-face` し、`html[data-ath-face="…"]` で `--ath-font` を切り替えます。既定は `'Aarth'` のままです。
 
 `@font-face` を自分で書く場合:
 
@@ -191,7 +193,8 @@ pip install -r requirements.txt
 ### 3. Generate the font
 
 ```bash
-python3 generate_aarth_font.py
+python3 generate_aarth_font.py              # 既定フェイス（Aarth）
+python3 generate_aarth_font.py --all-faces  # faces.json の全フェイス + aarth.css
 ```
 
 スクリプトは次を行います。
@@ -204,8 +207,9 @@ python3 generate_aarth_font.py
 出力はデフォルトでカレントディレクトリです（`--output-dir`）。
 
 ```
-aarth.ttf    — OpenType/CFF font（互換性が広い）
-aarth.woff2  — モダンブラウザ向けの圧縮 Web フォント
+aarth.ttf / aarth.woff2
+aarth-koudenpa-signpen.ttf / aarth-koudenpa-signpen.woff2   # 追加フェイスの例
+aarth.css   — --all-faces または --write-css が faces.json から再生成
 ```
 
 ### 4. Preview in a browser
@@ -280,6 +284,24 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 
 数字だけを描く場合も、上の 5–6 行目と同じ **7+3**（または横一列の 10 セル）にしてください。アースの数字字形は原作イラストの赤井孝美氏による設計です。ラスタは CC BY-SA 3.0 です。全グリフを自前で描く場合は未記入テンプレートを使ってください。
 
+### フォントフェイスを追加する
+
+手書きや別ラスタを、同じ cmap の別ウェブフォントとして足せます。字形デモ（`/ath/`）の「字体」セレクトは `faces.json` を読んで増えます。
+
+1. `templates/ath_blank_template.png` に全グリフを描き、`templates/faces/<id>.png`（または `.jpg`）として保存する。
+2. `faces.json` の `faces` 配列にエントリを足す（`id` / `family` / `fileStem` / `label` / `image` は必須。`copyright` と `designer` も書く）。
+3. 生成する。
+
+```bash
+# 追加したフェイスだけ
+python3 generate_aarth_font.py --face <id>
+
+# 全フェイスと aarth.css（デモの切り替え用）
+python3 generate_aarth_font.py --all-faces
+```
+
+`id` はファイル名と `data-ath-face` に使います。例: `aarth-koudenpa-signpen`（サインペン手書き、`templates/faces/aarth-koudenpa-signpen.jpg`）。色ペンでも構いません。生成パイプラインは RGB の最も暗いチャンネルをインクとみなします。
+
 ---
 
 ### Command-line options
@@ -288,6 +310,10 @@ python3 generate_aarth_font.py --image Ath_alphabet.png --digits-image path/to/d
 |---|---|---|
 | `--image` | filled template if present | Local path or HTTP URL of the alphabet (or combined) PNG |
 | `--digits-image` | off | Optional PNG of numerals 0–9 (`7+3` or one row of 10) |
+| `--face` | off | Build one face from `faces.json` (uses that face's `image` unless `--image` is set) |
+| `--all-faces` | off | Build every face in `faces.json` and rewrite `aarth.css` |
+| `--write-css` | off | Rewrite `aarth.css` from `faces.json` and exit |
+| `--faces-file` | `faces.json` | Alternate catalog path |
 | `--write-template` | off | Write reading + blank templates to a PNG path or directory, then exit |
 | `--output-dir` | `.` | Directory to write output files |
 | `--debug` | off | Save `debug_boxes.png` (and `debug_digit_boxes.png` when digits are present) |

@@ -1,13 +1,36 @@
-/* Aarth webfont — host this file next to aarth.woff2 / aarth.ttf.
+/* Aarth webfonts — host this file next to the .woff2 / .ttf files.
+   Generated from faces.json by generate_aarth_font.py.
    Relative urls resolve against THIS stylesheet, so a cross-origin
    <link> (GitHub Pages, jsDelivr, …) still loads the fonts from the
    same origin as the CSS. The host must send Access-Control-Allow-Origin
-   for @font-face (GitHub Pages and jsDelivr do). */
+   for @font-face (GitHub Pages and jsDelivr do).
+   Switch faces with html[data-ath-face] or --ath-font. */
+:root {
+  --ath-font: 'Aarth', serif;
+}
+
 @font-face {
   font-family: 'Aarth';
-  src: url('aarth.woff2?v=2') format('woff2'),
-       url('aarth.ttf?v=2')   format('truetype');
+  src: url('aarth.woff2?v=3') format('woff2'),
+       url('aarth.ttf?v=3')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
+}
+
+html[data-ath-face='aarth'] {
+  --ath-font: 'Aarth', serif;
+}
+
+@font-face {
+  font-family: 'Aarth Koudenpa Signpen';
+  src: url('aarth-koudenpa-signpen.woff2?v=3') format('woff2'),
+       url('aarth-koudenpa-signpen.ttf?v=3')   format('truetype');
+  font-weight: normal;
+  font-style:  normal;
+  font-display: swap;
+}
+
+html[data-ath-face='aarth-koudenpa-signpen'] {
+  --ath-font: 'Aarth Koudenpa Signpen', serif;
 }

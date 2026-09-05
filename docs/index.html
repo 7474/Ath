@@ -9,6 +9,8 @@
     try {
       var t = localStorage.getItem("ath-theme");
       if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      var f = localStorage.getItem("ath-face");
+      if (f) document.documentElement.setAttribute("data-ath-face", f);
     } catch (e) {}
   </script>
   <link rel="icon" href="favicon.ico" sizes="48x48">
@@ -36,7 +38,7 @@
     }
 
     .hero-ath {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: clamp(2.4rem, 8vw, 4.2rem);
       letter-spacing: .08em;
       line-height: 1.2;
@@ -51,7 +53,7 @@
     }
 
     .teaser-grid span {
-      font-family: 'Aarth', serif;
+      font-family: var(--ath-font);
       font-size: clamp(1.2rem, 4.5vw, 2rem);
       text-align: center;
       line-height: 1.4;
@@ -165,5 +167,6 @@
   </footer>
 
   <script src="theme.js"></script>
+  <script src="ath-face.js" data-faces="faces.json"></script>
 </body>
 </html>

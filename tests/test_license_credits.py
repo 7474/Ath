@@ -17,6 +17,7 @@ class DesignerCreditTest(unittest.TestCase):
             ROOT / "index.html",
             ROOT / "ath" / "index.html",
             ROOT / "templates" / "digits" / "NOTICE.md",
+            ROOT / "templates" / "faces" / "NOTICE.md",
         ]
         for path in paths:
             text = path.read_text(encoding="utf-8")

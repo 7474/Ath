@@ -2,11 +2,16 @@
 """
 generate_aarth_font.py
 ======================
-Generates aarth.ttf and aarth.woff2 from Ath raster images (alphabet ± digits).
+Generates Ath webfonts (TTF + WOFF2) from raster images (alphabet ± digits).
+
+Default face files are aarth.ttf / aarth.woff2. Additional faces are listed
+in faces.json (id, family, source image). ``--all-faces`` builds every face
+and rewrites aarth.css so the demo page can switch families.
 
 Pipeline:
   1. Download the source PNG from Wikimedia Commons (or use a local file).
-  2. Pre-process with OpenCV: grayscale → threshold.
+  2. Pre-process with OpenCV: darkest RGB channel → threshold (so red
+     sign-pen ink is as dark as black ink).
   3. Detect glyph boxes; merge disconnected overlines / umlauts into the
      parent glyph; keep the 4×7 alphabet grid (drop the header) and, when
      present, the numeral cells 0–9 from the same sheet or ``--digits-image``.
@@ -15,6 +20,8 @@ Pipeline:
 
 Usage:
     python generate_aarth_font.py [--image PATH_OR_URL]
+    python generate_aarth_font.py --face aarth-koudenpa-signpen
+    python generate_aarth_font.py --all-faces
     python generate_aarth_font.py --write-template templates/
 
 Requirements (install once):
@@ -25,6 +32,7 @@ Requirements (install once):
 """
 
 import argparse
+import json
 import subprocess
 import sys
 import tempfile
@@ -115,6 +123,7 @@ SOURCE_URL = (
 REPO_ROOT = Path(__file__).resolve().parent
 DIGIT_RASTER_DIR = REPO_ROOT / "templates" / "digits"
 FILLED_TEMPLATE = REPO_ROOT / "templates" / "ath_source_filled.png"
+FACES_FILE = REPO_ROOT / "faces.json"
 # Restroke 16×16 TRON bitmaps onto this canvas so potrace sees letter-weight
 # strokes and open counters instead of 1-px pixel cubes.
 DIGIT_PAINT_SIZE = 256
@@ -165,11 +174,16 @@ def download_image(url: str, dest: Path) -> None:
 
 
 def load_grayscale(image_path: Path) -> np.ndarray:
-    """Load the source PNG as a single-channel grayscale image."""
-    img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-    if img is None:
+    """Load a raster as a single-channel ink map (dark = ink).
+
+    Rec.601 grayscale leaves red sign-pen strokes around 90–120, which
+    ``DETECT_INK_MAX`` would drop. The darkest RGB channel keeps both
+    black ink and chromatic pens well below that cutoff.
+    """
+    color = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+    if color is None:
         raise FileNotFoundError(f"Cannot read image: {image_path}")
-    return img
+    return np.min(color, axis=2)
 
 
 def binarize(gray: np.ndarray) -> np.ndarray:
@@ -296,11 +310,16 @@ def _letter_sized_boxes(boxes: list) -> list:
     """
     if not boxes:
         return []
-    max_h = max(b[3] for b in boxes)
+    heights = sorted(h for _x, _y, _w, h in boxes)
+    median_h = heights[len(heights) // 2]
+    typical = [b for b in boxes if b[3] <= max(median_h * 3, 18)]
+    max_h = max(b[3] for b in typical) if typical else max(b[3] for b in boxes)
     threshold = max(18, int(max_h * 0.40))
     kept = []
     for box in boxes:
         _x, _y, w, h = box
+        if h > max(max_h * 3, threshold) and w < 3 * max(h, 1):
+            continue
         if h >= threshold:
             kept.append(box)
         elif w >= 3 * max(h, 1):
@@ -322,6 +341,10 @@ def collect_contour_boxes(binary: np.ndarray, min_area: int = 8) -> list:
         if w * h < min_area:
             continue
         if w > binary.shape[1] * 0.8:
+            continue
+        # Photos of filled sheets often have a dark page-edge stripe.
+        # That stripe would dominate letter-height and drop every glyph.
+        if h > binary.shape[0] * 0.8:
             continue
         boxes.append((x, y, w, h))
     return boxes
@@ -631,16 +654,151 @@ def layout_glyph(
     return rec, affine, advance
 
 
-# ---------------------------------------------------------------------------
-# Font building
-# ---------------------------------------------------------------------------
+def face_file_stem(face: dict | None) -> str:
+    if not face:
+        return "aarth"
+    return str(face.get("fileStem") or face.get("id") or "aarth")
 
-def build_font(glyph_data: list[dict], output_dir: Path):
+
+def face_ps_name(face: dict | None) -> str:
+    if not face:
+        return "Aarth"
+    if face.get("psName"):
+        return str(face["psName"])
+    family = str(face.get("family") or "Aarth")
+    compact = "".join(ch for ch in family if ch.isalnum())
+    return compact or "Aarth"
+
+
+def resolve_face_meta(face: dict | None) -> dict:
+    """Name-table and output paths for one webfont face."""
+    if not face:
+        face = {
+            "id": "aarth",
+            "family": "Aarth",
+            "fileStem": "aarth",
+        }
+    family = str(face.get("family") or "Aarth")
+    style = str(face.get("styleName") or "Regular")
+    return {
+        "id": str(face.get("id") or "aarth"),
+        "family": family,
+        "psName": face_ps_name(face),
+        "fullName": str(face.get("fullName") or f"{family} {style}"),
+        "styleName": style,
+        "fileStem": face_file_stem(face),
+        "copyright": str(face.get("copyright") or FONT_LICENSE),
+        "designer": str(
+            face.get("designer")
+            or "Hiroyuki Morioka (letters), Takami Akai (numerals)"
+        ),
+        "licenseUrl": str(face.get("licenseUrl") or FONT_LICENSE_URL),
+        "description": str(
+            face.get("description")
+            or (
+                "Fan-made Ath webfont. Letters: Hiroyuki Morioka. "
+                "Numerals: Takami Akai."
+            )
+        ),
+        "label": str(face.get("label") or family),
+        "image": face.get("image"),
+        "preload": bool(face.get("preload")),
+    }
+
+
+def load_faces_catalog(path: Path | None = None) -> dict:
+    """Load faces.json (id / family / source image for each webfont)."""
+    catalog_path = Path(path) if path else FACES_FILE
+    if not catalog_path.is_file():
+        return {
+            "cssVariable": "--ath-font",
+            "storageKey": "ath-face",
+            "default": "aarth",
+            "cacheBust": "3",
+            "faces": [],
+        }
+    with catalog_path.open(encoding="utf-8") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"faces catalog must be an object: {catalog_path}")
+    faces = data.get("faces") or []
+    if not isinstance(faces, list):
+        raise ValueError(f"faces catalog 'faces' must be a list: {catalog_path}")
+    data["faces"] = faces
+    data.setdefault("cssVariable", "--ath-font")
+    data.setdefault("storageKey", "ath-face")
+    data.setdefault("default", "aarth")
+    data.setdefault("cacheBust", "3")
+    return data
+
+
+def get_face(catalog: dict, face_id: str) -> dict:
+    for face in catalog.get("faces") or []:
+        if face.get("id") == face_id:
+            return face
+    known = ", ".join(f.get("id", "?") for f in catalog.get("faces") or [])
+    raise KeyError(f"unknown font face {face_id!r}. Known: {known}")
+
+
+def write_faces_css(
+    dest: Path,
+    catalog: dict | None = None,
+    cache_bust: str | None = None,
+) -> Path:
+    """Write @font-face rules plus --ath-font switcher CSS from faces.json."""
+    catalog = catalog if catalog is not None else load_faces_catalog()
+    faces = [resolve_face_meta(face) for face in catalog.get("faces") or []]
+    if not faces:
+        faces = [resolve_face_meta(None)]
+    default_id = str(catalog.get("default") or faces[0]["id"])
+    default_meta = next((f for f in faces if f["id"] == default_id), faces[0])
+    bust = str(cache_bust or catalog.get("cacheBust") or "3")
+    css_var = str(catalog.get("cssVariable") or "--ath-font")
+
+    lines = [
+        "/* Aarth webfonts — host this file next to the .woff2 / .ttf files.",
+        "   Generated from faces.json by generate_aarth_font.py.",
+        "   Relative urls resolve against THIS stylesheet, so a cross-origin",
+        "   <link> (GitHub Pages, jsDelivr, …) still loads the fonts from the",
+        "   same origin as the CSS. The host must send Access-Control-Allow-Origin",
+        "   for @font-face (GitHub Pages and jsDelivr do).",
+        f"   Switch faces with html[data-ath-face] or {css_var}. */",
+        ":root {",
+        f"  {css_var}: '{default_meta['family']}', serif;",
+        "}",
+        "",
+    ]
+    for meta in faces:
+        stem = meta["fileStem"]
+        family = meta["family"]
+        lines += [
+            "@font-face {",
+            f"  font-family: '{family}';",
+            f"  src: url('{stem}.woff2?v={bust}') format('woff2'),",
+            f"       url('{stem}.ttf?v={bust}')   format('truetype');",
+            "  font-weight: normal;",
+            "  font-style:  normal;",
+            "  font-display: swap;",
+            "}",
+            "",
+            f"html[data-ath-face='{meta['id']}'] {{",
+            f"  {css_var}: '{family}', serif;",
+            "}",
+            "",
+        ]
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    print(f"[output] {dest}")
+    return dest
+
+
+def build_font(glyph_data: list[dict], output_dir: Path, face: dict | None = None):
     """
     glyph_data: list of {codepoint, name, svg_d}
     Builds a CFF-based OTF (natively supports cubic Beziers from potrace), then:
-      - saves as aarth.ttf  (OTF binary; .ttf extension for broad compatibility)
-      - compresses to aarth.woff2
+      - saves as ``{fileStem}.ttf``  (OTF binary; .ttf extension for compatibility)
+      - compresses to ``{fileStem}.woff2``
 
     Each glyph is scaled with a *shared* factor taken from the tallest outline
     (typically a letter plus overline/umlaut) so bodies stay the same size and
@@ -713,32 +871,30 @@ def build_font(glyph_data: list[dict], output_dir: Path):
         charStrings[g["name"]] = pen.getCharString()
         metrics[g["name"]] = (advance, 0)
 
+    meta = resolve_face_meta(face)
     fb = FontBuilder(EM, isTTF=False)
     fb.setupGlyphOrder(glyph_names)
     fb.setupHorizontalMetrics(metrics)
     fb.setupCharacterMap({g["codepoint"]: g["name"] for g in glyph_data})
     fb.setupCFF(
-        psName="Aarth",
+        psName=meta["psName"],
         fontInfo={
             "version": "1.0",
-            "FullName": "Aarth Regular",
-            "FamilyName": "Aarth",
-            "Weight": "Regular",
+            "FullName": meta["fullName"],
+            "FamilyName": meta["family"],
+            "Weight": meta["styleName"],
         },
         charStringsDict=charStrings,
         privateDict={"defaultWidthX": 0, "nominalWidthX": 0},
     )
     fb.setupNameTable({
-        "familyName": "Aarth",
-        "styleName": "Regular",
-        "copyright": FONT_LICENSE,
-        "designer": "Hiroyuki Morioka (letters), Takami Akai (numerals)",
-        "licenseDescription": FONT_LICENSE,
-        "licenseInfoURL": FONT_LICENSE_URL,
-        "description": (
-            "Fan-made Ath webfont. Letters: Hiroyuki Morioka. "
-            "Numerals: Takami Akai."
-        ),
+        "familyName": meta["family"],
+        "styleName": meta["styleName"],
+        "copyright": meta["copyright"],
+        "designer": meta["designer"],
+        "licenseDescription": meta["copyright"],
+        "licenseInfoURL": meta["licenseUrl"],
+        "description": meta["description"],
     })
     fb.setupHorizontalHeader(ascent=ASCENDER, descent=DESCENDER)
     fb.setupHead(unitsPerEm=EM)
@@ -754,11 +910,11 @@ def build_font(glyph_data: list[dict], output_dir: Path):
     )
     fb.setupPost()
 
-    ttf_path = output_dir / "aarth.ttf"
+    ttf_path = output_dir / f"{meta['fileStem']}.ttf"
     fb.font.save(str(ttf_path))
     print(f"[output] {ttf_path}")
 
-    woff2_path = output_dir / "aarth.woff2"
+    woff2_path = output_dir / f"{meta['fileStem']}.woff2"
     from fontTools.ttLib.woff2 import compress
     compress(str(ttf_path), str(woff2_path))
     print(f"[output] {woff2_path}")
@@ -1156,82 +1312,54 @@ def _write_debug_boxes(binary, labeled_boxes: list[tuple], dest: Path) -> None:
     cv2.imwrite(str(dest), debug_img)
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Generate Aarth webfont from Ath raster images (alphabet ± digits)",
-    )
-    parser.add_argument("--image", default=None,
-                        help="Path to PNG image or URL (default: filled template, else Wikimedia)")
-    parser.add_argument(
-        "--digits-image", default=None,
-        help="Optional raster of Ath numerals 0–9 (7+3 or 10-wide grid; see --write-template)",
-    )
-    parser.add_argument(
-        "--write-template", default=None, metavar="PATH",
-        help="Write reading + blank templates (PNG path or directory) and exit",
-    )
-    parser.add_argument("--output-dir", default=".", help="Directory for output files")
-    parser.add_argument("--debug", action="store_true", help="Save debug images")
-    args = parser.parse_args()
-
-    output_dir = Path(args.output_dir)
+def generate_font_from_rasters(
+    image_path: Path,
+    output_dir: Path,
+    digits_image: Path | None = None,
+    debug: bool = False,
+    face: dict | None = None,
+    debug_prefix: str = "",
+) -> tuple[Path, Path]:
+    """Detect, trace, and assemble one webfont from alphabet ± digit rasters."""
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    meta = resolve_face_meta(face)
+    stem = meta["fileStem"]
 
-    if args.write_template:
-        alphabet_src = None
-        if args.image and not args.image.startswith("http"):
-            alphabet_src = Path(args.image)
-        elif (Path("Ath_alphabet.png")).is_file():
-            alphabet_src = Path("Ath_alphabet.png")
-        write_source_templates(Path(args.write_template), alphabet_image=alphabet_src)
-        return
-
-    # --- 1. Acquire image ---
-    if args.image is None and FILLED_TEMPLATE.is_file():
-        image_path = FILLED_TEMPLATE
-        print(f"[info] using {image_path}")
-    else:
-        image_path = _acquire_image(args.image, output_dir, "Ath_alphabet.png")
-
-    # --- 2. Pre-process ---
     print("[process] binarizing image …")
     gray = load_grayscale(image_path)
     binary = binarize(gray)
 
-    # --- 3. Detect glyph boxes ---
     print("[process] detecting glyphs …")
     alphabet_boxes, digit_boxes = find_alphabet_and_digit_boxes(binary)
     print(
         f"  found {len(alphabet_boxes)} alphabet"
-        f" + {len(digit_boxes)} digit boxes on --image"
+        f" + {len(digit_boxes)} digit boxes on {image_path.name}"
     )
 
     digits_gray = gray
     digits_binary = binary
-    if args.digits_image:
-        digits_path = Path(args.digits_image)
+    if digits_image:
+        digits_path = Path(digits_image)
         print(f"[process] reading digits image {digits_path} …")
         digits_gray = load_grayscale(digits_path)
         digits_binary = binarize(digits_gray)
         digit_boxes = find_digit_boxes(digits_binary)
         print(f"  found {len(digit_boxes)} digit boxes on --digits-image")
 
-    if args.debug:
+    debug_name = f"{debug_prefix}debug_boxes.png" if debug_prefix else "debug_boxes.png"
+    if debug:
         labeled = [
             (box, ALPHABET_NAMES[i] if i < len(ALPHABET_NAMES) else str(i))
             for i, box in enumerate(alphabet_boxes)
         ]
-        if digit_boxes and not args.digits_image:
+        if digit_boxes and not digits_image:
             labeled += [
                 (box, DIGIT_NAMES[i] if i < len(DIGIT_NAMES) else str(i))
                 for i, box in enumerate(digit_boxes)
             ]
-        _write_debug_boxes(binary, labeled, output_dir / "debug_boxes.png")
-        if args.digits_image and digit_boxes:
+        _write_debug_boxes(binary, labeled, output_dir / debug_name)
+        if digits_image and digit_boxes:
             d_labeled = [
                 (box, DIGIT_NAMES[i] if i < len(DIGIT_NAMES) else str(i))
                 for i, box in enumerate(digit_boxes)
@@ -1259,7 +1387,6 @@ def main():
     if digit_boxes:
         digit_boxes = frame_digit_boxes(digit_boxes)
 
-    # --- 4. Vectorise each glyph ---
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
         glyph_data = []
@@ -1279,10 +1406,121 @@ def main():
                 lock_frame=True,
             )
 
-        print("[build] assembling font …")
-        build_font(glyph_data, output_dir)
+        print(f"[build] assembling {meta['family']} …")
+        paths = build_font(glyph_data, output_dir, face=face)
 
-    print("[done] aarth.ttf and aarth.woff2 created.")
+    print(f"[done] {stem}.ttf and {stem}.woff2 created.")
+    return paths
+
+
+def _resolve_face_image(face: dict, output_dir: Path) -> Path:
+    raw = face.get("image")
+    if not raw:
+        raise ValueError(f"face {face.get('id')!r} has no image")
+    spec = str(raw)
+    path = Path(spec)
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    if path.is_file():
+        return path
+    if spec.startswith("http"):
+        return _acquire_image(spec, output_dir, f"{face_file_stem(face)}.png")
+    raise FileNotFoundError(f"face image not found: {path}")
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate Aarth webfont from Ath raster images (alphabet ± digits)",
+    )
+    parser.add_argument("--image", default=None,
+                        help="Path to PNG image or URL (default: face image, filled template, or Wikimedia)")
+    parser.add_argument(
+        "--digits-image", default=None,
+        help="Optional raster of Ath numerals 0–9 (7+3 or 10-wide grid; see --write-template)",
+    )
+    parser.add_argument(
+        "--write-template", default=None, metavar="PATH",
+        help="Write reading + blank templates (PNG path or directory) and exit",
+    )
+    parser.add_argument(
+        "--faces-file", default=None,
+        help="Path to faces.json (default: repository faces.json)",
+    )
+    parser.add_argument(
+        "--face", default=None, metavar="ID",
+        help="Build one registered face from faces.json (e.g. aarth-koudenpa-signpen)",
+    )
+    parser.add_argument(
+        "--all-faces", action="store_true",
+        help="Build every face in faces.json and rewrite aarth.css",
+    )
+    parser.add_argument(
+        "--write-css", action="store_true",
+        help="Rewrite aarth.css from faces.json and exit",
+    )
+    parser.add_argument("--output-dir", default=".", help="Directory for output files")
+    parser.add_argument("--debug", action="store_true", help="Save debug images")
+    args = parser.parse_args()
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    catalog = load_faces_catalog(Path(args.faces_file) if args.faces_file else None)
+
+    if args.write_template:
+        alphabet_src = None
+        if args.image and not args.image.startswith("http"):
+            alphabet_src = Path(args.image)
+        elif (Path("Ath_alphabet.png")).is_file():
+            alphabet_src = Path("Ath_alphabet.png")
+        write_source_templates(Path(args.write_template), alphabet_image=alphabet_src)
+        return
+
+    if args.write_css:
+        write_faces_css(output_dir / "aarth.css", catalog)
+        return
+
+    if args.all_faces:
+        if not catalog.get("faces"):
+            raise SystemExit("faces.json has no faces to build")
+        for face in catalog["faces"]:
+            image_path = _resolve_face_image(face, output_dir)
+            print(f"[face] {face.get('id')} ← {image_path}")
+            prefix = "" if face.get("id") == catalog.get("default") else f"{face_file_stem(face)}_"
+            generate_font_from_rasters(
+                image_path,
+                output_dir,
+                digits_image=Path(args.digits_image) if args.digits_image else None,
+                debug=args.debug,
+                face=face,
+                debug_prefix=prefix,
+            )
+        write_faces_css(output_dir / "aarth.css", catalog)
+        return
+
+    face = None
+    if args.face:
+        face = get_face(catalog, args.face)
+
+    if args.image is None and face is not None:
+        image_path = _resolve_face_image(face, output_dir)
+        print(f"[info] using {image_path}")
+    elif args.image is None and FILLED_TEMPLATE.is_file():
+        image_path = FILLED_TEMPLATE
+        print(f"[info] using {image_path}")
+    else:
+        image_path = _acquire_image(args.image, output_dir, "Ath_alphabet.png")
+
+    generate_font_from_rasters(
+        image_path,
+        output_dir,
+        digits_image=Path(args.digits_image) if args.digits_image else None,
+        debug=args.debug,
+        face=face,
+    )
 
 
 if __name__ == "__main__":
