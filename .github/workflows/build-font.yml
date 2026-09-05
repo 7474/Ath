@@ -16,6 +16,7 @@ on:
       - 'generate_favicon.py'
       - 'ath/**'
       - 'aarth.css'
+      - 'theme.js'
       - 'requirements.txt'
       - 'web/**'
       - 'data/lexicon.json'
@@ -54,6 +55,7 @@ jobs:
           cp index.html docs/index.html
           cp site.css docs/site.css
           cp aarth.css docs/aarth.css
+          cp theme.js docs/theme.js
           cp favicon.ico docs/favicon.ico
           rm -rf docs/icons
           cp -r icons docs/icons

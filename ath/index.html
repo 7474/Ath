@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>アース（Ath）字形デモ — アーヴ語とアース</title>
+  <script>
+    try {
+      var t = localStorage.getItem("ath-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
   <link rel="icon" href="../favicon.ico" sizes="48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="../icons/favicon-16.png">
@@ -19,8 +26,8 @@
 
     body {
       font-family: system-ui, sans-serif;
-      background: #fafaf8;
-      color: #222;
+      background: var(--bg);
+      color: var(--ink);
     }
 
     main.page-content {
@@ -108,7 +115,7 @@
 
     h1, h2 { margin-bottom: .5rem; }
     h1 { font-size: 1.8rem; margin-bottom: 1.5rem; }
-    h2 { font-size: 1.2rem; color: #555; margin-top: 2rem; }
+    h2 { font-size: 1.2rem; color: var(--heading); margin-top: 2rem; }
 
     /* ------------------------------------------------------------------ */
     /* Aarth font utility class                                            */
@@ -121,8 +128,8 @@
     /* Demo sections                                                        */
     /* ------------------------------------------------------------------ */
     .demo-block {
-      background: #fff;
-      border: 1px solid #e0e0e0;
+      background: var(--card);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 1.5rem;
       margin-top: 1rem;
@@ -137,7 +144,7 @@
       font-size: clamp(2.4rem, 12vw, 5rem);
       line-height: 1.2;
       letter-spacing: .08em;
-      color: #1a1a1a;
+      color: var(--ink);
       overflow-wrap: anywhere;
     }
 
@@ -172,7 +179,7 @@
 
     .alpha-cell .label {
       font-size: .8rem;
-      color: #555;
+      color: var(--heading);
       font-family: monospace;
     }
 
@@ -197,12 +204,12 @@
     .mapping-table td {
       text-align: left;
       padding: .4rem .55rem;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--line-soft);
       vertical-align: middle;
     }
 
     .mapping-table th {
-      color: #555;
+      color: var(--heading);
       font-weight: 600;
       font-size: .78rem;
       letter-spacing: .02em;
@@ -267,7 +274,7 @@
         align-items: center;
         gap: .4rem .75rem;
         padding: .55rem 0;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--line-soft);
       }
       .mapping-table td {
         display: block;
@@ -309,7 +316,7 @@
 
     .empire-short {
       font-size: 1.35rem;
-      color: #333;
+      color: var(--notice-ink);
       margin-bottom: 1.2rem;
     }
 
@@ -335,25 +342,25 @@
       margin-top: .9rem;
       font-size: .9rem;
       line-height: 1.6;
-      color: #555;
+      color: var(--heading);
       font-family: system-ui, sans-serif;
       text-transform: none;
       letter-spacing: normal;
     }
 
-    .source-note a { color: #1a5fb4; }
+    .source-note a { color: var(--link); }
 
     code {
-      background: #f0f0f0;
-      color: #1a1a1a;
+      background: var(--code-bg);
+      color: var(--code-ink);
       border-radius: 3px;
       padding: .1em .35em;
       font-size: .9em;
     }
 
     pre {
-      background: #1e1e2e;
-      color: #cdd6f4;
+      background: var(--pre-bg);
+      color: var(--pre-ink);
       border-radius: 8px;
       padding: 1.2rem;
       overflow-x: auto;
@@ -374,21 +381,22 @@
       font: .85rem/1.2 system-ui, sans-serif;
       text-transform: none;
       padding: .35rem .7rem;
-      border: 1px solid #ccc;
+      border: 1px solid var(--control);
       border-radius: 6px;
-      background: #fff;
+      background: var(--card);
+      color: var(--ink);
       cursor: pointer;
     }
 
-    .snippet-actions button:hover { background: #f3f3f3; }
+    .snippet-actions button:hover { background: var(--control-hover); }
 
     .use-note {
       margin-top: .8rem;
-      color: #444;
+      color: var(--body-soft);
       line-height: 1.5;
     }
 
-    .use-note a { color: #1a5fb4; }
+    .use-note a { color: var(--link); }
 
     /* <pre><code> must not inherit the inline-code chip background,
        or the light text on #f0f0f0 becomes unreadable. */
@@ -403,18 +411,18 @@
     .notice {
       font-size: .95rem;
       line-height: 1.75;
-      color: #333;
+      color: var(--notice-ink);
     }
 
-    .notice a { color: #1a5fb4; }
+    .notice a { color: var(--link); }
 
     .notice p + p { margin-top: .8rem; }
 
     footer {
       margin-top: 3rem;
       padding-top: 1.5rem;
-      border-top: 1px solid #e0e0e0;
-      color: #666;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
       font-size: .85rem;
     }
   </style>
@@ -430,6 +438,7 @@
       <a href="../">概要</a>
       <a href="./" aria-current="page">アース</a>
       <a href="../web/">翻訳</a>
+      <button type="button" class="theme-toggle" id="theme-toggle">自動</button>
     </nav>
     <div class="translate-play">
       <button type="button" id="translate-button" aria-pressed="false" aria-controls="page-content">
@@ -781,6 +790,7 @@
       }
     })();
   </script>
+  <script src="../theme.js"></script>
 
 </body>
 </html>
