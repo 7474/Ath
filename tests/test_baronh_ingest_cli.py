@@ -182,6 +182,29 @@ class CliSmokeTest(unittest.TestCase):
         self.assertFalse(any(entry.lemma in {"le", "lo"} for entry in lex.lookup("並列")))
         self.assertFalse(any(entry.lemma == "te" for entry in lex.lookup("引用")))
 
+    def test_expanded_and_aux_glosses_are_clean_words(self):
+        from baronh.lexicon import load_lexicon
+        from baronh.translate import translate
+
+        lex = load_lexicon()
+        crown = next(entry for entry in lex.lookup("cilugiac") if entry.lemma == "cilugiac")
+        self.assertEqual(crown.gloss_ja.split("/")[0].strip(), "皇太子")
+        self.assertNotIn("(", crown.gloss_ja)
+        self.assertNotIn("（", crown.gloss_ja)
+        self.assertIn("皇太女", crown.gloss_ja)
+        strike = next(entry for entry in lex.lookup("bhotuth") if entry.lemma == "bhotuth")
+        self.assertEqual(strike.gloss_ja.split("/")[0].strip(), "打撃")
+        self.assertIn("打撃隊", strike.gloss_ja)
+        self.assertNotIn("(隊)", strike.gloss_ja)
+        passive = next(entry for entry in lex.lookup("-ar-") if entry.lemma == "-ar-")
+        self.assertEqual(passive.gloss_ja.split("/")[0].strip(), "受け身")
+        self.assertNotIn("(ら)", passive.gloss_ja)
+        self.assertIn("〜(ら)れる", passive.notes)
+        out = translate("cilugiac", lex, source_lang="baronh", target_lang="ja")
+        self.assertIn("皇太子", out.text)
+        self.assertNotIn("(", out.text)
+        self.assertNotIn("女", out.text)
+
     def test_lexicon_letters_are_ath_glyphs(self):
         from baronh.lexicon import load_lexicon
         from baronh.phonology import to_ath_keys

@@ -244,8 +244,27 @@ def _looks_usage_label(inner: str) -> bool:
     return bool(_USAGE_LABEL_RE.match(item))
 
 
+_DICT_PASSIVE_RE = re.compile(r"^〜?\(ら\)れる$")
+_DICT_CAUSATIVE_RE = re.compile(r"^〜?\(さ\)せる$")
+_DICT_PASSIVE_PLAIN_RE = re.compile(r"^〜される$")
+
+
+def _normalize_dict_aux(text: str, notes: list[str]) -> str:
+    """辞書の活用表記 `〜(ら)れる` は訳語にせず、受け身・使役だけを残す。"""
+    if _DICT_PASSIVE_RE.fullmatch(text):
+        notes.append("〜(ら)れる")
+        return "受け身"
+    if _DICT_CAUSATIVE_RE.fullmatch(text):
+        notes.append("〜(さ)せる")
+        return "使役"
+    if _DICT_PASSIVE_PLAIN_RE.fullmatch(text):
+        notes.append(text)
+        return "受け身"
+    return text
+
+
 def _peel_any_leading_paren(text: str, notes: list[str]) -> str:
-    """残った先頭カッコは用法・修飾として notes へ。`(ら)れる` だけは語形の一部。"""
+    """残った先頭カッコは用法・修飾として notes へ。活用表記は後で辞書形として分ける。"""
     while text:
         match = _LEADING_ANY_PAREN.match(text)
         if not match:
@@ -454,6 +473,7 @@ def clean_ja_gloss(raw: str) -> tuple[str, str]:
             part = _peel_mid_synonym_paren(part, notes)
             part = _peel_trailing_note_paren(part, notes)
             part = _strip_trail_case_paren(part)
+            part = _normalize_dict_aux(part, notes)
             if not part:
                 continue
             if re.fullmatch(r"[（(][^）)]+[）)]", part):

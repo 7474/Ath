@@ -1913,14 +1913,14 @@
     {
       "lemma": "-ar-",
       "pos": "suffix",
-      "gloss_ja": "〜(ら)れる / 〜される / 受け身",
-      "gloss_en": "〜(ら)れる",
+      "gloss_ja": "受け身",
+      "gloss_en": "受け身",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "受動の意を現わす Fe ïarbarle. 私は選抜された",
+      "notes": "〜(ら)れる 受動の意を現わす Fe ïarbarle. 私は選抜された 〜される",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {
@@ -1993,13 +1993,13 @@
     {
       "lemma": "-as-",
       "pos": "suffix",
-      "gloss_ja": "〜(さ)せる",
-      "gloss_en": "〜(さ)せる",
+      "gloss_ja": "使役",
+      "gloss_en": "使役",
       "tags": [
         "dadh-baronr",
         "ingested"
       ],
-      "notes": "使役の意を現わす sacase 書かせる",
+      "notes": "〜(さ)せる 使役の意を現わす sacase 書かせる",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-1.html"
     },
     {

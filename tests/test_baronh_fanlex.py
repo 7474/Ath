@@ -233,10 +233,16 @@ class CleanJaGlossTest(unittest.TestCase):
         self.assertEqual(gloss, "それで / そのために")
         self.assertIn("前文の内容を受けて", notes)
 
-    def test_keeps_optional_conjugation_kana(self):
+    def test_dict_aux_notation_is_note(self):
         gloss, notes = clean_ja_gloss("〜(ら)れる")
-        self.assertEqual(gloss, "〜(ら)れる")
-        self.assertNotIn("ら", notes)
+        self.assertEqual(gloss, "受け身")
+        self.assertIn("〜(ら)れる", notes)
+        gloss, notes = clean_ja_gloss("〜(さ)せる")
+        self.assertEqual(gloss, "使役")
+        self.assertIn("〜(さ)せる", notes)
+        gloss, notes = clean_ja_gloss("〜(ら)れる / 〜される / 受け身")
+        self.assertEqual(gloss, "受け身")
+        self.assertIn("〜(ら)れる", notes)
 
     def test_expands_compact_variants(self):
         gloss, notes = clean_ja_gloss("皇太子(女)")
