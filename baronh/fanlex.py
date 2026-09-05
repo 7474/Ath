@@ -244,6 +244,26 @@ def _looks_usage_label(inner: str) -> bool:
     return bool(_USAGE_LABEL_RE.match(item))
 
 
+def _looks_content_noun(inner: str) -> bool:
+    """`(繊維)束` の「繊維」のように、見出しの実義になる短い語。"""
+    item = (inner or "").strip()
+    if not item or _looks_usage_label(item):
+        return False
+    if re.search(r"[がをにへでもなてで]$", item):
+        return False
+    if item in {"は", "を", "が", "に", "へ", "と", "で", "の", "も", "か", "など", "などに", "等"}:
+        return False
+    if "あるいは" in item:
+        return False
+    if not 1 <= _ja_char_count(item) <= 6:
+        return False
+    if not re.search(r"[\u4e00-\u9fff]", item):
+        return False
+    if re.search(r"(して|られ|こと|場合|問われ|こたえて|受けて)", item):
+        return False
+    return bool(re.fullmatch(r"[\u3040-\u30ff\u4e00-\u9fffー]+", item))
+
+
 _DICT_PASSIVE_RE = re.compile(r"^〜?\(ら\)れる$")
 _DICT_CAUSATIVE_RE = re.compile(r"^〜?\(さ\)せる$")
 _DICT_PASSIVE_PLAIN_RE = re.compile(r"^〜される$")
@@ -271,6 +291,8 @@ def _peel_any_leading_paren(text: str, notes: list[str]) -> str:
             break
         inner, rest = match.group(1).strip(), match.group(2).strip()
         if inner in {"ら", "さ"} and rest.startswith(("れる", "せる", "られる", "させる")):
+            break
+        if _looks_content_noun(inner):
             break
         if not rest or _ja_char_count(rest) < 1:
             break
@@ -320,6 +342,23 @@ def _expand_compact_parens(text: str, notes: list[str]) -> list[str]:
         if inner == "輸送艦":
             return [f"{head}{inner}"]
         return [head, f"{head}{inner}"]
+    lead = _LEADING_ANY_PAREN.match(text)
+    if lead:
+        inner, rest = lead.group(1).strip(), lead.group(2).strip()
+        if _looks_content_noun(inner) and rest:
+            joined = f"{inner}{rest}"
+            return [joined, rest] if rest != joined else [joined]
+    mid = re.fullmatch(r"(.+?)[（(]([^）)]{1,12})[）)](.+)", text)
+    if mid:
+        left, inner, right = mid.group(1), mid.group(2).strip(), mid.group(3)
+        if (
+            _looks_content_noun(inner)
+            and _ja_char_count(left) >= 2
+            and _ja_char_count(right) >= 2
+        ):
+            primary = f"{left}{right}".strip()
+            alt = f"{inner}{right}".strip()
+            return [primary, alt] if alt != primary else [primary]
     return [text]
 
 
@@ -343,14 +382,6 @@ def _peel_mid_synonym_paren(text: str, notes: list[str]) -> str:
     if inner in {"ら", "さ", "女", "隊"}:
         return text
     if _looks_usage_label(inner) or _looks_furigana(inner, left):
-        notes.append(inner)
-        return (left + right).strip()
-    if (
-        _ja_char_count(inner) <= 6
-        and _ja_char_count(left) >= 2
-        and _ja_char_count(right) >= 2
-        and "あるいは" not in inner
-    ):
         notes.append(inner)
         return (left + right).strip()
     return text

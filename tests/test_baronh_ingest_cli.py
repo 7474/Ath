@@ -204,6 +204,13 @@ class CliSmokeTest(unittest.TestCase):
         self.assertIn("皇太子", out.text)
         self.assertNotIn("(", out.text)
         self.assertNotIn("女", out.text)
+        subject = next(entry for entry in lex.lookup("bitsair-ec") if entry.lemma == "bitsair-ec")
+        self.assertIn("帝国臣民", subject.gloss_ja)
+        self.assertNotIn("(帝国)", subject.gloss_ja)
+        self.assertTrue(any(entry.lemma == "bitsair-ec" for entry in lex.lookup("帝国臣民")))
+        fiber = next(entry for entry in lex.lookup("labh") if entry.lemma == "labh")
+        self.assertIn("繊維束", fiber.gloss_ja)
+        self.assertNotIn("(繊維)", fiber.gloss_ja)
 
     def test_lexicon_letters_are_ath_glyphs(self):
         from baronh.lexicon import load_lexicon

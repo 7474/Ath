@@ -1780,27 +1780,27 @@
     {
       "lemma": "bitsair-ec",
       "pos": "noun",
-      "gloss_ja": "臣民 / 帝国の支配をうける者の総称",
-      "gloss_en": "臣民 / 帝国の支配をうける者の総称",
+      "gloss_ja": "帝国臣民 / 臣民 / 帝国の支配をうける者の総称",
+      "gloss_en": "帝国臣民 / 臣民 / 帝国の支配をうける者の総称",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
-      "notes": "(rüé -) 帝国",
+      "notes": "(rüé -)",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
       "lemma": "h",
       "pos": "noun",
-      "gloss_ja": "臣民 / 帝国の支配をうける者の総称 / 百合 / 薔薇 / 髪 / 髪の毛",
-      "gloss_en": "臣民 / 帝国の支配をうける者の総称",
+      "gloss_ja": "帝国臣民 / 臣民 / 帝国の支配をうける者の総称 / 百合 / 薔薇 / 髪 / 髪の毛",
+      "gloss_en": "帝国臣民 / 臣民 / 帝国の支配をうける者の総称",
       "tags": [
         "dadh-baronr",
         "ingested",
         "reconstructed"
       ],
-      "notes": "(rüé -) 帝国",
+      "notes": "(rüé -)",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-2.html"
     },
     {
@@ -7736,15 +7736,15 @@
     {
       "lemma": "labh",
       "pos": "noun",
-      "gloss_ja": "束",
-      "gloss_en": "束",
+      "gloss_ja": "繊維束 / 束",
+      "gloss_en": "繊維束 / 束",
       "reading_ja": "ラーヴ",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "繊維 の意か labh *ihosr 光繊維束",
+      "notes": "の意か labh *ihosr 光繊維束",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-5.html"
     },
     {
@@ -13231,8 +13231,8 @@
     {
       "lemma": "slona",
       "pos": "noun",
-      "gloss_ja": "外部の / 艦外の / 船外の / 艦外",
-      "gloss_en": "外部の / 艦外の / 船外の",
+      "gloss_ja": "外部の / 艦外の / 船外の / 船外空識覚 / 艦外",
+      "gloss_en": "外部の / 艦外の / 船外の / 船外空識覚",
       "reading_ja": "スローナ",
       "tags": [
         "dadh-baronr",
@@ -13240,7 +13240,7 @@
         "reconstructed",
         "mule-jisyo"
       ],
-      "notes": "船外 frocragh - 艦外空識覚 の",
+      "notes": "frocragh - 艦外空識覚 の",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-7.html"
     },
     {
@@ -14122,15 +14122,15 @@
     {
       "lemma": "tymh",
       "pos": "noun",
-      "gloss_ja": "物質燃料採取基地 / 物質燃料・推進剤採取基地",
-      "gloss_en": "物質燃料採取基地",
+      "gloss_ja": "物質燃料採取基地 / 推進剤採取基地 / 物質燃料・推進剤採取基地",
+      "gloss_en": "物質燃料採取基地 / 推進剤採取基地",
       "reading_ja": "テューフ",
       "tags": [
         "dadh-baronr",
         "ingested",
         "mule-jisyo"
       ],
-      "notes": "=itymh 推進剤",
+      "notes": "=itymh",
       "source": "http://dadh-baronr.s5.xrea.com/doc/baronhdic-8.html"
     },
     {
@@ -17517,13 +17517,12 @@
     {
       "lemma": "ceutes banodhoti",
       "pos": "phrase",
-      "gloss_ja": "一人あたり",
-      "gloss_en": "一人あたり",
+      "gloss_ja": "客一人あたり / 一人あたり",
+      "gloss_en": "客一人あたり / 一人あたり",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
-      "notes": "客",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {
@@ -19135,13 +19134,12 @@
     {
       "lemma": "éllorséc",
       "pos": "noun",
-      "gloss_ja": "融解",
-      "gloss_en": "融解",
+      "gloss_ja": "船殻融解 / 融解",
+      "gloss_en": "船殻融解 / 融解",
       "tags": [
         "mule-jisyo",
         "ingested"
       ],
-      "notes": "船殻",
       "source": "http://mule.s59.xrea.com/seikai/jisyo/"
     },
     {

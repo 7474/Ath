@@ -223,9 +223,6 @@ class CleanJaGlossTest(unittest.TestCase):
         gloss, notes = clean_ja_gloss("(船が)沈む")
         self.assertEqual(gloss, "沈む")
         self.assertIn("船が", notes)
-        gloss, notes = clean_ja_gloss("(帝国)臣民")
-        self.assertEqual(gloss, "臣民")
-        self.assertIn("帝国", notes)
         gloss, notes = clean_ja_gloss("(前置型)帝国の")
         self.assertEqual(gloss, "帝国の")
         self.assertIn("前置型", notes)
@@ -251,6 +248,13 @@ class CleanJaGlossTest(unittest.TestCase):
         self.assertEqual(gloss, "打撃 / 打撃隊")
         gloss, notes = clean_ja_gloss("探査(するもの)")
         self.assertEqual(gloss, "探査するもの")
+        gloss, notes = clean_ja_gloss("(帝国)臣民")
+        self.assertEqual(gloss, "帝国臣民 / 臣民")
+        self.assertNotIn("帝国", notes)
+        gloss, notes = clean_ja_gloss("(繊維)束")
+        self.assertEqual(gloss, "繊維束 / 束")
+        gloss, notes = clean_ja_gloss("物質燃料(推進剤)採取基地")
+        self.assertEqual(gloss, "物質燃料採取基地 / 推進剤採取基地")
 
     def test_mid_nado_qualifier(self):
         gloss, notes = clean_ja_gloss("馬(などに)乗ること")
