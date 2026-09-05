@@ -101,7 +101,7 @@
           var got = applyNdjsonLine(line, onProgress);
           if (got) result = got;
         });
-        if (!result) throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+        if (!result) throw new Error("エージェント API の応答を読めませんでした。同じオリジンで python -m baronh serve を使ってください。");
         return result;
       });
     }
@@ -123,7 +123,7 @@
           var last = applyNdjsonLine(buf, onProgress);
           if (last) result = last;
         }
-        if (!result) throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+        if (!result) throw new Error("エージェント API の応答を読めませんでした。同じオリジンで python -m baronh serve を使ってください。");
         return result;
       });
     }
@@ -292,15 +292,11 @@
   }
 
   function agentEndpoint() {
-    var raw = (localStorage.getItem(AGENT_URL_KEY) || ($("agent-url") && $("agent-url").value) || "/api/translate").trim();
-    if (!raw) raw = "/api/translate";
-    raw = raw.replace(/\/+$/, "");
-    if (!/\/api\/translate$/i.test(raw)) raw += "/api/translate";
-    return raw;
+    return "/api/translate";
   }
 
   function agentHealthUrl() {
-    return agentEndpoint().replace(/\/api\/translate$/i, "/api/health");
+    return "/api/health";
   }
 
   function setAgentOptionVisible(visible) {
@@ -351,13 +347,13 @@
         if (!res.ok) {
           var msg = (data && data.error) || res.statusText;
           if (res.status === 404) {
-            msg = "エージェント API がありません。python -m baronh serve を使うか、生成AI設定に Cloud Run の URL を入れてください。";
+            msg = "エージェント API がありません。同じオリジンで python -m baronh serve を使ってください。";
           }
           throw new Error(msg);
         }
         return data;
       }, function () {
-        throw new Error("エージェント API の応答を読めませんでした。python -m baronh serve か Cloud Run の URL が必要です。");
+        throw new Error("エージェント API の応答を読めませんでした。同じオリジンで python -m baronh serve を使ってください。");
       });
     });
   }
@@ -612,8 +608,8 @@
     localStorage.setItem(MODEL_KEY, $("chat-model").value.trim() || "gpt-4o-mini");
     localStorage.setItem(BASE_KEY, $("api-base").value.trim() || "https://api.openai.com/v1");
     localStorage.setItem(TTS_MODEL_KEY, $("tts-model").value.trim() || "gpt-4o-mini-tts");
-    if ($("agent-url")) localStorage.setItem(AGENT_URL_KEY, $("agent-url").value.trim());
-    var msg = "設定をこのブラウザに保存しました（エージェント: " + agentEndpoint() + "）";
+    localStorage.removeItem(AGENT_URL_KEY);
+    var msg = "設定をこのブラウザに保存しました";
     setSettingsStatus(msg);
     setStatus(msg);
     probeAgentConfigured();
@@ -628,7 +624,6 @@
     $("api-base").value = "https://api.openai.com/v1";
     $("chat-model").value = "gpt-4o-mini";
     $("tts-model").value = "gpt-4o-mini-tts";
-    if ($("agent-url")) $("agent-url").value = "/api/translate";
     setSettingsStatus("API 設定を消去しました");
     setStatus("API 設定を消去しました");
   });
@@ -657,7 +652,7 @@
   $("chat-model").value = localStorage.getItem(MODEL_KEY) || "gpt-4o-mini";
   $("api-base").value = localStorage.getItem(BASE_KEY) || "https://api.openai.com/v1";
   $("tts-model").value = localStorage.getItem(TTS_MODEL_KEY) || "gpt-4o-mini-tts";
-  if ($("agent-url")) $("agent-url").value = localStorage.getItem(AGENT_URL_KEY) || "/api/translate";
+  localStorage.removeItem(AGENT_URL_KEY);
   if ($("local-vector-search")) {
     $("local-vector-search").checked = localStorage.getItem(VECTOR_SEARCH_KEY) === "1";
   }

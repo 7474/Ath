@@ -80,7 +80,7 @@
 
 例: 「光」→ ベクトル検索と類義語で `sairiac`「輝くもの」。「光」⊂「凝集光銃」のような複合語へは結ばない（長い語の 1 文字 n-gram は索引しない）。語釈から分けた補足 (`notes`) は厳密 lookup のキーにはしないが、ベクトル文書には載せて参考ヒットにする（「ラクファカール」→ `lacmhacarh` に加え、故郷 `murrautec` の用法注。「並列」→ `le` / `lo`「と」の用法注）。
 
-GitHub Pages の静的ホストはエージェントを実行しない。翻訳ページは同じオリジンの `/api/translate`、または設定した Cloud Run 等の URL へ POST する。載せ方は [DEPLOY.md](DEPLOY.md)。
+GitHub Pages の静的ホストはエージェントを実行しない。翻訳ページは同一オリジンの `/api/translate` へ POST する（応答があるときだけエンジン選択肢に出る）。載せ方は [DEPLOY.md](DEPLOY.md)。
 
 ## 生成 AI（ブラウザ経路）
 

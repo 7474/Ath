@@ -408,7 +408,7 @@ python3 -m baronh export-web --out web/data
 
 `web/` は GitHub Pages の翻訳ページ（[`/web/`](web/index.html)）の静的ファイルです。辞書 JSON を読み、格変化・規則翻訳・読み上げまでブラウザ内で完結します。アーヴ語を選んだ入出力のテキストエリアだけアース文字フォントで表示します。
 
-サーバエージェントを使うときは、同じプロセスの `/api/translate`（`python -m baronh serve`）か、Cloud Run などに載せた URL を設定します。生成 AI が未構成なら翻訳ページのエンジン選択肢からサーバエージェントを外します。GitHub Pages だけではサーバエージェントは動きません。ブラウザの生成AIは、GitHub Actions が事前構築したベクトル索引（`vectors.bin`）と文法コンテキストで Chat Completions を呼びます。ローカルでは `python3 -m baronh export-web` が同じファイルを `web/data/` に書き出します。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
+サーバエージェントは同一オリジンの `/api/translate`（`python -m baronh serve` または Cloud Run 上のサイト）だけを見ます。応答がなければ翻訳ページのエンジン選択肢から外します。GitHub Pages だけではサーバエージェントは動きません。ブラウザの生成AIは、GitHub Actions が事前構築したベクトル索引（`vectors.bin`）と文法コンテキストで Chat Completions を呼びます。ローカルでは `python3 -m baronh export-web` が同じファイルを `web/data/` に書き出します。詳細は [baronh/ARCHITECTURE.md](baronh/ARCHITECTURE.md) と [baronh/DEPLOY.md](baronh/DEPLOY.md) です。
 
 サイト全体を見るときは `python3 -m baronh serve`（概要 `/`、アース `/ath/`、翻訳 `/web/`）か、ルートで `python3 -m http.server 8000` です。
 

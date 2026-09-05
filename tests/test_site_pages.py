@@ -127,7 +127,8 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("サーバエージェント", web)
         self.assertIn("ベクトル検索", web)
         self.assertIn("js/vectordb.js", web)
-        self.assertIn("id=\"agent-url\"", web)
+        self.assertNotIn("id=\"agent-url\"", web)
+        self.assertNotIn("エージェント URL", web)
         self.assertIn("/api/translate", web)
         self.assertIn("id=\"local-vector-search\"", web)
         self.assertIn("訳語をベクトル検索", web)
@@ -147,6 +148,10 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("stream: true", js)
         self.assertIn("readNdjsonStream", js)
         self.assertIn("下書き（生成中）", js)
+        self.assertIn('return "/api/translate"', js)
+        self.assertIn('return "/api/health"', js)
+        self.assertNotIn('id="agent-url"', js)
+        self.assertNotIn("$(\"agent-url\")", js)
 
     def test_translator_page_leads_with_tool_not_construction(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")

@@ -66,9 +66,7 @@ gcloud run deploy baronh-agent \
   --set-env-vars OPENAI_BASE_URL=https://aiplatform.googleapis.com/v1/projects/PROJECT/locations/asia-northeast1/endpoints/openapi,OPENAI_CHAT_MODEL=google/gemini-2.0-flash,BARONH_CORS_ORIGIN=https://7474.github.io
 ```
 
-認証トークンを `OPENAI_API_KEY` に載せるか、サイドカー / ADC で OpenAI 互換プロキシを挟む。GitHub Pages から叩くなら `BARONH_CORS_ORIGIN` を Pages のオリジンに固定する。
-
-翻訳ページの「生成AI設定」にある「エージェント URL」に `https://<service>-<hash>.run.app/api/translate` を入れる。
+認証トークンを `OPENAI_API_KEY` に載せるか、サイドカー / ADC で OpenAI 互換プロキシを挟む。翻訳ページは同一オリジンの `/api/translate` だけを見る。エージェントを使うときは Cloud Run の URL そのものを開く（GitHub Pages からリモート URL は指定しない）。API を別オリジンから直接叩くときだけ `BARONH_CORS_ORIGIN` を付ける。
 
 `deploy/Dockerfile` は翻訳に必要なファイルだけを含む。フォント生成用の OpenCV は入れない。
 
