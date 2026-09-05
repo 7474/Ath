@@ -120,6 +120,8 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ath-face.js", demo)
         self.assertIn("faces.json", demo)
         self.assertIn("光電波サインペン", demo)
+        self.assertIn("ゴシック", demo)
+        self.assertIn('value="aarth-gothic"', demo)
         self.assertIn("../aarth.css", demo)
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
@@ -272,6 +274,8 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("--ath-font", aarth)
         self.assertIn("aarth-koudenpa-signpen", aarth)
         self.assertIn("Aarth Koudenpa Signpen", aarth)
+        self.assertIn("aarth-gothic", aarth)
+        self.assertIn("Aarth Gothic", aarth)
 
     def test_readme_describes_site_map(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

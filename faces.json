@@ -2,7 +2,7 @@
   "cssVariable": "--ath-font",
   "storageKey": "ath-face",
   "default": "aarth",
-  "cacheBust": "3",
+  "cacheBust": "4",
   "faces": [
     {
       "id": "aarth",
@@ -15,6 +15,18 @@
       "copyright": "CC BY-SA 3.0. Ath letters designed by Hiroyuki Morioka; numerals designed by Takami Akai. Digit rasters: Wikimedia Commons TRON 9-9830–9-9839.",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
       "preload": true
+    },
+    {
+      "id": "aarth-gothic",
+      "family": "Aarth Gothic",
+      "fileStem": "aarth-gothic",
+      "label": "ゴシック",
+      "image": "templates/ath_source_filled.png",
+      "traceStyle": "gothic",
+      "designer": "Hiroyuki Morioka (letters), Takami Akai (numerals); monoline restroke",
+      "description": "Monoline gothic restroke of the standard Ath raster (uniform stroke, rounded terminals).",
+      "copyright": "CC BY-SA 3.0. Ath letters designed by Hiroyuki Morioka; numerals designed by Takami Akai. Gothic restroke of templates/ath_source_filled.png.",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
       "id": "aarth-koudenpa-signpen",

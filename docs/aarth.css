@@ -11,8 +11,8 @@
 
 @font-face {
   font-family: 'Aarth';
-  src: url('aarth.woff2?v=3') format('woff2'),
-       url('aarth.ttf?v=3')   format('truetype');
+  src: url('aarth.woff2?v=4') format('woff2'),
+       url('aarth.ttf?v=4')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
@@ -23,9 +23,22 @@ html[data-ath-face='aarth'] {
 }
 
 @font-face {
+  font-family: 'Aarth Gothic';
+  src: url('aarth-gothic.woff2?v=4') format('woff2'),
+       url('aarth-gothic.ttf?v=4')   format('truetype');
+  font-weight: normal;
+  font-style:  normal;
+  font-display: swap;
+}
+
+html[data-ath-face='aarth-gothic'] {
+  --ath-font: 'Aarth Gothic', serif;
+}
+
+@font-face {
   font-family: 'Aarth Koudenpa Signpen';
-  src: url('aarth-koudenpa-signpen.woff2?v=3') format('woff2'),
-       url('aarth-koudenpa-signpen.ttf?v=3')   format('truetype');
+  src: url('aarth-koudenpa-signpen.woff2?v=4') format('woff2'),
+       url('aarth-koudenpa-signpen.ttf?v=4')   format('truetype');
   font-weight: normal;
   font-style:  normal;
   font-display: swap;
