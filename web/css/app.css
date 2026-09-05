@@ -197,6 +197,8 @@ button.primary:disabled { opacity: .5; cursor: wait; }
 button.primary .busy-spinner {
   margin-right: .4rem;
   vertical-align: -0.15em;
+  border-color: rgba(255, 255, 255, .35);
+  border-top-color: #fff;
 }
 
 .busy-row {
@@ -217,8 +219,13 @@ button.primary .busy-spinner {
   border: 2px solid #ccc;
   border-top-color: var(--ink);
   border-radius: 50%;
-  animation: busy-spin .7s linear infinite;
   flex: 0 0 auto;
+}
+
+.busy-spinner[hidden] { display: none; }
+
+.translator.is-busy .busy-spinner {
+  animation: busy-spin .7s linear infinite;
 }
 
 .busy-elapsed { font-variant-numeric: tabular-nums; }
