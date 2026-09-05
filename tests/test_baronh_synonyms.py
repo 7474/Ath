@@ -143,12 +143,33 @@ class ColloquialLexiconTest(unittest.TestCase):
         self.assertIn("almec", hints)
         self.assertIn("éni", hints)
 
+    def test_hints_drop_fragment_lookups(self):
+        src = (
+            "リン・ジントって奴はあれでなかなか頭の出来がいい。"
+            "なんたって故郷、俺らの、ついでにアーヴ語を読み書き出来るんだからな。"
+            "だからと言ってアーヴ語なんて覚える気はない。"
+        )
+        hints = dictionary_hints(src, self.lex, "ja")
+        self.assertIn("murrautec", hints)
+        self.assertIn("farh", hints)
+        self.assertNotIn("- 来る:", hints)
+        self.assertNotIn("lar [", hints)
+        self.assertNotIn("danh", hints)
+        self.assertNotIn("ly [", hints)
+        self.assertNotIn("-ar-", hints)
+        self.assertNotIn("syre", hints)
+
     def test_grammar_affixes_are_not_invented(self):
         self.assertNotIn("lér", invented_baronh_forms("cadase lér.", self.lex))
         self.assertNotIn("ad", invented_baronh_forms("fac ad e.", self.lex))
         self.assertNotIn("iri", invented_baronh_forms("iri sacre.", self.lex))
         self.assertTrue(FormIndex(self.lex).lookup("iri"))
         self.assertIn("xyzzy", invented_baronh_forms("F'a xyzzy.", self.lex))
+        self.assertNotIn("catoracas", invented_baronh_forms("catoracas le.", self.lex))
+        self.assertNotIn("ciloclér", invented_baronh_forms("ciloclér.", self.lex))
+        self.assertNotIn("riread", invented_baronh_forms("riread.", self.lex))
+        self.assertIn("facecadase", invented_baronh_forms("facecadase.", self.lex))
+        self.assertIn("larh", invented_baronh_forms("larh.", self.lex))
 
 
 if __name__ == "__main__":

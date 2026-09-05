@@ -1271,15 +1271,15 @@
     ]).join("\n");
   }
 
-  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、辞書の一致・類義語・確度の高いベクトル検索だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n複数文・段落の原文は要約せず、番号 [1] [2] … に対応する訳を同じ順で省略なく出す。\n訳文だけを出力し、解説や引用符は付けないでください。";
+  var AGENT_BRIEF = "あなたはアーヴ語 (Baronh) の翻訳エージェントです。公式の完全辞書は公開されていないため、\n与えられた文法コンテキストと、辞書の一致・類義語・確度の高いベクトル検索だけを根拠に、自分で訳文を組み立てます。\n規則ベースの下訳は渡しません。なぞらないでください。\n\n目標言語がアーヴ語のとき、最優先は「辞書にある語で意味が通ること」です。\n辞書にない普通名詞は造語せず、search_lexicon や find_synonyms で\n語釈の類義語・言い換えを探し、その見出しの格変化・活用で訳してください。\n意味がややずれても、未登録語を残すより辞書の類義語を使います。\n固有名詞は transcribe_name でアーヴ語正書法へ発音転記します\n（ジ行 gh、カ行 c、主格 -c/-h/-n。j/k/w/v は使わない）。\n文法は下のコンテキストに全文があります。grammar_note は確認用で、使うなら topics にまとめて1回だけ。\n足りない語は search_lexicon / find_synonyms / lookup_lexicon の queries（固有名詞は transcribe_name の names）にすべて入れて1回で引く。\n1語ずつの連続呼び出しは禁止。関連辞書で足りるならツールは使わず訳文だけを出す。\nvalidate_baronh は訳文が書けてから1回だけ。\n複数文・段落の原文は要約せず、番号 [1] [2] … の単位に対応する訳を同じ順で省略なく出す。\n訳文には [1] などの番号を付けない。\n訳文だけを出力し、解説や引用符は付けないでください。";
 
-  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 翻訳機 → 機械通訳 (catorac)。喋る → 話す。俺ら → 私たち (farh)。完璧 → 完全 (batta)。\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）\n- 複数文は要約せず番号順: [1] 私はアーヴです [2] 分かりますか → [1] F'a bale. [2] face sa?";
+  var FEW_SHOT_SYNONYM = "例（類義語で辞書に寄せる。文はモデルが組む）:\n- 星たちの光を見ます → 光は辞書に無いので 輝くもの (sairiac) に寄せ、gereulacr sairiac mire.\n- 翻訳機 → 機械通訳 (catorac)。喋る → 話す。俺ら → 私たち (farh)。完璧 → 完全 (batta)。\n- 私はアーヴです → F'a bale.\n- ジントはアーヴです → ghintoc a bale.（ジントは固有名詞の発音転記）\n- 複数文は要約せず同じ順（訳に番号は付けない）: [1] 私はアーヴです [2] 分かりますか → F'a bale. / face sa?";
 
   var LOOKUP_QUERY_LIMIT = 24;
   var HINT_TOKEN_MAX = 20;
   var HINT_LINE_LIMIT = 40;
   var COVERAGE_ATTEMPTS = 2;
-  var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。訳文だけを出力してください。";
+  var TOOL_ANSWER_NOW = "以上が検索結果です。これ以上ツールは呼ばず、次の原文を省略せず全文翻訳してください。要約・省略は禁止です。番号付きの各単位に対応する訳を同じ順ですべて出力してください。訳文に [1] などの番号は付けないでください。訳文だけを出力してください。";
 
   var AGENT_TOOLS = [
     { type: "function", function: { name: "search_lexicon", description: "アーヴ語辞書の検索。一致と類義語を優先し、弱いベクトル類似は返さない。足りない語はすべて queries に入れて1回だけ呼ぶ。1語ずつの連続呼び出しは禁止。", parameters: { type: "object", properties: { queries: { type: "array", items: { type: "string" }, description: "原文の語・言い換えをすべて入れる" }, limit: { type: "integer" } }, required: ["queries"] } } },
@@ -1396,14 +1396,36 @@
       ? missingUnitIndices(mapping, units.length)
       : units.map(function (_, i) { return i + 1; });
     var listed = missing.map(function (i) { return "[" + i + "] " + units[i - 1]; }).join("\n");
-    return "訳が原文より短い、または番号が欠けています。要約せず、次の未訳単位を同じ番号で訳してください。既訳は繰り返さなくてよいです。訳文だけを出力してください。\n\n" + listed;
+    return "訳が原文より短い、または単位が欠けています。要約せず、次の未訳単位を同じ順で訳してください。既訳は繰り返さなくてよいです。訳文に番号は付けないでください。訳文だけを出力してください。\n\n" + listed;
+  }
+
+  function linesToMap(text, count) {
+    var mapping = parseNumberedMap(text);
+    if (Object.keys(mapping).length) return mapping;
+    var lines = String(text || "").split(/\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+    var out = {};
+    var i;
+    for (i = 1; i <= count && i <= lines.length; i++) out[i] = lines[i - 1];
+    return out;
   }
 
   function mergeTranslation(sourceText, previous, extra) {
     var units = splitSourceUnits(sourceText);
     var count = units.length;
-    var extraMap = parseNumberedMap(extra);
-    var prevMap = parseNumberedMap(previous);
+    var prevMap = linesToMap(previous, count);
+    var extraNumbered = parseNumberedMap(extra);
+    var extraLines = String(extra || "").split(/\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+    var extraMap = {};
+    if (Object.keys(extraNumbered).length) {
+      extraMap = extraNumbered;
+    } else if (extraLines.length >= count) {
+      extraLines.slice(0, count).forEach(function (line, i) { extraMap[i + 1] = line; });
+    } else {
+      var missing = missingUnitIndices(prevMap, count);
+      extraLines.forEach(function (line, i) {
+        if (i < missing.length) extraMap[missing[i]] = line;
+      });
+    }
     if (Object.keys(extraMap).length && !missingUnitIndices(extraMap, count).length) {
       return joinNumberedUnits(extraMap, count);
     }
@@ -1412,12 +1434,7 @@
     Object.keys(extraMap).forEach(function (key) {
       if (String(extraMap[key] || "").trim()) merged[key] = extraMap[key];
     });
-    if (Object.keys(merged).length) {
-      return Object.keys(merged).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); })
-        .filter(function (key) { return parseInt(key, 10) >= 1 && parseInt(key, 10) <= count; })
-        .map(function (key) { return "[" + key + "] " + merged[key]; })
-        .join("\n");
-    }
+    if (Object.keys(merged).length) return joinNumberedUnits(merged, count);
     return extra || previous;
   }
 
@@ -1427,7 +1444,7 @@
     if (Object.keys(mapping).length && units.length > 1) {
       return joinNumberedUnits(mapping, units.length) || stripUnitNumbers(translated);
     }
-    return Object.keys(mapping).length ? stripUnitNumbers(translated) : String(translated || "");
+    return stripUnitNumbers(translated || "");
   }
 
   function formatEntry(entry) {
@@ -1580,9 +1597,9 @@
     return hits.slice(0, limit);
   }
 
-  var HINT_SPLIT_RE = /(?:って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)/;
+  var HINT_SPLIT_RE = /(?:なんたって|ついでに|てな訳で|だからと言って|とは言え|って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)/;
   var KATAKANA_NAME_RE = /[ァ-ヶー]+(?:[・＝][ァ-ヶー]+)+/g;
-  var HINT_STOP = { "奴": 1, "やつ": 1, "ぜ": 1, "だ": 1, "って": 1, "な": 1, "ん": 1, "こ": 1, "よ": 1, "ね": 1 };
+  var HINT_STOP = { "奴": 1, "やつ": 1, "ぜ": 1, "だ": 1, "って": 1, "な": 1, "ん": 1, "こ": 1, "よ": 1, "ね": 1, "く": 1, "る": 1, "ら": 1 };
   var VECTOR_RETRIEVE_MIN_SCORE = 0.42;
   var RESOLVE_HIT_LIMIT = 6;
 
@@ -1607,6 +1624,25 @@
     return HINT_STOP[word] ? [] : [word];
   }
 
+  function hintPieceUsable(text, lexicon) {
+    var word = String(text || "").trim();
+    if (!word || HINT_STOP[word] || JA_PARTICLES[word]) return false;
+    if (word.charAt(0) === "-" || word.charAt(word.length - 1) === "-") return false;
+    var keysMap = global.BaronhVectorDB && global.BaronhVectorDB.PARAPHRASE_KEYS || {};
+    if (keysMap[word] || keysMap[String(word).toLowerCase()]) return true;
+    var shortKana = /^[\u3040-\u309fー]+$/.test(word) && word.length < 3;
+    if (lexicon) {
+      var hits = lexicon.lookup(word, "auto").filter(function (hit) { return hit.pos !== "suffix"; });
+      if (hits.length) {
+        if (shortKana && !hits.every(function (hit) { return hit.pos === "pronoun"; })) return false;
+        return true;
+      }
+      if (word.length < 2 || shortKana) return false;
+      return true;
+    }
+    return !(word.length < 2 || shortKana);
+  }
+
   function knownPiece(text, lexicon) {
     if (!text || JA_PARTICLES[text] || HINT_STOP[text]) return false;
     if (lexicon.lookup(text, "auto").length) return true;
@@ -1623,28 +1659,41 @@
   function peelKnownPieces(text, lexicon) {
     var word = String(text || "").trim();
     if (!word) return [];
-    if (knownPiece(word, lexicon) || looksLikeProperNoun(word)) return [word];
+    if (looksLikeProperNoun(word)) return [word];
+    if (knownPiece(word, lexicon) && hintPieceUsable(word, lexicon)) return [word];
     var out = [];
     var i = 0;
     var n = word.length;
     while (i < n) {
-      var matched = "";
+      var skipped = false;
       var j;
       for (j = n; j > i; j--) {
+        var skip = word.slice(i, j);
+        if (JA_PARTICLES[skip] || HINT_STOP[skip]) {
+          i = j;
+          skipped = true;
+          break;
+        }
+      }
+      if (skipped) continue;
+      var matched = "";
+      for (j = n; j > i; j--) {
         var chunk = word.slice(i, j);
-        if (knownPiece(chunk, lexicon)) {
+        if (knownPiece(chunk, lexicon) && hintPieceUsable(chunk, lexicon)) {
           matched = chunk;
           break;
         }
       }
-      if (matched) {
-        out.push(matched);
-        i += matched.length;
-      } else {
-        i += 1;
+      if (!matched) {
+        var rest = word.slice(i);
+        if (hintPieceUsable(rest, lexicon) || looksLikeProperNoun(rest)) out.push(rest);
+        break;
       }
+      out.push(matched);
+      i += matched.length;
     }
-    return out.length ? out : hintQueryPieces(word);
+    if (out.length) return out;
+    return hintPieceUsable(word, lexicon) ? [word] : [];
   }
 
   function expandHintQueries(tokens, lexicon) {
@@ -1654,7 +1703,7 @@
       hintQueryPieces(String(tok)).forEach(function (piece) {
         var peeled = peelKnownPieces(piece, lexicon);
         (peeled.length ? peeled : [piece]).forEach(function (item) {
-          if (!item || seen[item]) return;
+          if (!item || seen[item] || !hintPieceUsable(item, lexicon)) return;
           seen[item] = 1;
           out.push(item);
         });
@@ -1761,8 +1810,9 @@
     expandHintQueries(raw, lexicon).forEach(function (word) {
       if (lines.length >= HINT_LINE_LIMIT) return;
       if (!word || seen[word] || JA_PARTICLES[word] || "、。！？!?:.".indexOf(word) >= 0) return;
+      if (!hintPieceUsable(word, lexicon)) return;
       seen[word] = 1;
-      var exact = lexicon.lookup(word, "auto");
+      var exact = lexicon.lookup(word, "auto").filter(function (hit) { return hit.pos !== "suffix"; });
       if (exact.length) {
         lines.push("- " + word + ": 辞書 " + exact[0].lemma + " [" + exact[0].pos + "] 「" + exact[0].gloss_ja + "」");
         return;
@@ -1779,6 +1829,7 @@
         return;
       }
       if (word.length > HINT_TOKEN_MAX) return;
+      if (word.length <= 2 || (/^[\u3040-\u309fー]+$/.test(word) && word.length < 4)) return;
       lines.push("- " + word + ": 未登録。search_lexicon / find_synonyms で辞書内の言い換えを探す");
     });
     return lines.length ? lines.join("\n") : "(ヒントなし。search_lexicon で引いてください)";
@@ -1903,7 +1954,7 @@
     var retrieved = formatResolvedContext(queries, lexicon, 16);
     var hints = dictionaryHints(text, lexicon, sourceLang);
     var coverage = units.length > 1
-      ? "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。要約しないでください。"
+      ? "番号付きの各単位に対応する訳を同じ順で省略せず出力してください。訳文に [1] などの番号は付けないでください。要約しないでください。"
       : "訳文だけを出力してください。";
     return "翻訳方向: " + sourceLang + " → " + targetLang +
       "\n原文（番号順に省略せず全文を訳す。要約禁止）:\n" + numbered +
@@ -1931,6 +1982,30 @@
     return forms;
   }
 
+  function knownWithAffixes(surface, index) {
+    if (index.lookup(surface).length) return true;
+    var key = String(surface || "").toLowerCase();
+    var endings = [];
+    Object.keys(VERB_ENDINGS).forEach(function (k) { endings.push(VERB_ENDINGS[k]); });
+    Object.keys(VOICE_SUFFIX).forEach(function (k) { endings.push(VOICE_SUFFIX[k]); });
+    endings.sort(function (a, b) { return b.length - a.length; });
+    var voices = Object.keys(VOICE_SUFFIX).map(function (k) { return VOICE_SUFFIX[k]; })
+      .sort(function (a, b) { return b.length - a.length; });
+    var i, j, stem;
+    for (i = 0; i < endings.length; i++) {
+      if (key.length <= endings[i].length || key.slice(-endings[i].length) !== endings[i]) continue;
+      stem = key.slice(0, -endings[i].length);
+      if (index.lookup(stem).length) return true;
+      for (j = 0; j < voices.length; j++) {
+        if (stem.length > voices[j].length && stem.slice(-voices[j].length) === voices[j] &&
+            index.lookup(stem.slice(0, -voices[j].length)).length) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function inventedBaronhForms(text, lexicon, local) {
     var index = new FormIndex(lexicon);
     var allowed = {};
@@ -1956,7 +2031,7 @@
       if (CLOSED_BARONH[key] || allowed[key]) return;
       if (/[\u3040-\u30ff\u4e00-\u9fff]/.test(surface)) return;
       if (!/[A-Za-zÉéÏïÜüŸÿŒœ]/.test(surface)) return;
-      if (index.lookup(surface).length) return;
+      if (index.lookup(surface).length || knownWithAffixes(surface, index)) return;
       invented.push(surface);
     });
     return invented;
@@ -2246,7 +2321,7 @@
         var critique = "次の語は辞書の語形でも発音転記でもありません: " + invented.join(", ") +
           "。造語せず、search_lexicon / find_synonyms の queries にまとめて辞書の類義語へ寄せて書き直してください。" +
           "規則ベースの下訳は無いので、自分で訳してください。" +
-          "要約せず、次の原文を番号順に省略なく訳してください。訳文だけを出力してください。\n\n原文:\n" +
+          "要約せず、次の原文を同じ順で省略なく訳してください。訳文に番号は付けないでください。訳文だけを出力してください。\n\n原文:\n" +
           formatNumberedSource(text);
         messages.push({ role: "assistant", content: textOut });
         messages.push({ role: "user", content: critique });
@@ -2359,6 +2434,7 @@
     nameForTranscription: nameForTranscription,
     translateAgent: translateAgent,
     inventedBaronhForms: inventedBaronhForms,
+    finalizeTranslation: finalizeTranslation,
     buildUserPrompt: buildUserPrompt,
     systemPrompt: systemPrompt,
     describeGaps: describeGaps,

@@ -293,7 +293,12 @@ class SourceCoverageTest(unittest.TestCase):
         cls.lex = load_lexicon()
 
     def test_split_sample_paragraph(self):
-        from baronh.openai_backend import coverage_incomplete, format_numbered_source, split_source_units
+        from baronh.openai_backend import (
+            coverage_incomplete,
+            finalize_translation,
+            format_numbered_source,
+            split_source_units,
+        )
 
         src = (
             "アーヴ語翻訳機\n\n"
@@ -316,6 +321,11 @@ class SourceCoverageTest(unittest.TestCase):
         short = "ringhintoc a almee éni. murrautec farh, lo barone gobhoth."
         self.assertTrue(coverage_incomplete(src, short))
         self.assertFalse(coverage_incomplete("私はアーヴです", "F'a bale."))
+        numbered_out = "[1] F'a bale.\n[2] face sa?"
+        self.assertEqual(
+            finalize_translation("私はアーヴです。分かりますか。", numbered_out),
+            "F'a bale.\nface sa?",
+        )
 
     def test_agent_continues_same_session_for_missing_units(self):
         from baronh.agent import translate_agent
@@ -357,6 +367,8 @@ class SourceCoverageTest(unittest.TestCase):
         out = translate_agent(src, self.lex, source_lang="ja", target_lang="baronh", chat_once=chat_once)
         self.assertIn("bale", out.text)
         self.assertIn("face", out.text)
+        self.assertNotIn("[1]", out.text)
+        self.assertNotIn("[2]", out.text)
         self.assertGreaterEqual(len(calls), 3)
         self.assertTrue(any("未訳単位" in note or "追記" in note for note in out.notes))
 

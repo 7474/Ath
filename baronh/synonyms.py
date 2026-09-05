@@ -421,10 +421,11 @@ def format_plan(plan: list[CoverageItem]) -> str:
 
 
 HINT_SPLIT_RE = re.compile(
-    r"(?:って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)"
+    r"(?:なんたって|ついでに|てな訳で|だからと言って|とは言え|"
+    r"って|なんて|んだからな|んだから|んだ|じゃねーか|じゃねー|じゃねえ|じゃない|じゃ)"
 )
 KATAKANA_NAME_RE = re.compile(r"[ァ-ヶー]+(?:[・＝][ァ-ヶー]+)+")
-HINT_STOP = frozenset({"奴", "やつ", "ぜ", "だ", "って", "な", "ん", "こ", "よ", "ね"})
+HINT_STOP = frozenset({"奴", "やつ", "ぜ", "だ", "って", "な", "ん", "こ", "よ", "ね", "く", "る", "ら"})
 VECTOR_RETRIEVE_MIN_SCORE = 0.42
 RESOLVE_HIT_LIMIT = 6
 
@@ -463,6 +464,28 @@ def name_for_transcription(raw: str) -> str:
     return word
 
 
+def hint_piece_usable(text: str, lexicon: Lexicon | None = None) -> bool:
+    """ヒントに載せてよい片か。1字や接辞、短いひらがなの破片は落とす。"""
+    word = (text or "").strip()
+    if not word or word in HINT_STOP or word in JA_PARTICLES:
+        return False
+    if word.startswith("-") or word.endswith("-"):
+        return False
+    if word in PARAPHRASE_KEYS or word.casefold() in PARAPHRASE_KEYS:
+        return True
+    short_kana = bool(re.fullmatch(r"[\u3040-\u309fー]+", word) and len(word) < 3)
+    if lexicon is not None:
+        hits = [hit for hit in lexicon.lookup(word, lang="auto") if hit.pos != "suffix"]
+        if hits:
+            if short_kana and not all(hit.pos == "pronoun" for hit in hits):
+                return False
+            return True
+        if len(word) < 2 or short_kana:
+            return False
+        return True
+    return not (len(word) < 2 or short_kana)
+
+
 def _known_piece(text: str, lexicon: Lexicon) -> bool:
     if not text or text in JA_PARTICLES or text in HINT_STOP:
         return False
@@ -477,28 +500,41 @@ def _known_piece(text: str, lexicon: Lexicon) -> bool:
 
 
 def peel_known_pieces(text: str, lexicon: Lexicon) -> list[str]:
-    """長い残りから、辞書または類義語に載る部分を左から剥がす。"""
+    """長い残りから、先頭の既知片だけを剥がす。途中の短い一致は拾わない。"""
     word = (text or "").strip()
     if not word:
         return []
-    if _known_piece(word, lexicon) or looks_like_proper_noun(word):
+    if looks_like_proper_noun(word):
+        return [word]
+    if _known_piece(word, lexicon) and hint_piece_usable(word, lexicon):
         return [word]
     out: list[str] = []
     i = 0
     n = len(word)
     while i < n:
+        skipped = False
+        for j in range(n, i, -1):
+            chunk = word[i:j]
+            if chunk in JA_PARTICLES or chunk in HINT_STOP:
+                i = j
+                skipped = True
+                break
+        if skipped:
+            continue
         matched = ""
         for j in range(n, i, -1):
             chunk = word[i:j]
-            if _known_piece(chunk, lexicon):
+            if _known_piece(chunk, lexicon) and hint_piece_usable(chunk, lexicon):
                 matched = chunk
                 break
-        if matched:
-            out.append(matched)
-            i += len(matched)
-        else:
-            i += 1
-    return out or hint_query_pieces(word)
+        if not matched:
+            rest = word[i:]
+            if hint_piece_usable(rest, lexicon) or looks_like_proper_noun(rest):
+                out.append(rest)
+            break
+        out.append(matched)
+        i += len(matched)
+    return out or ([word] if hint_piece_usable(word, lexicon) else [])
 
 
 def expand_hint_queries(tokens: Iterable[str], lexicon: Lexicon) -> list[str]:
@@ -506,8 +542,9 @@ def expand_hint_queries(tokens: Iterable[str], lexicon: Lexicon) -> list[str]:
     seen: set[str] = set()
     for tok in tokens:
         for piece in hint_query_pieces(str(tok)):
-            for item in peel_known_pieces(piece, lexicon) or [piece]:
-                if not item or item in seen:
+            peeled = peel_known_pieces(piece, lexicon) or [piece]
+            for item in peeled:
+                if not item or item in seen or not hint_piece_usable(item, lexicon):
                     continue
                 seen.add(item)
                 out.append(item)
