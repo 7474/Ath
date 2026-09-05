@@ -96,11 +96,61 @@ h1 { font-size: 1.55rem; margin-bottom: .7rem; }
 }
 
 .engine-details summary {
+  list-style: none;
   cursor: pointer;
+  box-sizing: border-box;
   min-height: 2.75rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .45rem 1rem;
+  border: 1px solid var(--control);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.engine-details summary::-webkit-details-marker { display: none; }
+
+.engine-details summary::after {
+  content: "";
+  width: .45rem;
+  height: .45rem;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -.2em;
+}
+
+.engine-details[open] summary::after {
+  transform: rotate(-135deg);
+  margin-top: .15em;
+}
+
+.engine-details summary:hover {
+  background: var(--control-hover);
+}
+
+.engine-details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.engine-details-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .1rem .55rem;
+  min-width: 0;
+}
+
+.engine-details-value {
+  font-weight: 500;
   color: var(--muted);
+  font-size: .85rem;
 }
 
 .engine-details-body {
