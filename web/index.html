@@ -64,6 +64,7 @@
             訳語をベクトル検索
           </label>
           <span class="badge" id="dict-count">辞書 …</span>
+          <button type="button" class="ghost" id="open-settings" aria-haspopup="dialog" aria-controls="settings-panel">生成AI設定</button>
         </div>
       </details>
 
@@ -82,7 +83,6 @@
         <button type="button" class="primary" id="translate-btn">翻訳</button>
         <button type="button" class="ghost" id="speak-btn">読み上げ</button>
         <button type="button" class="ghost" id="copy-btn">コピー</button>
-        <button type="button" class="ghost" id="open-settings" aria-haspopup="dialog" aria-controls="settings-panel">生成AI設定</button>
       </div>
       <p class="reading" id="reading"></p>
       <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -100,7 +100,7 @@
           <input type="text" id="lookup-q" placeholder="abh / アーヴ / pearl" />
           <button type="button" class="ghost" id="lookup-btn">検索</button>
         </div>
-        <pre class="forms" id="lookup-out">語を検索すると語釈と格変化が出ます。</pre>
+        <div class="forms" id="lookup-out"><p class="hint">語を検索すると語釈と格変化が出ます。</p></div>
         <div class="settings-row">
           <input type="file" id="import-file" accept=".json,.csv,.tsv,.txt" />
           <button type="button" class="ghost" id="clear-overlay">追加分を消す</button>
@@ -114,7 +114,7 @@
           <input type="text" id="conj-q" placeholder="sac / 書く" />
           <button type="button" class="ghost" id="conj-btn">活用表</button>
         </div>
-        <pre class="forms" id="conj-out">動詞を入れると直説法・仮定法などの語形を出します。</pre>
+        <div class="forms" id="conj-out"><p class="hint">動詞を入れると直説法・仮定法などの語形を出します。</p></div>
       </div>
     </section>
 

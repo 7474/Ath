@@ -164,27 +164,33 @@ class SiteStructureTest(unittest.TestCase):
     def test_translator_ai_settings_is_modal(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         nav = web[web.find('class="site-nav"') : web.find("</nav>")]
-        actions_at = web.find('class="actions"')
+        details = web[web.find('class="engine-details"') : web.find("</details>")]
+        actions = web[web.find('class="actions"') : web.find("</div>", web.find('class="actions"'))]
         settings_btn_at = web.find('id="open-settings"')
         dialog_at = web.find('id="settings-panel"')
-        self.assertGreater(actions_at, 0)
         self.assertNotIn('id="examples-btn"', web)
         self.assertIn('class="engine-details"', web)
         self.assertIn('enterkeyhint="go"', web)
-        self.assertGreater(settings_btn_at, actions_at)
+        self.assertIn("open-settings", details)
+        self.assertNotIn("open-settings", actions)
+        self.assertNotIn("生成AI設定", actions)
         self.assertGreater(dialog_at, settings_btn_at)
         self.assertIn("生成AI設定", web)
         self.assertNotIn("open-settings", nav)
         self.assertNotIn("生成AI設定", nav)
         self.assertIn("<dialog", web[max(0, dialog_at - 120) : dialog_at + 40])
         self.assertIn('id="close-settings"', web)
+        self.assertNotIn("<pre", web)
         css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("settings-modal", css)
         self.assertIn("::backdrop", css)
-        self.assertIn("position: sticky", css)
+        self.assertIn("100dvh", css)
+        self.assertIn(".entry-card", css)
         js = (ROOT / "web" / "js" / "app.js").read_text(encoding="utf-8")
         self.assertIn("showModal", js)
         self.assertIn("closeSettings", js)
+        self.assertIn("renderEntryCard", js)
+        self.assertIn("openaiNeedsSetup", js)
         self.assertNotIn("examples-btn", js)
 
     def test_translator_points_to_site_hub(self):

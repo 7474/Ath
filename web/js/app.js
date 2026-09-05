@@ -409,8 +409,21 @@
     });
   }
 
+  function openaiNeedsSetup() {
+    var base = apiBase();
+    var key = localStorage.getItem(KEY) || ($("api-key") && $("api-key").value.trim());
+    return $("engine").value === "openai" && !key && /api\.openai\.com/.test(base);
+  }
+
   function runTranslate() {
     if (!lexicon) return;
+    if (openaiNeedsSetup()) {
+      openSettings();
+      var msg = "API キーが未設定です。生成AI設定から保存してください。";
+      setSettingsStatus(msg);
+      setStatus(msg);
+      return;
+    }
     var engine = $("engine").value;
     startBusy(engine === "local" ? "翻訳中…" : "生成AIに問い合わせています…", {
       clearResult: engine !== "local"
@@ -472,50 +485,64 @@
     setStatus("読み: " + spoken);
   }
 
+  function renderEntryCard(entry, extraHtml) {
+    var html = "<article class='entry-card'>";
+    html += "<h3>" + escapeHtml(entry.lemma) + " <span class='pos'>" + escapeHtml(entry.pos || "") + "</span></h3>";
+    html += "<p class='gloss'>" + escapeHtml(entry.gloss_ja || "");
+    if (entry.gloss_en) html += " / " + escapeHtml(entry.gloss_en);
+    html += "</p>";
+    if (extraHtml) html += extraHtml;
+    if (entry.pos === "noun" || entry.pos === "pronoun") {
+      var forms = BaronhEngine.decline(entry);
+      html += "<ul class='cases'>" + BaronhEngine.CASES.map(function (c) {
+        return "<li><span class='case'>" + escapeHtml(BaronhEngine.CASE_JA[c]) + "</span> " +
+          escapeHtml(forms[c]) + "</li>";
+      }).join("") + "</ul>";
+    }
+    html += "</article>";
+    return html;
+  }
+
   function doLookup() {
     var q = $("lookup-q").value.trim();
     if (!q) return;
     var hits = lexicon.lookup(q, "auto");
-    var blocks = [];
+    var html = "";
     if (!hits.length) {
-      blocks.push("完全一致なし");
+      html += "<p class='hint'>完全一致なし</p>";
     } else {
-      blocks.push(hits.map(function (e) {
-        var lines = [e.lemma + "  [" + e.pos + "]  " + e.gloss_ja + " / " + e.gloss_en];
-        if (e.pos === "noun" || e.pos === "pronoun") {
-          var forms = BaronhEngine.decline(e);
-          lines.push(BaronhEngine.CASES.map(function (c) {
-            return BaronhEngine.CASE_JA[c] + " " + forms[c];
-          }).join("  "));
-        }
-        return lines.join("\n");
-      }).join("\n\n"));
+      html += hits.map(function (e) { return renderEntryCard(e); }).join("");
     }
     if (window.BaronhVectorDB) {
       var vec = BaronhVectorDB.getIndex(lexicon).search(q, 5);
       if (vec.length) {
-        blocks.push("ベクトル検索:\n" + vec.map(function (hit) {
-          var extra = hit.entry.notes ? "  〔" + String(hit.entry.notes).replace(/\s+/g, " ").trim() + "〕" : "";
-          return hit.entry.lemma + "  [" + hit.entry.pos + "]  " + hit.entry.gloss_ja + extra +
-            "  (" + hit.score.toFixed(3) + ")";
-        }).join("\n"));
+        html += "<p class='forms-heading'>ベクトル検索</p>";
+        html += vec.map(function (hit) {
+          var extra = hit.entry.notes
+            ? "<p class='hint'>" + escapeHtml(String(hit.entry.notes).replace(/\s+/g, " ").trim()) +
+              "（" + hit.score.toFixed(3) + "）</p>"
+            : "<p class='hint'>" + hit.score.toFixed(3) + "</p>";
+          return renderEntryCard(hit.entry, extra);
+        }).join("");
       }
     }
-    $("lookup-out").textContent = blocks.join("\n\n");
+    $("lookup-out").innerHTML = html;
   }
 
   function doConj() {
     var q = $("conj-q").value.trim();
     var hits = lexicon.lookup(q, "auto").filter(function (e) { return e.pos === "verb"; });
     if (!hits.length) {
-      $("conj-out").textContent = "動詞が見つかりません";
+      $("conj-out").innerHTML = "<p class='hint'>動詞が見つかりません</p>";
       return;
     }
     var e = hits[0];
     var rows = BaronhEngine.allVerbForms(e).filter(function (r) { return r.voices.length === 0; });
-    $("conj-out").textContent = e.lemma + "「" + e.gloss_ja + "」\n" + rows.map(function (r) {
-      return r.mood + " / " + r.aspect + "  " + r.form;
-    }).join("\n");
+    var list = "<ul class='forms-list'>" + rows.map(function (r) {
+      return "<li><span class='mood'>" + escapeHtml(r.mood) + " / " + escapeHtml(r.aspect) +
+        "</span> " + escapeHtml(r.form) + "</li>";
+    }).join("") + "</ul>";
+    $("conj-out").innerHTML = renderEntryCard(e, list);
   }
 
   $("translate-btn").addEventListener("click", runTranslate);
@@ -539,7 +566,13 @@
   });
   $("source-lang").addEventListener("change", syncAthScript);
   $("target-lang").addEventListener("change", syncAthScript);
-  $("engine").addEventListener("change", syncLocalVectorOption);
+  $("engine").addEventListener("change", function () {
+    syncLocalVectorOption();
+    if (openaiNeedsSetup()) {
+      openSettings();
+      setSettingsStatus("ブラウザ生成AIを使うには接続先を保存してください。");
+    }
+  });
   if ($("local-vector-search")) {
     $("local-vector-search").addEventListener("change", function () {
       localStorage.setItem(VECTOR_SEARCH_KEY, $("local-vector-search").checked ? "1" : "0");
