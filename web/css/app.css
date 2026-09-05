@@ -1,19 +1,3 @@
-@font-face {
-  font-family: "Aarth";
-  /* Pages: /Ath/web/css → /Ath/aarth.woff2。serve: /css → /aarth.woff2（web/ 直下）。 */
-  src: url("../../aarth.woff2") format("woff2"),
-       url("../aarth.woff2") format("woff2"),
-       url("aarth.woff2") format("woff2"),
-       url("/font/aarth.woff2") format("woff2"),
-       url("../../aarth.ttf") format("truetype"),
-       url("../aarth.ttf") format("truetype"),
-       url("aarth.ttf") format("truetype"),
-       url("/font/aarth.ttf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -116,6 +100,39 @@ h1 { font-size: 1.55rem; margin-bottom: .7rem; }
   display: none;
 }
 
+.engine-details {
+  margin: 0 0 .7rem;
+  font-size: .9rem;
+}
+
+.engine-details summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.engine-details-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding: .2rem 0 .35rem;
+}
+
+.engine-details .opt {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.engine-details .opt[hidden] {
+  display: none;
+}
+
 select, input[type="text"], input[type="password"], textarea, button {
   font: inherit;
 }
@@ -125,14 +142,15 @@ select, input[type="text"], input[type="password"] {
   border-radius: 8px;
   padding: .4rem .6rem;
   background: #fff;
+  min-height: 2.75rem;
 }
 
 .swap {
   border: 1px solid #ccc;
   background: #fff;
   border-radius: 999px;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.75rem;
+  height: 2.75rem;
   cursor: pointer;
 }
 
@@ -177,6 +195,7 @@ textarea.ath-script {
 button.primary, button.ghost {
   border-radius: 999px;
   padding: .45rem 1rem;
+  min-height: 2.75rem;
   cursor: pointer;
   font-weight: 600;
 }
@@ -267,14 +286,67 @@ button.primary:disabled { opacity: .5; cursor: wait; }
   .tools { grid-template-columns: 1fr; }
 }
 
-pre.forms {
+.forms {
   background: var(--soft);
   border-radius: 8px;
   padding: .7rem .8rem;
-  overflow-x: auto;
-  font-size: .88rem;
-  line-height: 1.55;
   margin-top: .5rem;
+}
+
+.forms .hint { margin: 0; }
+
+.entry-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: .7rem .75rem;
+}
+
+.entry-card + .entry-card { margin-top: .55rem; }
+
+.entry-card h3 {
+  font-size: 1.05rem;
+  margin: 0 0 .25rem;
+}
+
+.entry-card .pos {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.entry-card .gloss {
+  margin: 0;
+  line-height: 1.5;
+  font-size: .92rem;
+}
+
+.entry-card .cases,
+.entry-card .forms-list {
+  list-style: none;
+  margin: .5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .25rem .6rem;
+  font-size: .88rem;
+}
+
+@media (max-width: 480px) {
+  .entry-card .cases,
+  .entry-card .forms-list { grid-template-columns: 1fr; }
+}
+
+.entry-card .case,
+.entry-card .mood {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.forms-heading {
+  font-size: .8rem;
+  color: var(--muted);
+  margin: .7rem 0 .35rem;
 }
 
 .settings-modal {
@@ -282,7 +354,7 @@ pre.forms {
   inset: 0;
   margin: auto;
   width: min(42rem, calc(100% - 1.6rem));
-  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -364,12 +436,33 @@ footer {
 
 @media (max-width: 760px) {
   /* モバイルでも入力・訳・翻訳ボタンがファーストビューに収まるようにする。 */
-  .site-bar { padding: .55rem .9rem; gap: .5rem; }
-  .site-meta { display: none; }
   main { padding: .7rem .9rem 2.2rem; }
   h1 { font-size: 1.15rem; margin-bottom: .5rem; }
   .panel.translator { padding: .75rem .8rem; }
   .langs { margin-bottom: .5rem; gap: .4rem; }
   textarea { min-height: 5.25rem; }
-  .actions { margin-top: .55rem; }
+  .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    margin: .55rem -.8rem 0;
+    padding: .55rem .8rem calc(.55rem + env(safe-area-inset-bottom, 0px));
+    background: rgba(250, 250, 248, .94);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+  .actions .primary { flex: 1 1 8rem; }
+  .settings-modal {
+    width: 100%;
+    max-width: none;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px)));
+    margin: auto 0 0;
+    border-radius: 16px 16px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .settings-modal-body {
+    padding-bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+  }
 }

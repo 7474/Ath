@@ -42,8 +42,19 @@ class SiteStructureTest(unittest.TestCase):
                 self.assertIn("アース", text)
                 self.assertIn("翻訳", text)
                 self.assertIn('class="site-nav"', text)
+                self.assertIn("viewport-fit=cover", text)
                 for href in hrefs:
                     self.assertIn(f'href="{href}"', text)
+
+    def test_shared_header_has_mobile_touch_rules(self):
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        self.assertIn("min-height: 2.75rem", css)
+        self.assertIn(".site-meta { display: none; }", css)
+        self.assertIn("safe-area-inset-top", css)
+        self.assertIn(".site-nav a:focus-visible", css)
+        self.assertIn(".site-card:active", css)
+        app = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertNotIn(".site-meta { display: none; }", app)
 
     def test_hub_is_about_language_and_script(self):
         hub = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -54,12 +65,33 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("字形デモ", hub)
         self.assertIn("翻訳", hub)
 
+    def test_ath_demo_mobile_glyph_grid_and_mapping(self):
+        demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("repeat(4, minmax(0, 1fr))", demo)
+        self.assertIn("clamp(2.4rem, 12vw, 5rem)", demo)
+        self.assertIn(".mapping-table .unicode { display: none; }", demo)
+        self.assertIn("color: #555;", demo)
+        hub = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn(".teaser-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }", hub)
+
     def test_ath_demo_keeps_translate_play(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
         self.assertIn('id="translate-button"', demo)
+        self.assertIn('class="translate-play"', demo)
+        self.assertIn("ラテンで読む", demo)
+        self.assertIn("アースで見る", demo)
+        nav = demo[demo.find('class="site-nav"') : demo.find("</nav>")]
+        self.assertNotIn("translate-button", nav)
+        play_at = demo.find('class="translate-play"')
+        main_at = demo.find("<main")
+        self.assertGreater(play_at, 0)
+        self.assertGreater(main_at, play_at)
         self.assertIn("../aarth.css", demo)
         self.assertIn("../site.css", demo)
         self.assertNotIn("Baronh 翻訳", demo)
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        self.assertIn(".translate-play", css)
+        self.assertIn("min-height: 2.75rem", css)
 
     def test_ath_demo_sets_empire_anthem_in_ath_keys(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
@@ -129,28 +161,38 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ファーストビュー", css)
         self.assertIn("min-height: 5.25rem", css)
 
-    def test_translator_ai_settings_is_modal_beside_examples(self):
+    def test_translator_ai_settings_is_modal(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         nav = web[web.find('class="site-nav"') : web.find("</nav>")]
-        actions_at = web.find('class="actions"')
-        examples_at = web.find('id="examples-btn"')
+        details = web[web.find('class="engine-details"') : web.find("</details>")]
+        actions = web[web.find('class="actions"') : web.find("</div>", web.find('class="actions"'))]
         settings_btn_at = web.find('id="open-settings"')
         dialog_at = web.find('id="settings-panel"')
-        self.assertGreater(actions_at, 0)
-        self.assertGreater(examples_at, actions_at)
-        self.assertGreater(settings_btn_at, examples_at)
+        self.assertNotIn('id="examples-btn"', web)
+        self.assertIn('class="engine-details"', web)
+        self.assertIn('enterkeyhint="go"', web)
+        self.assertIn("open-settings", details)
+        self.assertNotIn("open-settings", actions)
+        self.assertNotIn("生成AI設定", actions)
         self.assertGreater(dialog_at, settings_btn_at)
         self.assertIn("生成AI設定", web)
         self.assertNotIn("open-settings", nav)
         self.assertNotIn("生成AI設定", nav)
         self.assertIn("<dialog", web[max(0, dialog_at - 120) : dialog_at + 40])
         self.assertIn('id="close-settings"', web)
+        self.assertNotIn("<pre", web)
         css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("settings-modal", css)
         self.assertIn("::backdrop", css)
+        self.assertIn("100dvh", css)
+        self.assertIn(".entry-card", css)
         js = (ROOT / "web" / "js" / "app.js").read_text(encoding="utf-8")
         self.assertIn("showModal", js)
         self.assertIn("closeSettings", js)
+        self.assertIn("renderEntryCard", js)
+        self.assertIn("openaiNeedsSetup", js)
+        self.assertIn("索引が無くても語釈と格変化は出す", js)
+        self.assertNotIn("examples-btn", js)
 
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -160,11 +202,17 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("../aarth.css", web)
 
     def test_translator_font_face_works_on_pages(self):
-        css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
-        self.assertIn("../../aarth.woff2", css)
-        self.assertIn('url("aarth.woff2")', css)
-        self.assertIn("textarea {", css)
-        self.assertNotIn("<textarea {", css)
+        app = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertNotIn("@font-face", app)
+        self.assertIn("textarea {", app)
+        self.assertNotIn("<textarea {", app)
+        web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('href="../aarth.css"', web)
+        self.assertIn('href="../aarth.woff2"', web)
+        self.assertIn('rel="preload"', web)
+        aarth = (ROOT / "aarth.css").read_text(encoding="utf-8")
+        self.assertIn("@font-face", aarth)
+        self.assertIn("aarth.woff2", aarth)
 
     def test_readme_describes_site_map(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

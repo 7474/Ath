@@ -2,12 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>アーヴ語とアース — Ath / Baronh</title>
   <link rel="icon" href="favicon.ico" sizes="48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preload" href="aarth.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="aarth.css">
   <link rel="stylesheet" href="site.css">
   <style>
@@ -47,6 +48,10 @@
       font-size: clamp(1.2rem, 4.5vw, 2rem);
       text-align: center;
       line-height: 1.4;
+    }
+
+    @media (max-width: 480px) {
+      .teaser-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
     .notice {

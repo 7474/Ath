@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>アース（Ath）字形デモ — アーヴ語とアース</title>
   <link rel="icon" href="../favicon.ico" sizes="48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="../icons/favicon-16.png">
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="preload" href="../aarth.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="../aarth.css">
   <link rel="stylesheet" href="../site.css">
   <style>
@@ -133,7 +134,7 @@
     /* Large heading */
     .aarth-hero {
       font-family: 'Aarth', serif;
-      font-size: 5rem;
+      font-size: clamp(2.4rem, 12vw, 5rem);
       line-height: 1.2;
       letter-spacing: .08em;
       color: #1a1a1a;
@@ -146,6 +147,13 @@
       grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: .5rem;
       margin-top: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .alpha-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .65rem .4rem;
+      }
     }
 
     .alpha-cell {
@@ -163,8 +171,8 @@
     }
 
     .alpha-cell .label {
-      font-size: .7rem;
-      color: #888;
+      font-size: .8rem;
+      color: #555;
       font-family: monospace;
     }
 
@@ -244,6 +252,31 @@
     body.translated .mapping-table code {
       font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
       text-transform: none;
+    }
+
+    @media (max-width: 600px) {
+      .mapping-table thead { display: none; }
+      .mapping-table,
+      .mapping-table tbody {
+        display: block;
+        width: 100%;
+      }
+      .mapping-table tr {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: .4rem .75rem;
+        padding: .55rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      .mapping-table td {
+        display: block;
+        padding: 0;
+        border: 0;
+      }
+      .mapping-table .unicode { display: none; }
+      .mapping-table .glyph { font-size: 1.7rem; }
+      .mapping-table .key { justify-self: end; }
     }
 
     /* Size scale — unspaced glyph strings must wrap instead of
@@ -388,7 +421,7 @@
 </head>
 <body>
 
-  <header class="site-bar">
+  <header class="site-bar site-bar--with-play">
     <a class="site-brand" href="../">
       <span class="site-logo" aria-hidden="true">aarth</span>
       <span class="site-meta" id="translate-meta">Ath</span>
@@ -397,11 +430,15 @@
       <a href="../">概要</a>
       <a href="./" aria-current="page">アース</a>
       <a href="../web/">翻訳</a>
-      <button type="button" id="translate-button" aria-pressed="false">Translate</button>
     </nav>
+    <div class="translate-play">
+      <button type="button" id="translate-button" aria-pressed="false" aria-controls="page-content">
+        ラテンで読む
+      </button>
+    </div>
   </header>
 
-  <main class="page-content">
+  <main class="page-content" id="page-content">
   <h1>Ath (Aarth) — glyph demo</h1>
 
   <!-- Hero -->
@@ -722,7 +759,7 @@
       function applyTranslation(translated) {
         document.body.classList.toggle('translated', translated);
         translateButton.setAttribute('aria-pressed', String(translated));
-        translateButton.textContent = translated ? 'Show Ath' : 'Translate';
+        translateButton.textContent = translated ? 'アースで見る' : 'ラテンで読む';
         if (translateMeta) translateMeta.textContent = translated ? 'Latin' : 'Ath';
         if (pageContent) pageContent.classList.remove('is-switching');
       }
