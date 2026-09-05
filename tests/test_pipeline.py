@@ -111,6 +111,14 @@ class GenerateFontTest(unittest.TestCase):
         cmap = font.getBestCmap()
         self.assertEqual(len(cmap), len(aarth.ALPHABET_CODEPOINTS))
 
+    def test_no_extra_reverse_winding_vs_source(self):
+        reports = aarth.check_font_vectors(
+            self.output_dir / "aarth.ttf",
+            SOURCE_PNG,
+        )
+        bad = [row for row in reports if not row["ok"]]
+        self.assertEqual(bad, [], msg=aarth.format_vector_report(reports))
+
 
 if __name__ == "__main__":
     unittest.main()

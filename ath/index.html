@@ -55,8 +55,14 @@
     /* Default: the document reads as Ath. Translate restores Latin copy. */
     body:not(.translated) .page-content {
       font-family: var(--ath-font);
+      font-weight: 400;
+      font-synthesis: none;
       text-transform: lowercase;
       letter-spacing: .04em;
+    }
+
+    body:not(.translated) .page-content :is(h1, h2, h3, h4, h5, h6, strong, b, th) {
+      font-weight: 400;
     }
 
     /* A / I / E are digraph keys — do not lowercase them. */
@@ -692,13 +698,23 @@
   font-family: 'Aarth';
   src: url('./aarth.woff2') format('woff2'),
        url('./aarth.ttf')   format('truetype');
-  font-weight: normal;
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth';
+  src: url('./aarth.woff2') format('woff2'),
+       url('./aarth.ttf')   format('truetype');
+  font-weight: 700;
   font-style:  normal;
   font-display: swap;
 }
 
 .ath-text {
   font-family: 'Aarth', serif;
+  font-synthesis: none;
 }</code></pre>
       <div class="snippet-actions">
         <button type="button" data-copy="snippet-font-face">Copy</button>

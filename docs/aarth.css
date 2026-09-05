@@ -11,9 +11,27 @@
 
 @font-face {
   font-family: 'Aarth';
-  src: url('aarth.woff2?v=4') format('woff2'),
-       url('aarth.ttf?v=4')   format('truetype');
-  font-weight: normal;
+  src: url('aarth.woff2?v=5') format('woff2'),
+       url('aarth.ttf?v=5')   format('truetype');
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth';
+  src: url('aarth.woff2?v=5') format('woff2'),
+       url('aarth.ttf?v=5')   format('truetype');
+  font-weight: 600;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth';
+  src: url('aarth.woff2?v=5') format('woff2'),
+       url('aarth.ttf?v=5')   format('truetype');
+  font-weight: 700;
   font-style:  normal;
   font-display: swap;
 }
@@ -24,9 +42,27 @@ html[data-ath-face='aarth'] {
 
 @font-face {
   font-family: 'Aarth Gothic';
-  src: url('aarth-gothic.woff2?v=4') format('woff2'),
-       url('aarth-gothic.ttf?v=4')   format('truetype');
-  font-weight: normal;
+  src: url('aarth-gothic.woff2?v=5') format('woff2'),
+       url('aarth-gothic.ttf?v=5')   format('truetype');
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth Gothic';
+  src: url('aarth-gothic.woff2?v=5') format('woff2'),
+       url('aarth-gothic.ttf?v=5')   format('truetype');
+  font-weight: 600;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth Gothic';
+  src: url('aarth-gothic.woff2?v=5') format('woff2'),
+       url('aarth-gothic.ttf?v=5')   format('truetype');
+  font-weight: 700;
   font-style:  normal;
   font-display: swap;
 }
@@ -37,13 +73,38 @@ html[data-ath-face='aarth-gothic'] {
 
 @font-face {
   font-family: 'Aarth Koudenpa Signpen';
-  src: url('aarth-koudenpa-signpen.woff2?v=4') format('woff2'),
-       url('aarth-koudenpa-signpen.ttf?v=4')   format('truetype');
-  font-weight: normal;
+  src: url('aarth-koudenpa-signpen.woff2?v=5') format('woff2'),
+       url('aarth-koudenpa-signpen.ttf?v=5')   format('truetype');
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth Koudenpa Signpen';
+  src: url('aarth-koudenpa-signpen.woff2?v=5') format('woff2'),
+       url('aarth-koudenpa-signpen.ttf?v=5')   format('truetype');
+  font-weight: 600;
+  font-style:  normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aarth Koudenpa Signpen';
+  src: url('aarth-koudenpa-signpen.woff2?v=5') format('woff2'),
+       url('aarth-koudenpa-signpen.ttf?v=5')   format('truetype');
+  font-weight: 700;
   font-style:  normal;
   font-display: swap;
 }
 
 html[data-ath-face='aarth-koudenpa-signpen'] {
   --ath-font: 'Aarth Koudenpa Signpen', serif;
+}
+
+/* Regular-only faces: do not stroke CFF outlines to fake bold. */
+.site-logo, .ath-sample, .hero-ath, .aarth, .aarth-hero, .ath-keys,
+.teaser-grid span, textarea.ath-script,
+body:not(.translated) .page-content {
+  font-synthesis: none;
 }

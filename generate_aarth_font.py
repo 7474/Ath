@@ -168,6 +168,10 @@ GOTHIC_STROKE_GAIN = 0.95
 GOTHIC_EDGE_SIGMA = 1.25
 GOTHIC_SPUR_LEN = 6
 
+# CFF faces are Regular-only. Registering 600/700 against the same files
+# stops the browser from synthesizing bold by stroking outlines (縁取り).
+_CSS_FACE_WEIGHTS = ("400", "600", "700")
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -775,6 +779,156 @@ def parse_svg_path(svg_file: Path) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Vector integrity (winding, extra holes vs the source raster)
+# ---------------------------------------------------------------------------
+
+def count_enclosed_holes(ink: np.ndarray) -> int:
+    """Count interior voids in a binary mask (nonzero = ink)."""
+    mask = (ink > 0).astype(np.uint8)
+    paper = np.where(mask > 0, 0, 255).astype(np.uint8)
+    paper = np.pad(paper, 1, constant_values=255)
+    h, w = paper.shape
+    flood = np.zeros((h + 2, w + 2), np.uint8)
+    cv2.floodFill(paper, flood, (0, 0), 128)
+    holes = (paper == 255).astype(np.uint8)
+    n_labels, _ = cv2.connectedComponents(holes, connectivity=8)
+    return max(0, n_labels - 1)
+
+
+def contour_signed_areas(pen) -> list[float]:
+    """Shoelace area of each closed contour (positive vs reverse winding)."""
+    contours: list[list[tuple[float, float]]] = []
+    cur: list[tuple[float, float]] = []
+    last = None
+
+    def _close():
+        nonlocal cur
+        if len(cur) >= 3:
+            contours.append(cur)
+        cur = []
+
+    def _cubic(p0, p1, p2, p3, steps: int = 8):
+        pts = []
+        for i in range(1, steps + 1):
+            t = i / steps
+            u = 1 - t
+            pts.append((
+                u**3 * p0[0] + 3 * u**2 * t * p1[0] + 3 * u * t**2 * p2[0] + t**3 * p3[0],
+                u**3 * p0[1] + 3 * u**2 * t * p1[1] + 3 * u * t**2 * p2[1] + t**3 * p3[1],
+            ))
+        return pts
+
+    for op, args in pen.value:
+        if op == "moveTo":
+            _close()
+            last = args[0]
+            cur = [last]
+        elif op == "lineTo":
+            last = args[0]
+            cur.append(last)
+        elif op == "curveTo":
+            cur.extend(_cubic(last, args[0], args[1], args[2]))
+            last = args[2]
+        elif op == "qCurveTo":
+            cur.extend(args)
+            last = args[-1]
+        elif op in ("closePath", "endPath"):
+            _close()
+            last = None
+    _close()
+
+    areas = []
+    for pts in contours:
+        acc = 0.0
+        n = len(pts)
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[(i + 1) % n]
+            acc += x1 * y2 - x2 * y1
+        areas.append(acc / 2.0)
+    return areas
+
+
+def reverse_winding_count(areas: list[float]) -> int:
+    """Inner CFF counters run opposite the outer outline."""
+    if not areas:
+        return 0
+    # Outer outline is the largest |area|; holes have the opposite sign.
+    outer = max(areas, key=lambda a: abs(a))
+    return sum(1 for a in areas if a * outer < 0)
+
+
+def check_font_vectors(
+    ttf_path: Path,
+    source_image: Path | None = None,
+) -> list[dict]:
+    """Compare each glyph's reverse-winding contours to holes in the raster.
+
+    Extra reverse-winding subpaths (or extra rendered voids) are the usual
+    cause of a hollow 縁取り when the source stroke was solid.
+    """
+    from fontTools.pens.recordingPen import RecordingPen
+    from fontTools.ttLib import TTFont
+
+    ttf_path = Path(ttf_path)
+    source_image = Path(source_image) if source_image else FILLED_TEMPLATE
+    font = TTFont(str(ttf_path))
+    cmap = font.getBestCmap() or {}
+    charstrings = font["CFF "].cff.topDictIndex[0].CharStrings
+
+    gray = load_grayscale(source_image)
+    binary = binarize(gray)
+    alphabet, digits = find_alphabet_and_digit_boxes(binary)
+    boxes = alphabet + digits
+    names = (ALPHABET_NAMES + DIGIT_NAMES)[:len(boxes)]
+
+    reports = []
+    for name, box in zip(names, boxes):
+        crop = crop_glyph(binary, box, padding=4)
+        src_holes = count_enclosed_holes(crop)
+        if name not in charstrings:
+            reports.append({
+                "name": name, "ok": False,
+                "reason": "missing charstring",
+                "source_holes": src_holes,
+                "vector_holes": None,
+            })
+            continue
+        pen = RecordingPen()
+        charstrings[name].draw(pen)
+        areas = contour_signed_areas(pen)
+        vec_holes = reverse_winding_count(areas)
+        extra = max(0, vec_holes - src_holes)
+        reports.append({
+            "name": name,
+            "ok": extra == 0,
+            "reason": None if extra == 0 else f"{extra} extra reverse-winding contour(s)",
+            "source_holes": src_holes,
+            "vector_holes": vec_holes,
+            "contours": len(areas),
+            "codepoint": next((cp for cp, n in cmap.items() if n == name), None),
+        })
+    return reports
+
+
+def format_vector_report(reports: list[dict]) -> str:
+    lines = [
+        f"{'name':16} src_holes vec_holes contours status",
+    ]
+    bad = 0
+    for row in reports:
+        status = "ok" if row["ok"] else (row.get("reason") or "FAIL")
+        if not row["ok"]:
+            bad += 1
+        lines.append(
+            f"{row['name']:16} {row['source_holes']!s:>9} "
+            f"{str(row['vector_holes']):>9} {str(row.get('contours', '-')):>8} {status}"
+        )
+    lines.append(f"{bad} glyph(s) with extra reverse-winding contours")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # SVG path → fontTools pen
 # ---------------------------------------------------------------------------
 
@@ -950,21 +1104,33 @@ def write_faces_css(
     for meta in faces:
         stem = meta["fileStem"]
         family = meta["family"]
+        for weight in _CSS_FACE_WEIGHTS:
+            lines += [
+                "@font-face {",
+                f"  font-family: '{family}';",
+                f"  src: url('{stem}.woff2?v={bust}') format('woff2'),",
+                f"       url('{stem}.ttf?v={bust}')   format('truetype');",
+                f"  font-weight: {weight};",
+                "  font-style:  normal;",
+                "  font-display: swap;",
+                "}",
+                "",
+            ]
         lines += [
-            "@font-face {",
-            f"  font-family: '{family}';",
-            f"  src: url('{stem}.woff2?v={bust}') format('woff2'),",
-            f"       url('{stem}.ttf?v={bust}')   format('truetype');",
-            "  font-weight: normal;",
-            "  font-style:  normal;",
-            "  font-display: swap;",
-            "}",
-            "",
             f"html[data-ath-face='{meta['id']}'] {{",
             f"  {css_var}: '{family}', serif;",
             "}",
             "",
         ]
+    lines += [
+        "/* Regular-only faces: do not stroke CFF outlines to fake bold. */",
+        ".site-logo, .ath-sample, .hero-ath, .aarth, .aarth-hero, .ath-keys,",
+        ".teaser-grid span, textarea.ath-script,",
+        "body:not(.translated) .page-content {",
+        "  font-synthesis: none;",
+        "}",
+        "",
+    ]
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
@@ -1654,6 +1820,10 @@ def main():
         "--write-css", action="store_true",
         help="Rewrite aarth.css from faces.json and exit",
     )
+    parser.add_argument(
+        "--check-vectors", default=None, metavar="TTF",
+        help="Inspect glyph windings in a TTF against --image (default: filled template) and exit",
+    )
     parser.add_argument("--output-dir", default=".", help="Directory for output files")
     parser.add_argument("--debug", action="store_true", help="Save debug images")
     args = parser.parse_args()
@@ -1669,6 +1839,14 @@ def main():
         elif (Path("Ath_alphabet.png")).is_file():
             alphabet_src = Path("Ath_alphabet.png")
         write_source_templates(Path(args.write_template), alphabet_image=alphabet_src)
+        return
+
+    if args.check_vectors:
+        source = Path(args.image) if args.image and not str(args.image).startswith("http") else None
+        reports = check_font_vectors(Path(args.check_vectors), source)
+        print(format_vector_report(reports))
+        if any(not row["ok"] for row in reports):
+            raise SystemExit(1)
         return
 
     if args.write_css:

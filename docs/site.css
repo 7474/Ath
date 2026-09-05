@@ -175,6 +175,24 @@ html {
   letter-spacing: .08em;
   line-height: 1;
   font-weight: 400;
+  font-synthesis: none;
+}
+
+/* Ath webfonts are Regular-only. UA bold on headings would synthesize a
+   CFF outline stroke (hollow stems / 縁取り). */
+body:not(.translated) .page-content :is(h1, h2, h3, h4, h5, h6, strong, b, th) {
+  font-weight: 400;
+}
+
+.ath-sample,
+.hero-ath,
+.teaser-grid span,
+.aarth,
+.aarth-hero,
+.ath-keys,
+textarea.ath-script {
+  font-weight: 400;
+  font-synthesis: none;
 }
 
 .site-meta {

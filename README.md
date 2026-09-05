@@ -139,7 +139,15 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
   font-family: 'Aarth';
   src: url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.woff2') format('woff2'),
        url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.ttf')   format('truetype');
-  font-weight: normal;
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aarth';
+  src: url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/7474/Ath@main/docs/aarth.ttf')   format('truetype');
+  font-weight: 700;
   font-style:  normal;
   font-display: swap;
 }
@@ -153,13 +161,22 @@ The 28 Ath phonemes are mapped to the following Unicode code points:
     font-family: 'Aarth';
     src: url('aarth.woff2') format('woff2'),
          url('aarth.ttf')   format('truetype');
-    font-weight: normal;
+    font-weight: 400;
+    font-style:  normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Aarth';
+    src: url('aarth.woff2') format('woff2'),
+         url('aarth.ttf')   format('truetype');
+    font-weight: 700;
     font-style:  normal;
     font-display: swap;
   }
 
   .ath {
     font-family: 'Aarth', serif;
+    font-synthesis: none;
   }
 </style>
 
@@ -318,6 +335,7 @@ python3 generate_aarth_font.py --all-faces
 | `--write-css` | off | Rewrite `aarth.css` from `faces.json` and exit |
 | `--faces-file` | `faces.json` | Alternate catalog path |
 | `--write-template` | off | Write reading + blank templates to a PNG path or directory, then exit |
+| `--check-vectors` | off | Inspect glyph windings in a TTF against the source raster (exit 1 if extra reverse-winding contours) |
 | `--output-dir` | `.` | Directory to write output files |
 | `--debug` | off | Save `debug_boxes.png` (and `debug_digit_boxes.png` when digits are present) |
 
