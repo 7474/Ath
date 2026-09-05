@@ -412,8 +412,6 @@
     var aliases = [text];
     if (text.indexOf("(") >= 0) {
       aliases.push(text.split("(")[0]);
-      var inner = text.slice(text.indexOf("(") + 1, text.lastIndexOf(")"));
-      if (inner && inner.indexOf("特に") !== 0) aliases.push(inner);
     }
     ["/", "・", "。", "、", ";", "；"].forEach(function (sep) {
       var expanded = [];
@@ -428,10 +426,11 @@
     var cleaned = [];
     var seen = {};
     aliases.forEach(function (alias) {
-      alias = String(alias || "").replace(/^[ .。;；]+|[ .。;；]+$/g, "");
+      alias = String(alias || "").replace(/[（(][^）)]+[）)]$/, "").replace(/^[ .。;；]+|[ .。;；]+$/g, "");
       if (!alias) return;
       if (alias.indexOf("特に") === 0 || /^\(?特に/.test(alias)) return;
       if (/^(pl\.|rüé|gen\.|nom\.|acc\.)/i.test(alias)) return;
+      if (/^(並列|引用|感嘆詞|感動詞|副詞|後置詞|前置詞|前置型|生格|正格|正格扱い|単位|長さの単位|人数を表す|呼びかけ|歓迎の言葉|文字|帝国国民)$/.test(alias)) return;
       var key = norm(alias);
       if (seen[key]) return;
       seen[key] = 1;

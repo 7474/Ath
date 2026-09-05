@@ -227,7 +227,7 @@
     {
       "lemma": "ath",
       "pos": "noun",
-      "gloss_ja": "アース（文字）",
+      "gloss_ja": "アース",
       "gloss_en": "Ath (letter)",
       "declension": "1",
       "stem": "at",
@@ -244,6 +244,7 @@
       "tags": [
         "wikipedia"
       ],
+      "notes": "文字",
       "source": "seed"
     },
     {
@@ -764,7 +765,7 @@
     {
       "lemma": "lébh",
       "pos": "noun",
-      "gloss_ja": "レーフ（帝国国民）",
+      "gloss_ja": "レーフ",
       "gloss_en": "imperial citizen",
       "declension": "2",
       "stem": "léb",
@@ -772,6 +773,7 @@
       "tags": [
         "wikipedia"
       ],
+      "notes": "帝国国民",
       "source": "seed"
     },
     {
@@ -1215,34 +1217,37 @@
     {
       "lemma": "te",
       "pos": "postposition",
-      "gloss_ja": "と（引用）",
+      "gloss_ja": "と",
       "gloss_en": "quotative",
       "reading_ja": "テ",
       "tags": [
         "wikipedia"
       ],
+      "notes": "引用",
       "source": "seed"
     },
     {
       "lemma": "le",
       "pos": "postposition",
-      "gloss_ja": "と（並列）",
+      "gloss_ja": "と",
       "gloss_en": "and",
       "reading_ja": "レ",
       "tags": [
         "wikipedia"
       ],
+      "notes": "並列",
       "source": "seed"
     },
     {
       "lemma": "lo",
       "pos": "postposition",
-      "gloss_ja": "と（並列）",
+      "gloss_ja": "と",
       "gloss_en": "and",
       "reading_ja": "ロ",
       "tags": [
         "wikipedia"
       ],
+      "notes": "並列",
       "source": "seed"
     },
     {

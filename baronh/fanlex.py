@@ -179,12 +179,21 @@ _LEADING_QUALIFIER_PAREN = re.compile(
 _LEADING_QUALIFIER_PAREN_TIGHT = re.compile(
     r"^[（(]([^）)]+(?:を|に|としての|のように|の))[）)]"
 )
+_LEADING_ANY_PAREN = re.compile(r"^[（(]([^）)]+)[）)]\s*(.+)$")
 _TRAIL_CASE_PAREN = re.compile(r"[（(][はをがにへとでのも][）)]$")
+_TRAIL_NOTE_PAREN = re.compile(r"[（(]([^）)]+)[）)]$")
+_MID_NADO_PAREN = re.compile(r"^(.+?)[（(](など|などに|等)[）)](.+)$")
+_GENDER_PAREN = re.compile(r"([\u3040-\u30ff\u4e00-\u9fff]*子)\(女\)")
+_USAGE_LABEL_RE = re.compile(
+    r"^(?:並列|引用|感嘆詞|感動詞|副詞|後置詞|前置詞|前置型|生格|正格|正格扱い|"
+    r"単位|長さの単位|人数を表す|呼びかけ|歓迎の言葉|文字|帝国国民|"
+    r".+詞|.+格|.+扱い|.+単位|.+を表す|.+の言葉|.+の称号)$"
+)
 _NOTE_PHRASE_RE = re.compile(
-    r"(?:爵位|姓称号)の[１1一]つ?|の美称|と同じ|の略$|の意か$|の[１1一]つ$|の上$|の下$"
+    r"(?:爵位|姓称号)の[１1一]つ?|の美称|と同じ|の略$|の意か$|の[１1一]つ$|の上$|の下$|の称号$|の別がある$"
 )
 _GRAMMAR_DESC_RE = re.compile(
-    r"(を表[わすす]|を示[す]|を意味する|文末に|人称代名詞|接頭語|接尾)"
+    r"(を表わ?す|を現わ?す|を示[す]|を意味する|文末に|人称代名詞|接頭語|接尾)"
 )
 _DEFINITION_NOTE_RE = re.compile(
     r"(において|を取り|を用い|であると|について|をもつ|を領地|するもの$|すること$)"
@@ -215,7 +224,182 @@ def _looks_grammar_desc(text: str) -> bool:
         return False
     if re.search(r"(文末|人称代名詞|接頭語)", text):
         return True
-    return bool(re.search(r"(を表[わすす]|を示[す]|を意味する)$", text))
+    return bool(re.search(r"(を表わ?す|を現わ?す|を示[す]|を意味する)$", text))
+
+
+def _looks_furigana(inner: str, head: str) -> bool:
+    if not re.fullmatch(r"[\u3040-\u309f\u30a0-\u30ffー]+", inner or ""):
+        return False
+    return _ja_char_count(inner) <= max(6, _ja_char_count(head) + 2)
+
+
+def _looks_usage_label(inner: str) -> bool:
+    item = (inner or "").strip()
+    if not item:
+        return False
+    if item.endswith(("?", "？")):
+        return True
+    if "具体的" in item or "不詳" in item:
+        return True
+    return bool(_USAGE_LABEL_RE.match(item))
+
+
+def _looks_content_noun(inner: str) -> bool:
+    """`(繊維)束` の「繊維」のように、見出しの実義になる短い語。"""
+    item = (inner or "").strip()
+    if not item or _looks_usage_label(item):
+        return False
+    if re.search(r"[がをにへでもなてで]$", item):
+        return False
+    if item in {"は", "を", "が", "に", "へ", "と", "で", "の", "も", "か", "など", "などに", "等"}:
+        return False
+    if "あるいは" in item:
+        return False
+    if not 1 <= _ja_char_count(item) <= 6:
+        return False
+    if not re.search(r"[\u4e00-\u9fff]", item):
+        return False
+    if re.search(r"(して|られ|こと|場合|問われ|こたえて|受けて)", item):
+        return False
+    return bool(re.fullmatch(r"[\u3040-\u30ff\u4e00-\u9fffー]+", item))
+
+
+_DICT_PASSIVE_RE = re.compile(r"^〜?\(ら\)れる$")
+_DICT_CAUSATIVE_RE = re.compile(r"^〜?\(さ\)せる$")
+_DICT_PASSIVE_PLAIN_RE = re.compile(r"^〜される$")
+
+
+def _normalize_dict_aux(text: str, notes: list[str]) -> str:
+    """辞書の活用表記 `〜(ら)れる` は訳語にせず、受け身・使役だけを残す。"""
+    if _DICT_PASSIVE_RE.fullmatch(text):
+        notes.append("〜(ら)れる")
+        return "受け身"
+    if _DICT_CAUSATIVE_RE.fullmatch(text):
+        notes.append("〜(さ)せる")
+        return "使役"
+    if _DICT_PASSIVE_PLAIN_RE.fullmatch(text):
+        notes.append(text)
+        return "受け身"
+    return text
+
+
+def _peel_any_leading_paren(text: str, notes: list[str]) -> str:
+    """残った先頭カッコは用法・修飾として notes へ。活用表記は後で辞書形として分ける。"""
+    while text:
+        match = _LEADING_ANY_PAREN.match(text)
+        if not match:
+            break
+        inner, rest = match.group(1).strip(), match.group(2).strip()
+        if inner in {"ら", "さ"} and rest.startswith(("れる", "せる", "られる", "させる")):
+            break
+        if _looks_content_noun(inner):
+            break
+        if not rest or _ja_char_count(rest) < 1:
+            break
+        notes.append(inner)
+        text = rest
+    return text
+
+
+def _split_sense_parts(text: str) -> list[str]:
+    """`;` `。` `/` で語義を割る。括弧の中の `/` は切らない。"""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    for char in text:
+        if char in "(（":
+            depth += 1
+            buf.append(char)
+        elif char in ")）":
+            depth = max(0, depth - 1)
+            buf.append(char)
+        elif depth == 0 and char in ";；。/／":
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(char)
+    parts.append("".join(buf))
+    return parts
+
+
+def _expand_compact_parens(text: str, notes: list[str]) -> list[str]:
+    """皇太子(女) や 打撃(隊) のように、実義を畳んだカッコは見出しへ展開する。"""
+    suffix = re.search(r"(の称号|の別がある)$", text)
+    if suffix and _GENDER_PAREN.search(text):
+        notes.append(suffix.group(1))
+        text = text[: suffix.start()].rstrip()
+    if _GENDER_PAREN.search(text):
+        expanded = _GENDER_PAREN.sub(
+            lambda match: f"{match.group(1)} / {match.group(1)[:-1]}女",
+            text,
+        )
+        return [bit.strip() for bit in expanded.split(" / ") if bit.strip()]
+    compact = re.fullmatch(r"(.+)\((隊|するもの|輸送艦)\)$", text)
+    if compact:
+        head, inner = compact.group(1), compact.group(2)
+        if inner == "するもの":
+            return [f"{head}するもの"]
+        if inner == "輸送艦":
+            return [f"{head}{inner}"]
+        return [head, f"{head}{inner}"]
+    lead = _LEADING_ANY_PAREN.match(text)
+    if lead:
+        inner, rest = lead.group(1).strip(), lead.group(2).strip()
+        if _looks_content_noun(inner) and rest:
+            joined = f"{inner}{rest}"
+            return [joined, rest] if rest != joined else [joined]
+    mid = re.fullmatch(r"(.+?)[（(]([^）)]{1,12})[）)](.+)", text)
+    if mid:
+        left, inner, right = mid.group(1), mid.group(2).strip(), mid.group(3)
+        if (
+            _looks_content_noun(inner)
+            and _ja_char_count(left) >= 2
+            and _ja_char_count(right) >= 2
+        ):
+            primary = f"{left}{right}".strip()
+            alt = f"{inner}{right}".strip()
+            return [primary, alt] if alt != primary else [primary]
+    return [text]
+
+
+def _peel_mid_nado_paren(text: str, notes: list[str]) -> str:
+    match = _MID_NADO_PAREN.match(text)
+    if not match:
+        return text
+    left, mark, rest = match.group(1).strip(), match.group(2), match.group(3).strip()
+    if rest and _ja_char_count(rest) >= 2:
+        notes.append(f"{left}{mark}")
+        return rest
+    return text
+
+
+def _peel_mid_synonym_paren(text: str, notes: list[str]) -> str:
+    """物質燃料(推進剤)採取基地 のような複合語中の言い換えを notes へ。"""
+    match = re.fullmatch(r"(.+?)[（(]([^）)]{1,12})[）)](.+)", text)
+    if not match:
+        return text
+    left, inner, right = match.group(1), match.group(2).strip(), match.group(3)
+    if inner in {"ら", "さ", "女", "隊"}:
+        return text
+    if _looks_usage_label(inner) or _looks_furigana(inner, left):
+        notes.append(inner)
+        return (left + right).strip()
+    return text
+
+
+def _peel_trailing_note_paren(text: str, notes: list[str]) -> str:
+    """`と（並列）` `ええと(感嘆詞)` `明日(あした)` の末尾補足を notes へ。"""
+    match = _TRAIL_NOTE_PAREN.search(text)
+    if not match:
+        return text
+    inner = match.group(1).strip()
+    head = text[: match.start()].rstrip()
+    if not head or inner in {"ら", "さ", "女", "隊", "するもの", "輸送艦"}:
+        return text
+    if _looks_furigana(inner, head) or _looks_usage_label(inner) or _ja_char_count(inner) > 6:
+        notes.append(inner)
+        return head
+    return text
 
 
 def _looks_definition_note(text: str) -> bool:
@@ -238,7 +422,7 @@ def _is_note_segment(text: str) -> bool:
         return True
     if item.startswith(("gen.", "nom.", "acc.", "pl.")):
         return True
-    if _LEADING_BARONH_RE.match(item) and _latin_char_count(item) >= 3:
+    if _LEADING_BARONH_RE.match(item) and _latin_char_count(item) >= 2 and _ja_char_count(item) > 0:
         return True
     if _looks_grammar_desc(item):
         return True
@@ -303,8 +487,8 @@ def clean_ja_gloss(raw: str) -> tuple[str, str]:
 
     senses: list[str] = []
     unknown: list[str] = []
-    for part in re.split(r"[;；。]", text):
-        part = part.strip(" /／、, ")
+    for raw_part in _split_sense_parts(text):
+        part = raw_part.strip(" /／、, ")
         if not part:
             continue
         part, usage_example = _peel_leading_meta(part, notes)
@@ -313,42 +497,20 @@ def clean_ja_gloss(raw: str) -> tuple[str, str]:
                 notes.append(part)
             continue
         part = _peel_qualifier_paren(part, notes)
-        part = _strip_trail_case_paren(part)
-        if not part:
-            continue
-        quotes = _QUOTE_RE.findall(part)
-        if quotes and _GRAMMAR_DESC_RE.search(_QUOTE_RE.sub("", part)):
-            for quote in quotes:
-                quote = quote.replace("…", "").strip()
-                if quote:
-                    senses.append(quote)
-            notes.append(part)
-            continue
-        if part in {"語義不詳", "未詳", "不詳", "品詞不詳"}:
-            unknown.append(part)
-            continue
-        speculation = re.fullmatch(r"(.+?)(?:、あるいは(.+?))?の意か", part)
-        if speculation and not _looks_grammar_desc(part):
-            for group in speculation.groups():
-                if group:
-                    senses.append(group.strip())
-            notes.append("の意か")
-            continue
-        if _latin_char_count(part) >= 3:
-            head = re.match(r"^([\u3040-\u30ff\u4e00-\u9fff〜ー]{1,4})(?=\s|[A-Za-zÉéÏïÜüŸÿŒœ*（(]|$)", part)
-            if head:
-                senses.append(head.group(1))
-            notes.append(part)
-            continue
-        if _is_note_segment(part):
-            notes.append(part)
-            continue
-        if "、" in part or "," in part:
-            bits = [bit.strip() for bit in re.split(r"[、,]", part) if bit.strip()]
-            if bits and all(_ja_char_count(bit) <= 8 and not _is_note_segment(bit) for bit in bits):
-                senses.extend(_strip_trail_case_paren(bit) for bit in bits)
+        part = _peel_any_leading_paren(part, notes)
+        pieces = _expand_compact_parens(part, notes)
+        for part in pieces:
+            part = _peel_mid_nado_paren(part, notes)
+            part = _peel_mid_synonym_paren(part, notes)
+            part = _peel_trailing_note_paren(part, notes)
+            part = _strip_trail_case_paren(part)
+            part = _normalize_dict_aux(part, notes)
+            if not part:
                 continue
-        senses.append(part)
+            if re.fullmatch(r"[（(][^）)]+[）)]", part):
+                notes.append(part.strip("（）()"))
+                continue
+            _collect_sense(part, senses, notes, unknown)
 
     seen: set[str] = set()
     unique: list[str] = []
@@ -369,6 +531,50 @@ def clean_ja_gloss(raw: str) -> tuple[str, str]:
     gloss = " / ".join(unique)
     note_parts = [item for item in notes if item and item not in unique and item != gloss]
     return gloss, " ".join(dict.fromkeys(note_parts))
+
+
+def _collect_sense(part: str, senses: list[str], notes: list[str], unknown: list[str]) -> None:
+    quotes = _QUOTE_RE.findall(part)
+    if quotes and _GRAMMAR_DESC_RE.search(_QUOTE_RE.sub("", part)):
+        for quote in quotes:
+            quote = quote.replace("…", "").strip()
+            if quote:
+                senses.append(quote)
+        notes.append(part)
+        return
+    if part in {"語義不詳", "未詳", "不詳", "品詞不詳"}:
+        unknown.append(part)
+        return
+    speculation = re.fullmatch(r"(.+?)(?:、あるいは(.+?))?の意か", part)
+    if speculation and not _looks_grammar_desc(part):
+        for group in speculation.groups():
+            if group:
+                senses.append(group.strip())
+        notes.append("の意か")
+        return
+    if _latin_char_count(part) >= 3:
+        head = re.match(r"^([\u3040-\u30ff\u4e00-\u9fff〜ー]{1,4})(?=\s|[A-Za-zÉéÏïÜüŸÿŒœ*（(]|$)", part)
+        if head:
+            senses.append(head.group(1))
+        notes.append(part)
+        return
+    etym = re.fullmatch(
+        r"([\u3040-\u30ff\u4e00-\u9fff〜ー]{1,6})\s*の意(?:[、,].+)?$",
+        part,
+    )
+    if etym and _ja_char_count(part) > 10:
+        senses.append(etym.group(1))
+        notes.append(part)
+        return
+    if _is_note_segment(part):
+        notes.append(part)
+        return
+    if "、" in part or "," in part:
+        bits = [bit.strip() for bit in re.split(r"[、,]", part) if bit.strip()]
+        if bits and all(_ja_char_count(bit) <= 8 and not _is_note_segment(bit) for bit in bits):
+            senses.extend(_strip_trail_case_paren(bit) for bit in bits)
+            return
+    senses.append(part)
 
 
 def _gloss_ja_from_dadh(gloss: str) -> tuple[str, str]:

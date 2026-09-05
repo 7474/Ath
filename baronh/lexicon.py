@@ -117,8 +117,8 @@ def seed_entries() -> list[Entry]:
     nouns = [
         _e("abh", "noun", "アーヴ", "Abh", "1", "ab", "アーヴ",
            _pron("abh", "abe", "bar", "bari", "baré", "abhar", "bale")),
-        _e("ath", "noun", "アース（文字）", "Ath (letter)", "1", "at", "アース",
-           _pron("ath", "ate", "tar", "tari", "taré", "athar", "tale")),
+        _e("ath", "noun", "アース", "Ath (letter)", "1", "at", "アース",
+           _pron("ath", "ate", "tar", "tari", "taré", "athar", "tale"), notes="文字"),
         _e("azz", "noun", "敵", "enemy", "1", "az", "アズ",
            _pron("azz", "aze", "zar", "zari", "zaré", "azzar", "zale")),
         _e("lorann", "noun", "父", "father", "1n", "loran", "ロラン", tags=["wikipedia"]),
@@ -159,7 +159,7 @@ def seed_entries() -> list[Entry]:
         _e("lonid", "noun", "門", "gate", "", "lonid", "ロニド", tags=["public"]),
         _e("gaftonosh", "noun", "紋章", "crest", "2", "gaftonos", "ガフトノーシュ", tags=["public"]),
         _e("frybarec", "noun", "帝国", "empire", "3", "frybare", "フリューバレ"),
-        _e("lébh", "noun", "レーフ（帝国国民）", "imperial citizen", "2", "léb", "レーフ"),
+        _e("lébh", "noun", "レーフ", "imperial citizen", "2", "léb", "レーフ", notes="帝国国民"),
         _e("ablïarsec", "noun", "アブリアル", "Ablïarsec", "3", "ablïarse", "アブリアル", tags=["public"]),
         _e("lacmhacarh", "noun", "ラクファカール", "Lacmhacarh", "2", "lacmhacar", "ラクファカール", tags=["wikipedia"]),
         _e("gatharsec", "noun", "ガサルス", "Gatharsec", "3", "gatharse", "ガサルス", tags=["wikipedia"]),
@@ -200,9 +200,9 @@ def seed_entries() -> list[Entry]:
         _e("a", "postposition", "は", "topic", reading_ja="ア"),
         _e("éü", "postposition", "よ", "vocative", reading_ja="エウ"),
         _e("sa", "postposition", "か", "question", reading_ja="サ"),
-        _e("te", "postposition", "と（引用）", "quotative", reading_ja="テ"),
-        _e("le", "postposition", "と（並列）", "and", reading_ja="レ"),
-        _e("lo", "postposition", "と（並列）", "and", reading_ja="ロ"),
+        _e("te", "postposition", "と", "quotative", reading_ja="テ", notes="引用"),
+        _e("le", "postposition", "と", "and", reading_ja="レ", notes="並列"),
+        _e("lo", "postposition", "と", "and", reading_ja="ロ", notes="並列"),
         _e("réfaiseni", "adverb", "一緒", "together", reading_ja="レファイセニ", tags=["wikipedia"]),
         _e("sote", "adverb", "ここに", "here", reading_ja="ソテ", tags=["wikipedia"]),
         _e("amata", "adjective", "多い", "many", reading_ja="アマタ"),
@@ -656,14 +656,17 @@ def score_entry(
     return best
 
 
+_USAGE_ALIAS_RE = re.compile(
+    r"^(?:並列|引用|感嘆詞|感動詞|副詞|後置詞|前置詞|前置型|生格|正格|正格扱い|"
+    r"単位|長さの単位|人数を表す|呼びかけ|歓迎の言葉|文字|帝国国民)$"
+)
+
+
 def _split_ja_aliases(gloss: str) -> list[str]:
     text = gloss.replace("（", "(").replace("）", ")")
     aliases = [text]
     if "(" in text:
         aliases.append(text.split("(", 1)[0])
-        inner = text[text.find("(") + 1 : text.rfind(")")]
-        if inner and not inner.startswith("特に"):
-            aliases.append(inner)
     for sep in ("/", "・", "。", "、", ";", "；"):
         expanded: list[str] = []
         for alias in aliases:
@@ -672,12 +675,14 @@ def _split_ja_aliases(gloss: str) -> list[str]:
     cleaned: list[str] = []
     seen: set[str] = set()
     for alias in aliases:
-        alias = alias.strip(" .。;；")
+        alias = re.sub(r"[（(][^）)]+[）)]$", "", alias).strip(" .。;；")
         if not alias:
             continue
         if alias.startswith("特に") or re.match(r"^\(?特に", alias):
             continue
         if re.match(r"^(pl\.|rüé|gen\.|nom\.|acc\.)", alias, re.I):
+            continue
+        if _USAGE_ALIAS_RE.match(alias):
             continue
         key = _normalize_key(alias)
         if key in seen:
