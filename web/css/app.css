@@ -364,8 +364,6 @@ footer {
 
 @media (max-width: 760px) {
   /* モバイルでも入力・訳・翻訳ボタンがファーストビューに収まるようにする。 */
-  .site-bar { padding: .55rem .9rem; gap: .5rem; }
-  .site-meta { display: none; }
   main { padding: .7rem .9rem 2.2rem; }
   h1 { font-size: 1.15rem; margin-bottom: .5rem; }
   .panel.translator { padding: .75rem .8rem; }

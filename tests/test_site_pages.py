@@ -42,8 +42,19 @@ class SiteStructureTest(unittest.TestCase):
                 self.assertIn("アース", text)
                 self.assertIn("翻訳", text)
                 self.assertIn('class="site-nav"', text)
+                self.assertIn("viewport-fit=cover", text)
                 for href in hrefs:
                     self.assertIn(f'href="{href}"', text)
+
+    def test_shared_header_has_mobile_touch_rules(self):
+        css = (ROOT / "site.css").read_text(encoding="utf-8")
+        self.assertIn("min-height: 2.75rem", css)
+        self.assertIn(".site-meta { display: none; }", css)
+        self.assertIn("safe-area-inset-top", css)
+        self.assertIn(".site-nav a:focus-visible", css)
+        self.assertIn(".site-card:active", css)
+        app = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
+        self.assertNotIn(".site-meta { display: none; }", app)
 
     def test_hub_is_about_language_and_script(self):
         hub = (ROOT / "index.html").read_text(encoding="utf-8")
