@@ -133,7 +133,7 @@
     /* Large heading */
     .aarth-hero {
       font-family: 'Aarth', serif;
-      font-size: 5rem;
+      font-size: clamp(2.4rem, 12vw, 5rem);
       line-height: 1.2;
       letter-spacing: .08em;
       color: #1a1a1a;
@@ -146,6 +146,13 @@
       grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: .5rem;
       margin-top: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .alpha-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .65rem .4rem;
+      }
     }
 
     .alpha-cell {
@@ -163,8 +170,8 @@
     }
 
     .alpha-cell .label {
-      font-size: .7rem;
-      color: #888;
+      font-size: .8rem;
+      color: #555;
       font-family: monospace;
     }
 
@@ -244,6 +251,31 @@
     body.translated .mapping-table code {
       font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
       text-transform: none;
+    }
+
+    @media (max-width: 600px) {
+      .mapping-table thead { display: none; }
+      .mapping-table,
+      .mapping-table tbody {
+        display: block;
+        width: 100%;
+      }
+      .mapping-table tr {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: .4rem .75rem;
+        padding: .55rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      .mapping-table td {
+        display: block;
+        padding: 0;
+        border: 0;
+      }
+      .mapping-table .unicode { display: none; }
+      .mapping-table .glyph { font-size: 1.7rem; }
+      .mapping-table .key { justify-self: end; }
     }
 
     /* Size scale — unspaced glyph strings must wrap instead of

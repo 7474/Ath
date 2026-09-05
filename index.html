@@ -49,6 +49,10 @@
       line-height: 1.4;
     }
 
+    @media (max-width: 480px) {
+      .teaser-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
     .notice {
       background: #fff;
       border: 1px solid #e0e0e0;

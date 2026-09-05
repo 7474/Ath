@@ -65,6 +65,15 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("字形デモ", hub)
         self.assertIn("翻訳", hub)
 
+    def test_ath_demo_mobile_glyph_grid_and_mapping(self):
+        demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("repeat(4, minmax(0, 1fr))", demo)
+        self.assertIn("clamp(2.4rem, 12vw, 5rem)", demo)
+        self.assertIn(".mapping-table .unicode { display: none; }", demo)
+        self.assertIn("color: #555;", demo)
+        hub = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn(".teaser-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }", hub)
+
     def test_ath_demo_keeps_translate_play(self):
         demo = (ROOT / "ath" / "index.html").read_text(encoding="utf-8")
         self.assertIn('id="translate-button"', demo)
