@@ -8,6 +8,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from baronh.g2p import speakable_for_pack
+from baronh.langpack import LanguagePack
 from baronh.phonology import reading_ja, speakable_text
 
 
@@ -30,11 +32,13 @@ def synthesize_local(
     lang: str = "baronh",
     output: Path | None = None,
     play: bool = False,
+    pack: LanguagePack | None = None,
 ) -> SpeechResult:
-    spoken = speakable_text(text, lang)
+    spoken = speakable_for_pack(text, pack, lang) if pack is not None else speakable_text(text, lang)
     espeak = _espeak_cmd()
     if espeak:
-        cmd = [espeak, "-v", "ja" if lang in {"baronh", "ja"} else "en", spoken]
+        voice = "en" if lang == "en" else "ja"
+        cmd = [espeak, "-v", voice, spoken]
         if output:
             wav = output.with_suffix(".wav") if output.suffix.lower() not in {".wav"} else output
             cmd.extend(["-w", str(wav)])

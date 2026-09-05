@@ -47,6 +47,9 @@ class AgentHttpTest(unittest.TestCase):
         self.assertIn("agent", body["engines"])
         self.assertEqual(body["vector_dim"], 512)
         self.assertIn("model", body)
+        lang_ids = {row["id"] for row in body["languages"]}
+        self.assertIn("mina", lang_ids)
+        self.assertIn("baronh", lang_ids)
 
     def test_synonyms_endpoint(self):
         conn = self._conn()
@@ -150,6 +153,62 @@ class AgentHttpTest(unittest.TestCase):
         )
         res = conn.getresponse()
         self.assertEqual(res.status, 400)
+
+
+    def test_translate_mina_pack(self):
+        payload = json.dumps({
+            "text": "私はミーナです",
+            "source_lang": "ja",
+            "target_lang": "mina",
+            "engine": "local",
+        }).encode("utf-8")
+        conn = self._conn()
+        conn.request(
+            "POST",
+            "/api/translate",
+            body=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        res = conn.getresponse()
+        body = json.loads(res.read().decode("utf-8"))
+        self.assertEqual(res.status, 200, body)
+        self.assertEqual(body["text"], "na ya minde.")
+        self.assertEqual(body["engine"], "transfer")
+        self.assertEqual(body["target_lang"], "mina")
+
+    def test_translate_mina_without_model(self):
+        payload = json.dumps({
+            "text": "私はミーナです",
+            "source_lang": "ja",
+            "target_lang": "mina",
+            "engine": "agent",
+            "stream": True,
+        }).encode("utf-8")
+        env = {"OPENAI_API_KEY": "", "OPENAI_BASE_URL": "", "OPENAI_API_BASE": ""}
+        with mock.patch.dict("os.environ", env, clear=False):
+            conn = self._conn()
+            conn.request(
+                "POST",
+                "/api/translate",
+                body=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            res = conn.getresponse()
+            body = json.loads(res.read().decode("utf-8"))
+        self.assertEqual(res.status, 200, body)
+        self.assertEqual(body["text"], "na ya minde.")
+        self.assertEqual(body["engine"], "transfer")
+
+    def test_languages_endpoint(self):
+        conn = self._conn()
+        conn.request("GET", "/api/languages")
+        res = conn.getresponse()
+        body = json.loads(res.read().decode("utf-8"))
+        self.assertEqual(res.status, 200)
+        ids = {row["id"] for row in body["languages"]}
+        self.assertIn("mina", ids)
+        self.assertIn("ja", ids)
+        self.assertIn("baronh", ids)
 
 
 class AgentHttpFakeChatTest(unittest.TestCase):
