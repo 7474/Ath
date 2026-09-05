@@ -116,6 +116,39 @@ h1 { font-size: 1.55rem; margin-bottom: .7rem; }
   display: none;
 }
 
+.engine-details {
+  margin: 0 0 .7rem;
+  font-size: .9rem;
+}
+
+.engine-details summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.engine-details-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding: .2rem 0 .35rem;
+}
+
+.engine-details .opt {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.engine-details .opt[hidden] {
+  display: none;
+}
+
 select, input[type="text"], input[type="password"], textarea, button {
   font: inherit;
 }
@@ -125,14 +158,15 @@ select, input[type="text"], input[type="password"] {
   border-radius: 8px;
   padding: .4rem .6rem;
   background: #fff;
+  min-height: 2.75rem;
 }
 
 .swap {
   border: 1px solid #ccc;
   background: #fff;
   border-radius: 999px;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.75rem;
+  height: 2.75rem;
   cursor: pointer;
 }
 
@@ -177,6 +211,7 @@ textarea.ath-script {
 button.primary, button.ghost {
   border-radius: 999px;
   padding: .45rem 1rem;
+  min-height: 2.75rem;
   cursor: pointer;
   font-weight: 600;
 }
@@ -369,5 +404,15 @@ footer {
   .panel.translator { padding: .75rem .8rem; }
   .langs { margin-bottom: .5rem; gap: .4rem; }
   textarea { min-height: 5.25rem; }
-  .actions { margin-top: .55rem; }
+  .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    margin: .55rem -.8rem 0;
+    padding: .55rem .8rem calc(.55rem + env(safe-area-inset-bottom, 0px));
+    background: rgba(250, 250, 248, .94);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+  .actions .primary { flex: 1 1 8rem; }
 }

@@ -161,16 +161,17 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("ファーストビュー", css)
         self.assertIn("min-height: 5.25rem", css)
 
-    def test_translator_ai_settings_is_modal_beside_examples(self):
+    def test_translator_ai_settings_is_modal(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         nav = web[web.find('class="site-nav"') : web.find("</nav>")]
         actions_at = web.find('class="actions"')
-        examples_at = web.find('id="examples-btn"')
         settings_btn_at = web.find('id="open-settings"')
         dialog_at = web.find('id="settings-panel"')
         self.assertGreater(actions_at, 0)
-        self.assertGreater(examples_at, actions_at)
-        self.assertGreater(settings_btn_at, examples_at)
+        self.assertNotIn('id="examples-btn"', web)
+        self.assertIn('class="engine-details"', web)
+        self.assertIn('enterkeyhint="go"', web)
+        self.assertGreater(settings_btn_at, actions_at)
         self.assertGreater(dialog_at, settings_btn_at)
         self.assertIn("生成AI設定", web)
         self.assertNotIn("open-settings", nav)
@@ -180,9 +181,11 @@ class SiteStructureTest(unittest.TestCase):
         css = (ROOT / "web" / "css" / "app.css").read_text(encoding="utf-8")
         self.assertIn("settings-modal", css)
         self.assertIn("::backdrop", css)
+        self.assertIn("position: sticky", css)
         js = (ROOT / "web" / "js" / "app.js").read_text(encoding="utf-8")
         self.assertIn("showModal", js)
         self.assertIn("closeSettings", js)
+        self.assertNotIn("examples-btn", js)
 
     def test_translator_points_to_site_hub(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")

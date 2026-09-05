@@ -8,21 +8,6 @@
   var AGENT_URL_KEY = "ath-translate.agent-url";
   var OVERLAY_KEY = "ath-translate.overlay";
   var VECTOR_SEARCH_KEY = "ath-translate.local-vector";
-  var EXAMPLES = [
-    ["ja", "baronh", "私は移民します"],
-    ["ja", "baronh", "私はアーヴです"],
-    ["ja", "baronh", "あなたの家族は？"],
-    ["ja", "baronh", "星たちよ"],
-    ["ja", "baronh", "分かりますか"],
-    ["ja", "baronh", "ありがとう"],
-    ["ja", "baronh", "私はジントです"],
-    ["ja", "baronh", "星たちの光を見ます"],
-    ["baronh", "ja", "F'a usere."],
-    ["baronh", "ja", "F'a bale."],
-    ["baronh", "en", "Facle sa?"],
-    ["en", "baronh", "I immigrate"]
-  ];
-  var exampleAt = 0;
   var lexicon = null;
 
   var $ = function (id) { return document.getElementById(id); };
@@ -474,8 +459,10 @@
   }
 
   function speakBrowser(spoken, lang) {
+    var readingEl = $("reading");
+    if (readingEl) readingEl.textContent = "読み: " + spoken;
     if (!window.speechSynthesis) {
-      setStatus("このブラウザは音声合成に未対応です。読み: " + spoken);
+      setStatus("このブラウザは音声合成に未対応です。読みを表示しています。");
       return;
     }
     var utter = new SpeechSynthesisUtterance(spoken);
@@ -537,15 +524,6 @@
     var text = $("target-text").value;
     if (navigator.clipboard) navigator.clipboard.writeText(text);
     else window.prompt("Copy:", text);
-  });
-  $("examples-btn").addEventListener("click", function () {
-    var ex = EXAMPLES[exampleAt % EXAMPLES.length];
-    exampleAt += 1;
-    $("source-lang").value = ex[0];
-    $("target-lang").value = ex[1];
-    $("source-text").value = ex[2];
-    syncAthScript();
-    runTranslate();
   });
   $("swap-langs").addEventListener("click", function () {
     var a = $("source-lang").value;
