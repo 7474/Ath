@@ -488,7 +488,7 @@
       });
     }
     lang = lang || "auto";
-    if (lang === "auto" || lang === "baronh") {
+    if (lang !== "ja" && lang !== "en") {
       take(this.byLemma[key]);
       var foldedOe = norm(foldFanRomanization(query));
       if (foldedOe !== key) take(this.byLemma[foldedOe]);
@@ -2487,6 +2487,13 @@
     resolveLexiconHits: resolveLexiconHits,
     nameForTranscription: nameForTranscription,
     translateAgent: translateAgent,
+    tokenizeJa: tokenizeJa,
+    tokenizeEn: tokenizeEn,
+    lookupJa: lookupJa,
+    verbFeaturesJa: verbFeaturesJa,
+    JA_PARTICLES: JA_PARTICLES,
+    JA_COPULA: JA_COPULA,
+    EN_PREP: EN_PREP,
     describeToolProgress: describeToolProgress,
     progressEvent: progressEvent,
     inventedBaronhForms: inventedBaronhForms,

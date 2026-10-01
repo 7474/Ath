@@ -5,6 +5,7 @@ WORKDIR /app
 
 COPY baronh/ baronh/
 COPY data/lexicon.json data/ingested.json data/
+COPY langs/ langs/
 COPY web/ web/
 COPY index.html site.css aarth.css aarth.woff2 aarth.ttf ./
 COPY ath/ ath/

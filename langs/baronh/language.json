@@ -1,0 +1,122 @@
+{
+  "id": "baronh",
+  "version": 1,
+  "names": {
+    "autonym": "baronh",
+    "ja": "アーヴ語",
+    "en": "Baronh"
+  },
+  "description": "既存のアーヴ語エンジン（grammar.py / phonology.py / translate.py）を言語パックの形で記述したもの。形態・音韻の実行は engine=baronh が従来実装へ委譲する。新規言語は langs/mina を複製し engine=suffix / table にする。",
+  "ui": true,
+  "script": "latin-ath",
+  "lexicon": "../../data/lexicon.json",
+  "closed_forms": ["F'a", "D'a", "S'a", "sa", "a", "éü", "le", "lo", "te"],
+  "grammar_notes": [
+    "本番の翻訳は baronh.translate であり、転移エンジンは使わない。",
+    "読みは phonology.reading_ja、格変化は grammar.decline に委譲する。"
+  ],
+  "phonology": {
+    "engine": "baronh",
+    "syllable": "(C)(h)V(C)",
+    "vowels": ["a", "i", "u", "é", "o", "e", "ï", "œ", "ü", "ÿ", "y"],
+    "consonants": ["c", "s", "t", "l", "n", "h", "p", "f", "m", "r", "g", "z", "d", "b"],
+    "silent_final": ["c", "r"],
+    "digraphs": {
+      "ai": "ai",
+      "au": "au",
+      "eu": "eu",
+      "mh": "ɸ",
+      "bh": "v",
+      "ph": "ɸ",
+      "fh": "ɸ",
+      "th": "s",
+      "dh": "z",
+      "ch": "ʃ",
+      "gh": "ʒ",
+      "nh": "ɲ",
+      "rh": "ɾ",
+      "lh": "l"
+    },
+    "ipa": {
+      "a": "a",
+      "i": "i",
+      "u": "u",
+      "e": "e",
+      "é": "e",
+      "o": "o",
+      "œ": "ø",
+      "ï": "i",
+      "ü": "y",
+      "ÿ": "i",
+      "y": "i",
+      "c": "k",
+      "s": "s",
+      "t": "t",
+      "l": "l",
+      "n": "n",
+      "h": "h",
+      "p": "p",
+      "f": "f",
+      "m": "m",
+      "r": "ɾ",
+      "g": "g",
+      "z": "z",
+      "d": "d",
+      "b": "b"
+    }
+  },
+  "morphology": {
+    "engine": "baronh",
+    "cases": ["nom", "acc", "gen", "dat", "all", "abl", "ins"],
+    "default_noun": "2",
+    "voices": ["causative", "passive", "negative"],
+    "voice_suffix": {
+      "causative": "as",
+      "passive": "ar",
+      "negative": "ad"
+    },
+    "verb_endings": {
+      "indicative|indefinite": "e",
+      "indicative|perfect": "le",
+      "indicative|progressive": "lér",
+      "indicative|prospective": "to",
+      "subjunctive|indefinite": "éme",
+      "subjunctive|perfect": "lar",
+      "subjunctive|progressive": "lérm",
+      "subjunctive|prospective": "dar",
+      "imperative|indefinite": "é",
+      "participle|indefinite": "a",
+      "participle|perfect": "la",
+      "participle|progressive": "léra",
+      "participle|prospective": "naur"
+    }
+  },
+  "syntax": {
+    "word_order": "SOV",
+    "topic": {
+      "particle": "a",
+      "position": "after",
+      "form": "nom",
+      "pronoun_contract": {
+        "fe": "F'a",
+        "de": "D'a",
+        "se": "S'a"
+      }
+    },
+    "vocative": {
+      "particle": "éü",
+      "position": "after",
+      "form": "nom"
+    },
+    "question": {
+      "particle": "sa",
+      "position": "final"
+    },
+    "copula": {
+      "lemma": "ane",
+      "omit_with_ins": true
+    },
+    "period": ".",
+    "question_mark": "?"
+  }
+}

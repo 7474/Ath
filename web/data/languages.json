@@ -1,0 +1,33 @@
+{
+  "languages": [
+    {
+      "id": "auto",
+      "name_ja": "自動",
+      "name_en": "Auto",
+      "kind": "pivot"
+    },
+    {
+      "id": "ja",
+      "name_ja": "日本語",
+      "name_en": "Japanese",
+      "kind": "pivot"
+    },
+    {
+      "id": "en",
+      "name_ja": "English",
+      "name_en": "English",
+      "kind": "pivot"
+    },
+    {
+      "id": "baronh",
+      "name_ja": "アーヴ語",
+      "name_en": "Baronh",
+      "autonym": "baronh",
+      "kind": "pack",
+      "engine": "baronh",
+      "ath": true,
+      "builtin": true,
+      "ui": true
+    }
+  ]
+}

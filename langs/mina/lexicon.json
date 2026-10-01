@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "version": 1,
+    "language": "mina",
+    "license": "CC0-1.0",
+    "notes": "ミーナ語は本リポジトリの言語パック雛形である。作品世界の設定ではない。"
+  },
+  "entries": [
+    {
+      "lemma": "na",
+      "pos": "pronoun",
+      "gloss_ja": "私",
+      "gloss_en": "I",
+      "declension": "a",
+      "paradigm": {
+        "nom": "na",
+        "acc": "no",
+        "gen": "ne",
+        "dat": "ni",
+        "all": "nan",
+        "abl": "nun",
+        "ins": "nade"
+      }
+    },
+    {
+      "lemma": "ta",
+      "pos": "pronoun",
+      "gloss_ja": "あなた",
+      "gloss_en": "you",
+      "declension": "a",
+      "paradigm": {
+        "nom": "ta",
+        "acc": "to",
+        "gen": "te",
+        "dat": "ti",
+        "all": "tan",
+        "abl": "tun",
+        "ins": "tade"
+      }
+    },
+    {
+      "lemma": "se",
+      "pos": "pronoun",
+      "gloss_ja": "彼/彼女",
+      "gloss_en": "he/she",
+      "declension": "a",
+      "paradigm": {
+        "nom": "se",
+        "acc": "so",
+        "gen": "se",
+        "dat": "si",
+        "all": "san",
+        "abl": "sun",
+        "ins": "sede"
+      }
+    },
+    {
+      "lemma": "mina",
+      "pos": "noun",
+      "gloss_ja": "ミーナ",
+      "gloss_en": "Mina",
+      "declension": "a"
+    },
+    {
+      "lemma": "rana",
+      "pos": "noun",
+      "gloss_ja": "人",
+      "gloss_en": "person",
+      "declension": "a"
+    },
+    {
+      "lemma": "sora",
+      "pos": "noun",
+      "gloss_ja": "星",
+      "gloss_en": "star",
+      "declension": "a"
+    },
+    {
+      "lemma": "kala",
+      "pos": "noun",
+      "gloss_ja": "光",
+      "gloss_en": "light",
+      "declension": "a"
+    },
+    {
+      "lemma": "nama",
+      "pos": "noun",
+      "gloss_ja": "水",
+      "gloss_en": "water",
+      "declension": "a"
+    },
+    {
+      "lemma": "tena",
+      "pos": "noun",
+      "gloss_ja": "家",
+      "gloss_en": "house",
+      "declension": "a"
+    },
+    {
+      "lemma": "mir",
+      "pos": "verb",
+      "gloss_ja": "見る",
+      "gloss_en": "see",
+      "stem": "mir"
+    },
+    {
+      "lemma": "pir",
+      "pos": "verb",
+      "gloss_ja": "行く",
+      "gloss_en": "go",
+      "stem": "pir"
+    },
+    {
+      "lemma": "dar",
+      "pos": "verb",
+      "gloss_ja": "する",
+      "gloss_en": "do",
+      "stem": "dar"
+    },
+    {
+      "lemma": "ham",
+      "pos": "verb",
+      "gloss_ja": "話す",
+      "gloss_en": "speak",
+      "stem": "ham"
+    },
+    {
+      "lemma": "sul",
+      "pos": "verb",
+      "gloss_ja": "である",
+      "gloss_en": "be",
+      "stem": "sul"
+    },
+    {
+      "lemma": "ya",
+      "pos": "postposition",
+      "gloss_ja": "は",
+      "gloss_en": "topic"
+    },
+    {
+      "lemma": "ka",
+      "pos": "postposition",
+      "gloss_ja": "か",
+      "gloss_en": "question"
+    },
+    {
+      "lemma": "o",
+      "pos": "postposition",
+      "gloss_ja": "よ",
+      "gloss_en": "O"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = PACKAGE_DIR.parent
 DATA_DIR = ROOT_DIR / "data"
 WEB_DIR = ROOT_DIR / "web"
+LANGS_DIR = ROOT_DIR / "langs"
 SEED_LEXICON_PATH = DATA_DIR / "lexicon.json"
 INGESTED_PATH = DATA_DIR / "ingested.json"
 USER_LEXICON_PATH = DATA_DIR / "user_lexicon.json"
