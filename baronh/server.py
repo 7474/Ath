@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from baronh.agent import AgentModelRequired, model_configured, translate_agent
 from baronh.ingest import write_lexicon
+from baronh.langpack import is_translate_lang, pack_for_route, web_language_catalog
 from baronh.lexicon import Lexicon, load_lexicon
 from baronh.openai_backend import DEFAULT_CHAT_MODEL
 from baronh.paths import DATA_DIR, ROOT_DIR, WEB_DIR
@@ -78,6 +79,7 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
                     "ok": True,
                     "entries": len(self.lexicon.entries),
                     "engines": ["local", "agent", "openai"],
+                    "languages": web_language_catalog(),
                     "vector_dim": VECTOR_DIM,
                     "model": model_configured(),
                     "chat_model": os.environ.get("OPENAI_CHAT_MODEL") or DEFAULT_CHAT_MODEL,
@@ -98,6 +100,9 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
             limit = max(1, min(limit, 16))
             hits = get_index(self.lexicon).search(query, limit=limit)
             self._send_json({"query": query, "hits": [hit_to_dict(hit) for hit in hits]})
+            return
+        if parsed.path == "/api/languages":
+            self._send_json({"languages": web_language_catalog()})
             return
         super().do_GET()
 
@@ -127,10 +132,15 @@ class TranslatorHandler(SimpleHTTPRequestHandler):
         target = str(payload.get("target_lang") or "auto")
         engine = str(payload.get("engine") or "agent")
         vector_search = bool(payload.get("vector_search"))
-        if source not in {"auto", "ja", "en", "baronh"} or target not in {"auto", "ja", "en", "baronh"}:
+        if not is_translate_lang(source) or not is_translate_lang(target):
             self._send_json({"error": "invalid lang"}, status=400)
             return
-        wants_stream = bool(payload.get("stream")) and engine in {"agent", "openai"}
+        pack_route = pack_for_route(source, target) is not None
+        wants_stream = (
+            bool(payload.get("stream"))
+            and engine in {"agent", "openai"}
+            and not pack_route
+        )
         if wants_stream:
             if engine == "agent" and not model_configured(chat_once=self.chat_once):
                 self._send_json({"error": str(AgentModelRequired())}, status=503)
@@ -230,6 +240,14 @@ def run_translate(
     chat_once: Any = None,
     on_progress: Any = None,
 ) -> Any:
+    pack = pack_for_route(source_lang, target_lang)
+    if pack is not None:
+        from baronh.transfer import translate_pack
+
+        result = translate_pack(text, pack, source_lang=source_lang, target_lang=target_lang)
+        if engine not in {"local", "auto"}:
+            result.notes.append("パック言語は規則翻訳（言語パック）で訳しています。")
+        return result
     if engine == "local":
         return translate(text, lexicon, source_lang=source_lang, target_lang=target_lang, vector_search=vector_search)
     if engine == "openai":
@@ -256,11 +274,14 @@ def make_handler(lexicon: Lexicon, *, chat_once: Any = None) -> type[TranslatorH
 
 
 def serve(host: str = "127.0.0.1", port: int = 8765, *, lexicon: Lexicon | None = None) -> None:
+    from baronh.langpack import export_web_packs
+
     WEB_DIR.mkdir(parents=True, exist_ok=True)
     loaded = lexicon or load_lexicon()
     dest = WEB_DIR / "data"
     write_lexicon(loaded, dest / "lexicon.json")
     write_index(loaded, dest)
+    export_web_packs(dest)
     handler = make_handler(loaded)
     server = ThreadingHTTPServer((host, port), handler)
     url = f"http://{host}:{port}/"

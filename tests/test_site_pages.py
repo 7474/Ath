@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
@@ -160,6 +161,14 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("サーバエージェント", web)
         self.assertIn("ベクトル検索", web)
         self.assertIn("js/vectordb.js", web)
+        self.assertIn("js/engine.js", web)
+        self.assertIn("js/langpack.js", web)
+        self.assertNotIn('value="mina"', web)
+        self.assertNotIn("ミーナ語", web)
+        self.assertNotIn("ミーナ", web)
+        js = (ROOT / "web" / "js" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("if (!lang.ui) return", js)
+        self.assertNotIn("ミーナ", js)
         self.assertNotIn("id=\"agent-url\"", web)
         self.assertNotIn("エージェント URL", web)
         self.assertIn("/api/translate", web)
@@ -185,6 +194,14 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn('return "/api/health"', js)
         self.assertNotIn('id="agent-url"', js)
         self.assertNotIn("$(\"agent-url\")", js)
+
+    def test_translator_static_catalog_hides_template_packs(self):
+        catalog = json.loads((ROOT / "web" / "data" / "languages.json").read_text(encoding="utf-8"))
+        ids = {row["id"] for row in catalog["languages"]}
+        self.assertIn("baronh", ids)
+        self.assertIn("ja", ids)
+        self.assertNotIn("mina", ids)
+        self.assertFalse((ROOT / "web" / "data" / "langs" / "mina").exists())
 
     def test_translator_page_leads_with_tool_not_construction(self):
         web = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -351,6 +368,7 @@ class SiteStructureTest(unittest.TestCase):
         self.assertIn("cp favicon.ico docs/favicon.ico", workflow)
         self.assertIn("cp -r icons docs/icons", workflow)
         self.assertIn("python3 -m baronh export-web --out docs/web/data", workflow)
+        self.assertIn("langs/**", workflow)
         self.assertIn("vectors.bin", workflow)
         self.assertIn("vectors.json", workflow)
 

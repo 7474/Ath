@@ -21,6 +21,7 @@ on:
       - 'theme.js'
       - 'requirements.txt'
       - 'web/**'
+      - 'langs/**'
       - 'data/lexicon.json'
       - 'data/ingested.json'
       - 'baronh/**'
